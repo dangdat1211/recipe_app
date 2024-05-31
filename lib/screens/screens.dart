@@ -6,3 +6,6 @@ export './favorite_screen/favorite_screen.dart';
 export './home_screen/home_screen.dart';
 export './search_screen/search_screen.dart';
 export './user_screen/user_screen.dart';
+export './sign_in_screen/sign_in_screen.dart';
+export './register_screen/register_screen.dart';
+export './forgot_password_screen/forgot_password_screen.dart';

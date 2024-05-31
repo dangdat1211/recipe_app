@@ -20,20 +20,18 @@ class _SplashScreenState extends State<SplashScreen> {
     final inFirst = LocalStorageHelper.getValue('inFirst') as bool?;
     await Future.delayed(const Duration(seconds: 2));
 
-    if (inFirst!= null && inFirst) {
+    if (inFirst != null && inFirst) {
       Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const NavigateScreen()),
-    );
-    }
-    else {
+        context,
+        MaterialPageRoute(builder: (context) => const NavigateScreen()),
+      );
+    } else {
       LocalStorageHelper.setValue('inFirst', true);
       Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const OnbroadingScreen()),
-    );
+        context,
+        MaterialPageRoute(builder: (context) => const OnbroadingScreen()),
+      );
     }
-    
   }
 
   @override
