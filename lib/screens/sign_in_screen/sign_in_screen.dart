@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/widgets/input_form.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -16,6 +17,8 @@ class _SignInScreenState extends State<SignInScreen> {
   final FocusNode _passwordFocusNode = FocusNode();
   String? _emailError;
   String? _passwordError;
+
+  bool _obscureText = false;
 
   @override
   void initState() {
@@ -73,37 +76,19 @@ class _SignInScreenState extends State<SignInScreen> {
               SizedBox(
                 height: 50,
               ),
-              TextField(
-                controller: _emailController,
-                focusNode: _emailFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _emailError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _emailController, 
+                focusNode: _emailFocusNode, 
+                errorText: _emailError,
+                label: 'Email',
               ),
               SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                focusNode: _passwordFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                  errorText: _passwordError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
-                obscureText: true,
+              InputForm(
+                controller: _passwordController, 
+                focusNode: _passwordFocusNode, 
+                errorText: _passwordError,
+                label: 'Password',
+                isPassword: true ,
               ),
               SizedBox(height: 10),
               Row(
@@ -154,14 +139,20 @@ class _SignInScreenState extends State<SignInScreen> {
                     _passwordError =
                         password.isEmpty ? 'Password cannot be empty' : null;
                   });
+
+                  if (_emailError == null && _passwordError == null) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => NavigateScreen()),
+                    );
+                  }
                 },
                 child: Container(
                   height: 50,
                   width: MediaQuery.of(context).size.width * 0.9,
                   decoration: BoxDecoration(
                     color: Color(0xFFFF7622),
-                    borderRadius:
-                        BorderRadius.circular(20), 
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
                     child: Text(
@@ -195,73 +186,79 @@ class _SignInScreenState extends State<SignInScreen> {
                   )
                 ],
               ),
-              const SizedBox(height: 10,),
+              const SizedBox(
+                height: 10,
+              ),
               const Row(
                 children: [
                   Expanded(
                     flex: 3,
                     child: Divider(
-                    color: Colors.black, 
-                    thickness: 1, 
-                  ),),
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
+                  ),
                   Expanded(
                     flex: 1,
-                    child: Center(child: Text('Hoặc'),),
+                    child: Center(
+                      child: Text('Hoặc'),
+                    ),
                   ),
                   Expanded(
                     flex: 3,
                     child: Divider(
-                    color: Colors.black, 
-                    thickness: 1, 
-                  ),),
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10,),
+              const SizedBox(
+                height: 10,
+              ),
               GestureDetector(
-                onTap: () {
-
-                },
+                onTap: () {},
                 child: Container(
                   padding: EdgeInsets.only(left: 20),
                   height: 40,
                   width: MediaQuery.of(context).size.width * 0.9,
                   decoration: BoxDecoration(
                     color: Color.fromARGB(255, 219, 219, 219),
-                    borderRadius:
-                        BorderRadius.circular(20), 
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.facebook),
-                      SizedBox(width: 10,),
+                      SizedBox(
+                        width: 10,
+                      ),
                       Text(
                         'Đăng nhập với Facebook',
-                        style: TextStyle(
-                          color: Colors.blue
-                        ),
+                        style: TextStyle(color: Colors.blue),
                       )
                     ],
                   ),
                 ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               GestureDetector(
-                onTap: () {
-
-                },
+                onTap: () {},
                 child: Container(
                   padding: EdgeInsets.only(left: 20),
                   height: 40,
                   width: MediaQuery.of(context).size.width * 0.9,
                   decoration: BoxDecoration(
                     color: Color.fromARGB(255, 219, 219, 219),
-                    borderRadius:
-                        BorderRadius.circular(20), 
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.login),
-                      SizedBox(width: 10,),
+                      SizedBox(
+                        width: 10,
+                      ),
                       Text('Đăng nhập với Google')
                     ],
                   ),

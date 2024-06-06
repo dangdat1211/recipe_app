@@ -18,8 +18,16 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.grey[100], // Màu nền tùy chỉnh cho tất cả các trang
+        primarySwatch: Colors.orange,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        appBarTheme: AppBarTheme(
+          color: Colors.grey[100], // Màu nền AppBar trùng với màu nền Scaffold
+          ),
+        ),
       home: Scaffold(
         body: Center(
           child: SplashScreen()

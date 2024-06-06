@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/widgets/input_form.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -108,94 +109,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               SizedBox(height: 10,),
-              TextField(
-                controller: _usernameController,
-                focusNode: _usernameFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Usename',
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _usernameError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _usernameController, 
+                focusNode: _usernameFocusNode, 
+                errorText: _usernameError,
+                label: 'Username',
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _emailController,
-                focusNode: _emailFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _emailError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _emailController, 
+                focusNode: _emailFocusNode, 
+                errorText: _emailError,
+                label: 'Email',
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _fullnameController,
-                focusNode: _fullnameFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Fullname',
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _fullnameError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _fullnameController, 
+                focusNode: _fullnameFocusNode, 
+                errorText: _fullnameError,
+                label: 'Fullname',
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _passwordController,
-                focusNode: _passwordFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _passwordError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _passwordController, 
+                focusNode: _passwordFocusNode, 
+                errorText: _passwordError,
+                label: 'Password',
+                isPassword: true ,
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _confirmPasswordController,
-                focusNode: _confirmPasswordFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                    color: Color(0xFFFF7622),
-                  )),
-                  errorText: _confirmPasswordError,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  labelStyle: TextStyle(fontSize: 16),
-                  errorStyle: TextStyle(fontSize: 14),
-                ),
+              InputForm(
+                controller: _confirmPasswordController, 
+                focusNode: _confirmPasswordFocusNode, 
+                errorText: _confirmPasswordError,
+                label: 'Confirm Password',
+                isPassword: true ,
               ),
               const SizedBox(height: 10),
               
