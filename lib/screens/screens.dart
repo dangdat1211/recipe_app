@@ -11,3 +11,5 @@ export './register_screen/register_screen.dart';
 export './forgot_password_screen/forgot_password_screen.dart';
 export './profile_user.dart/profile_user.dart';
 export './edit_profile/edit_profile.dart';
+export './home_screen/propose_screen.dart';
+export './detail_recipe.dart/detail_recipe.dart';

@@ -14,15 +14,13 @@ class _UserScreenState extends State<UserScreen> {
   Widget build(BuildContext context) {
     bool isAccess = true;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('User Screen'),
-      ),
       body: SingleChildScrollView(
           child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: isAccess
                   ? Column(
                       children: [
+                        SizedBox(height: 50,),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
