@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/widgets/item_recipe.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -55,7 +56,45 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: currentUser != null
-          ? Text('Menu Screen')
+          ? Center(
+            child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Danh sách công thức'),
+                    ListView.builder(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: 20,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: ItemRecipe(
+                                name:
+                                    'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
+                                star: '4.3',
+                                favorite: '2000',
+                                avatar: '',
+                                fullname: 'Phạm Duy Đạt',
+                                image: 'assets/food_intro.jpg',
+                              ),
+                            )
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                )
+              ),
+          )
           : Container(
             height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
