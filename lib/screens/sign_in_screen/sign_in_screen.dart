@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/screens/screens.dart';
@@ -11,14 +12,14 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  final TextEditingController _emailController = TextEditingController();
+ final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   String? _emailError;
   String? _passwordError;
 
-  bool _obscureText = false;
+  bool remember = false;
 
   @override
   void initState() {
@@ -27,8 +28,7 @@ class _SignInScreenState extends State<SignInScreen> {
     _emailFocusNode.addListener(() {
       if (!_emailFocusNode.hasFocus) {
         setState(() {
-          _emailError =
-              _emailController.text.isEmpty ? 'Email cannot be empty' : null;
+          _emailError = _emailController.text.isEmpty ? 'Email cannot be empty' : null;
         });
       }
     });
@@ -36,15 +36,11 @@ class _SignInScreenState extends State<SignInScreen> {
     _passwordFocusNode.addListener(() {
       if (!_passwordFocusNode.hasFocus) {
         setState(() {
-          _passwordError = _passwordController.text.isEmpty
-              ? 'Password cannot be empty'
-              : null;
+          _passwordError = _passwordController.text.isEmpty ? 'Password cannot be empty' : null;
         });
       }
     });
   }
-
-  bool remember = false;
 
   @override
   void dispose() {
@@ -53,6 +49,51 @@ class _SignInScreenState extends State<SignInScreen> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    final String email = _emailController.text;
+    final String password = _passwordController.text;
+
+    setState(() {
+      _emailError = email.isEmpty ? 'Email cannot be empty' : null;
+      _passwordError = password.isEmpty ? 'Password cannot be empty' : null;
+    });
+
+    if (_emailError == null && _passwordError == null) {
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+
+        if (userCredential.user != null && !userCredential.user!.emailVerified) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Please verify your email before signing in.'),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => NavigateScreen()), // Replace with your home screen
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        setState(() {
+          if (e.code == 'user-not-found') {
+            _emailError = 'No user found for that email.';
+          } 
+          else if (e.code == 'invalid-credential') {
+            _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
+          } else {
+            _emailError = e.code;
+          }
+        });
+      } catch (e) {
+        print(e);
+      }
+    }
   }
 
   @override
@@ -77,18 +118,18 @@ class _SignInScreenState extends State<SignInScreen> {
                 height: 50,
               ),
               InputForm(
-                controller: _emailController, 
-                focusNode: _emailFocusNode, 
+                controller: _emailController,
+                focusNode: _emailFocusNode,
                 errorText: _emailError,
                 label: 'Email',
               ),
               SizedBox(height: 20),
               InputForm(
-                controller: _passwordController, 
-                focusNode: _passwordFocusNode, 
+                controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 errorText: _passwordError,
                 label: 'Password',
-                isPassword: true ,
+                isPassword: true,
               ),
               SizedBox(height: 10),
               Row(
@@ -103,8 +144,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             remember = !remember;
                           });
                         },
-                        visualDensity:
-                            VisualDensity(vertical: -4, horizontal: -4),
+                        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
                         activeColor: Color(0xFFFF7622),
                       ),
                       Text('Ghi nhớ mật khẩu')
@@ -114,8 +154,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => ForgotPasswordScreen()),
+                        MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
                       );
                     },
                     child: const Text(
@@ -129,24 +168,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 10),
               GestureDetector(
-                onTap: () {
-                  String email = _emailController.text;
-                  String password = _passwordController.text;
-
-                  setState(() {
-                    _emailError =
-                        email.isEmpty ? 'Email cannot be empty' : null;
-                    _passwordError =
-                        password.isEmpty ? 'Password cannot be empty' : null;
-                  });
-
-                  if (_emailError == null && _passwordError == null) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => NavigateScreen()),
-                    );
-                  }
-                },
+                onTap: _signIn,
                 child: Container(
                   height: 50,
                   width: MediaQuery.of(context).size.width * 0.9,
@@ -173,8 +195,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => RegisterScreen()),
+                        MaterialPageRoute(builder: (context) => RegisterScreen()),
                       );
                     },
                     child: Text(

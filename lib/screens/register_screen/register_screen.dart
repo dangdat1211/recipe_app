@@ -1,3 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/widgets/input_form.dart';
@@ -14,8 +17,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _fullnameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-    
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _fullnameFocusNode = FocusNode();
@@ -77,17 +81,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _confirmPasswordError = _confirmPasswordController.text.isEmpty
               ? 'confirmPassword cannot be empty'
               : null;
-          if (_passwordController.value != null ) {
+          if (_passwordController.value != null) {
             if (_passwordController.value != _confirmPasswordController.value) {
               _confirmPasswordError = "ccc";
-            }
-            else {
+            } else {
               _confirmPasswordError = null;
             }
           }
         });
       }
     });
+  }
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  CollectionReference users = FirebaseFirestore.instance.collection('users');
+
+  Future<void> _register() async {
+    if (_usernameController.text.isEmpty ||
+        _fullnameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      return;
+    }
+
+    try {
+      // Đăng ký tài khoản mới với email và mật khẩu
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      // Gửi email xác minh đến người dùng
+      await userCredential.user!.sendEmailVerification();
+      
+      users.doc(userCredential.user?.uid)
+          .set({
+            'username': _usernameController.text,
+            'fullname': _fullnameController.text,
+            'email': _emailController.text,
+            'avatar': '', 
+            'followers': [
+              'ádasd',
+              'ádasd'
+            ], 
+            'following': [
+              'dfsdf',
+              'qưeqwe',
+              'qưeqwe'             
+            ], 
+            'recipes': [
+              '32432',
+              '342342'
+            ], 
+          })
+          .then((value) => print("User Added"))
+          .catchError((error) => print("Failed to add user: $error"));
+
+      // await _firestore.collection('users').doc(userCredential.user!.uid).set({
+      //   'username': _usernameController.text,
+      //   'fullname': _fullnameController.text,
+      //   'email': _emailController.text,
+      //   'password': _passwordController.text,
+      // });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text('Email xác minh đã được gửi đến ' + _emailController.text),
+      ));
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        setState(() {
+          _emailError = 'Email này đã được sử dụng';
+        });
+      } else {
+        setState(() {
+          _emailError = 'Lỗi đăng ký: ' + e.message!;
+        });
+      }
+    }
   }
 
   @override
@@ -108,48 +183,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontSize: 40,
                 ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               InputForm(
-                controller: _usernameController, 
-                focusNode: _usernameFocusNode, 
+                controller: _usernameController,
+                focusNode: _usernameFocusNode,
                 errorText: _usernameError,
                 label: 'Username',
               ),
               const SizedBox(height: 10),
               InputForm(
-                controller: _emailController, 
-                focusNode: _emailFocusNode, 
+                controller: _emailController,
+                focusNode: _emailFocusNode,
                 errorText: _emailError,
                 label: 'Email',
               ),
               const SizedBox(height: 10),
               InputForm(
-                controller: _fullnameController, 
-                focusNode: _fullnameFocusNode, 
+                controller: _fullnameController,
+                focusNode: _fullnameFocusNode,
                 errorText: _fullnameError,
                 label: 'Fullname',
               ),
               const SizedBox(height: 10),
               InputForm(
-                controller: _passwordController, 
-                focusNode: _passwordFocusNode, 
+                controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 errorText: _passwordError,
                 label: 'Password',
-                isPassword: true ,
+                isPassword: true,
               ),
               const SizedBox(height: 10),
               InputForm(
-                controller: _confirmPasswordController, 
-                focusNode: _confirmPasswordFocusNode, 
+                controller: _confirmPasswordController,
+                focusNode: _confirmPasswordFocusNode,
                 errorText: _confirmPasswordError,
                 label: 'Confirm Password',
-                isPassword: true ,
+                isPassword: true,
               ),
               const SizedBox(height: 10),
-              
               ElevatedButton(
                 onPressed: () {
-                  // Xử lý việc đăng ký tài khoản ở đây
+                  _register();
                 },
                 child: Text('Register'),
               ),
