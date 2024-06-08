@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/screens/home_screen/following_screen.dart';
 import 'package:recipe_app/screens/screens.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: TabBarView(
                   children: [
                     ProposeScreen(),
-                    Center(child: Text('Nội dung Trang 2')),
+                    FollowingScreen(),
                   ],
                 ),
               ),

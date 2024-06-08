@@ -13,3 +13,4 @@ export './profile_user.dart/profile_user.dart';
 export './edit_profile/edit_profile.dart';
 export './home_screen/propose_screen.dart';
 export './detail_recipe.dart/detail_recipe.dart';
+export './add_recipe/add_info_recipe.dart';

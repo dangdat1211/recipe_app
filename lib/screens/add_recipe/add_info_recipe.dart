@@ -1,15 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:recipe_app/screens/screens.dart';
 
-class FavoriteScreen extends StatefulWidget {
-  const FavoriteScreen({super.key});
+class AddInfoRecipe extends StatefulWidget {
+  const AddInfoRecipe({super.key});
 
   @override
-  State<FavoriteScreen> createState() => _FavoriteScreenState();
+  State<AddInfoRecipe> createState() => _AddInfoRecipeState();
 }
 
-class _FavoriteScreenState extends State<FavoriteScreen> {
+class _AddInfoRecipeState extends State<AddInfoRecipe> {
   User? currentUser;
 
   @override
@@ -35,7 +35,10 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
 
-                Navigator.pushNamed(context, '/login');
+                Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
+      );
               },
               child: Text('Đăng nhập'),
             ),

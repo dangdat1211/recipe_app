@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -155,8 +156,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            height: 100,
-                            child: Image.asset('assets/food_intro.jpg'),
+                            height: 150,
+                            child: Image.asset('assets/logo_noback.png'),
                           ),
                           SizedBox(
                             height: 10,
@@ -249,41 +250,12 @@ class _ProposeScreenState extends State<ProposeScreen> {
                       scrollDirection: Axis.horizontal,
                       itemCount: recipes.length,
                       itemBuilder: (context, index) {
-                        return Card(
-                          color: Colors.white,
-                          child: Container(
-                            width: 130,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(),
-                                Text(('Phạm Duy Đạt')),
-                                Text('@user_name'),
-                                Text('10000 công thức'),
-                                GestureDetector(
-                                  child: Container(
-                                      height: 30,
-                                      width: 100,
-                                      decoration: BoxDecoration(
-                                          color: Color.fromARGB(
-                                              255, 255, 206, 175),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      child: Center(
-                                        child: Text(
-                                          'Theo dõi ngay',
-                                          style: TextStyle(
-                                            color: Color(0xFFFF7622),
-                                          ),
-                                        ),
-                                      )),
-                                )
-                              ],
-                            ),
-                          ),
+                        return ItemUser(
+                          avatar: "avatar", 
+                          fullname: "Phạm Duy Đạt", 
+                          username: "username", 
+                          recipe: "4", 
+                          follow: false
                         );
                       },
                     ),
@@ -296,62 +268,64 @@ class _ProposeScreenState extends State<ProposeScreen> {
             height: 10,
           ),
           Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(selectedValue), // Text thay đổi theo selectedValue
-                    DropdownButton<String>(
-                      value: selectedValue,
-                      items: <String>[
-                        'Mới cập nhật',
-                        'Nhiều tim nhất',
-                        'Điểm cao nhất'
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedValue = newValue!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    childAspectRatio: 2.7,
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                          'Danh sách công thức'), // Text thay đổi theo selectedValue
+                      DropdownButton<String>(
+                        value: selectedValue,
+                        items: <String>[
+                          'Mới cập nhật',
+                          'Nhiều tim nhất',
+                          'Điểm cao nhất'
+                        ].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedValue = newValue!;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  itemCount: 20,
-                  itemBuilder: (context, index) {
-                    return ItemRecipe(
-                      name:
-                          'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
-                      star: '4.3',
-                      favorite: '2000',
-                      avatar: '',
-                      fullname: 'Phạm Duy Đạt',
-                      image: 'assets/food_intro.jpg',
-                    );
-                  },
-                ),
-              ],
-            ),
-          )
+                  ListView.builder(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: 20,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        child: Center(
+                            child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: ItemRecipe(
+                            name:
+                                'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
+                            star: '4.3',
+                            favorite: '2000',
+                            avatar: '',
+                            fullname: 'Phạm Duy Đạt',
+                            image: 'assets/food_intro.jpg',
+                          ),
+                        )),
+                      );
+                    },
+                  ),
+                ],
+              )),
         ],
       ),
     );

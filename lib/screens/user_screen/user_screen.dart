@@ -61,58 +61,80 @@ class _UserScreenState extends State<UserScreen> {
           padding: const EdgeInsets.all(16.0),
           child: isLoading
               ? Container(
-                height: MediaQuery.of(context).size.height*0.9,
-                width: MediaQuery.of(context).size.width*0.9,
-                child: Center(child: CircularProgressIndicator()))
+                  height: MediaQuery.of(context).size.height * 0.9,
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  child: Center(child: CircularProgressIndicator()))
               : currentUser == null
-                  ? Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => SignInScreen()),
-                            );
-                          },
-                          child: Container(
-                            height: 100,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 208, 208, 208),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.account_circle,
-                                  size: 50,
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                Container(
-                                  width: MediaQuery.of(context).size.width * 0.74,
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Đăng nhập vào tài khoản'),
-                                      Text('Lưu và tạo công thức, gửi cooksnap và hơn thế nữa jhsagd asdyg ahsgd')
-                                    ],
+                  ? Center(
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: 40,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SignInScreen()),
+                              );
+                            },
+                            child: Container(
+                              height: 100,
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 208, 208, 208),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.account_circle,
+                                    size: 50,
                                   ),
-                                )
-                              ],
+                                  const SizedBox(
+                                    width: 10,
+                                  ),
+                                  Container(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.7,
+                                    child: const Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Đăng nhập vào tài khoản'),
+                                        Text(
+                                            'Lưu và tạo công thức, gửi cooksnap và hơn thế nữa jhsagd asdyg ahsgd')
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(
+                            height: 30,
+                          ),
+                          Container(
+                            height: 150,
+                            child: Image.asset('assets/logo_noback.png'),
+                          ),
+                          Text('Đăng nhập để có một trải nghiệm tốt nhất'),
+                          SizedBox(
+                            height: 30,
+                          ),
+                        ],
+                      ),
                     )
                   : Column(
                       children: [
-                        SizedBox(height: 50,),
+                        SizedBox(
+                          height: 50,
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -155,13 +177,15 @@ class _UserScreenState extends State<UserScreen> {
                                   width: 10,
                                 ),
                                 Container(
-                                  width: MediaQuery.of(context).size.width * 0.7,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.7,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                         'dsd',                                         
+                                        'dsd',
                                         style: TextStyle(
                                             color: Color(0xFFFF7622),
                                             fontSize: 25),
@@ -225,7 +249,9 @@ class _UserScreenState extends State<UserScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -274,7 +300,9 @@ class _UserScreenState extends State<UserScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -323,54 +351,54 @@ class _UserScreenState extends State<UserScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         GestureDetector(
                           onTap: () {
                             _signOut();
                           },
                           child: Container(
-                            height: 50,
-                            width: MediaQuery.of(context).size.width*0.5,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text('Đăng xuất'),
-                            )
-                          ),
+                              height: 50,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.5),
+                                    spreadRadius: 5,
+                                    blurRadius: 7,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text('Đăng xuất'),
+                              )),
                         ),
                         GestureDetector(
                           onTap: () {
                             printName();
                           },
                           child: Container(
-                            height: 50,
-                            width: MediaQuery.of(context).size.width*0.5,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text('Test'),
-                            )
-                          ),
+                              height: 50,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.5),
+                                    spreadRadius: 5,
+                                    blurRadius: 7,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text('Test'),
+                              )),
                         )
                       ],
                     ),

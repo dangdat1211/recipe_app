@@ -12,7 +12,7 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
- final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
@@ -28,7 +28,8 @@ class _SignInScreenState extends State<SignInScreen> {
     _emailFocusNode.addListener(() {
       if (!_emailFocusNode.hasFocus) {
         setState(() {
-          _emailError = _emailController.text.isEmpty ? 'Email cannot be empty' : null;
+          _emailError =
+              _emailController.text.isEmpty ? 'Email cannot be empty' : null;
         });
       }
     });
@@ -36,7 +37,9 @@ class _SignInScreenState extends State<SignInScreen> {
     _passwordFocusNode.addListener(() {
       if (!_passwordFocusNode.hasFocus) {
         setState(() {
-          _passwordError = _passwordController.text.isEmpty ? 'Password cannot be empty' : null;
+          _passwordError = _passwordController.text.isEmpty
+              ? 'Password cannot be empty'
+              : null;
         });
       }
     });
@@ -62,12 +65,14 @@ class _SignInScreenState extends State<SignInScreen> {
 
     if (_emailError == null && _passwordError == null) {
       try {
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
 
-        if (userCredential.user != null && !userCredential.user!.emailVerified) {
+        if (userCredential.user != null &&
+            !userCredential.user!.emailVerified) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Please verify your email before signing in.'),
@@ -76,15 +81,16 @@ class _SignInScreenState extends State<SignInScreen> {
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => NavigateScreen()), // Replace with your home screen
+            MaterialPageRoute(
+                builder: (context) =>
+                    NavigateScreen()), // Replace with your home screen
           );
         }
       } on FirebaseAuthException catch (e) {
         setState(() {
           if (e.code == 'user-not-found') {
             _emailError = 'No user found for that email.';
-          } 
-          else if (e.code == 'invalid-credential') {
+          } else if (e.code == 'invalid-credential') {
             _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
           } else {
             _emailError = e.code;
@@ -108,14 +114,13 @@ class _SignInScreenState extends State<SignInScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Đăng nhập',
-                style: TextStyle(
-                  fontSize: 40,
-                ),
+              Container(
+                height: 150,
+                child: Image.asset('assets/logo_noback.png'),
               ),
+              Text('Tham gia ngay cùng cộng đồng lớn'),
               SizedBox(
-                height: 50,
+                height: 30,
               ),
               InputForm(
                 controller: _emailController,
@@ -144,7 +149,8 @@ class _SignInScreenState extends State<SignInScreen> {
                             remember = !remember;
                           });
                         },
-                        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+                        visualDensity:
+                            VisualDensity(vertical: -4, horizontal: -4),
                         activeColor: Color(0xFFFF7622),
                       ),
                       Text('Ghi nhớ mật khẩu')
@@ -154,7 +160,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => ForgotPasswordScreen()),
                       );
                     },
                     child: const Text(
@@ -195,7 +202,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => RegisterScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => RegisterScreen()),
                       );
                     },
                     child: Text(

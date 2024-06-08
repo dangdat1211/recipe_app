@@ -35,18 +35,19 @@ class _ItemRecipeState extends State<ItemRecipe> {
         );
       },
       child: Container(
-        width: 350,
+        width: MediaQuery.of(context).size.width*0.8,
         child: Row(
           children: [
             Container(
-              width: 250,
+              width: MediaQuery.of(context).size.width*0.55,
               height: 142,
               decoration: BoxDecoration(
-                color: Color.fromARGB(255, 255, 228, 204),
+                color: Color.fromARGB(255, 255, 248, 243),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
                 ),
+                
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -97,7 +98,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
               ),
             ),
             Container(
-              width: 100,
+              width: MediaQuery.of(context).size.width*0.25,
               height: 142,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.only(

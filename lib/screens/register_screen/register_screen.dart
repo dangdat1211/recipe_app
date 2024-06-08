@@ -140,13 +140,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           .then((value) => print("User Added"))
           .catchError((error) => print("Failed to add user: $error"));
 
-      // await _firestore.collection('users').doc(userCredential.user!.uid).set({
-      //   'username': _usernameController.text,
-      //   'fullname': _fullnameController.text,
-      //   'email': _emailController.text,
-      //   'password': _passwordController.text,
-      // });
-
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content:
             Text('Email xác minh đã được gửi đến ' + _emailController.text),
@@ -177,11 +170,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Đăng ký',
-                style: TextStyle(
-                  fontSize: 40,
-                ),
+              Container(
+                height: 150,
+                child: Image.asset('assets/logo_noback.png'),
+              ),
+              Text('Tham gia ngay cùng cộng đồng lớn'),
+              SizedBox(
+                height: 30,
               ),
               SizedBox(
                 height: 10,
