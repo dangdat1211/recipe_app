@@ -1,6 +1,7 @@
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/add_recipe/add_info_recipe.dart';
+import 'package:recipe_app/screens/notify_screen/notify_screen.dart';
 import 'package:recipe_app/screens/screens.dart';
 
 
@@ -18,7 +19,7 @@ class _NavigateScreenState extends State<NavigateScreen> {
     HomeScreen(),
     SearchScreen(),
     AddInfoRecipe(),
-    FavoriteScreen(),
+    NotifyScreen(),
     UserScreen(),
   ];
 

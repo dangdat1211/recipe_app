@@ -1,6 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
+import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class DetailReCipe extends StatefulWidget {
   const DetailReCipe({super.key});
@@ -37,20 +42,13 @@ class _DetailReCipeState extends State<DetailReCipe> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    child: CircleAvatar(),
-                  ),
-                  Column(
-                    children: [Text('Phạm Duy Đạt'), Text('@user_name')],
-                  )
-                ],
+              SizedBox(
+                height: 10,
               ),
               Center(
                 child: Container(
                   height: 200,
-                  width: 355, // Đặt chiều cao mong muốn cho video
+                  width: 355,
                   child: YoutubePlayer(
                     controller: _controllerYoutube,
                     showVideoProgressIndicator: true,
@@ -58,335 +56,381 @@ class _DetailReCipeState extends State<DetailReCipe> {
                   ),
                 ),
               ),
-              Text('Tên món ăn : Hahasd asdiasjd sạdha'),
-              Text('Mô tả món ăn : Hahasd asdiasjd sạdha'),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Center(
-                      child: Text('Nguyên liệu'),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 5,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.1,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    child: Center(
-                      child: Text('1'),
-                    ),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: EdgeInsets.symmetric(
-                        horizontal:
-                            8), // Thêm padding để Text không dính sát vào viền
-                    alignment:
-                        Alignment.centerLeft, // Căn Text bắt đầu từ bên trái
-                    child: Text(
-                      '1 tỷ tiền mặt',
-                      textAlign: TextAlign.left, // Đảm bảo text căn từ bên trái
-                    ),
-                  ),
-                ],
-              ),
               SizedBox(
                 height: 10,
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.1,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    child: Center(
-                      child: Text('1'),
-                    ),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: EdgeInsets.symmetric(
-                        horizontal:
-                            8), // Thêm padding để Text không dính sát vào viền
-                    alignment:
-                        Alignment.centerLeft, // Căn Text bắt đầu từ bên trái
-                    child: Text(
-                      '1 tỷ tiền mặt',
-                      textAlign: TextAlign.left, // Đảm bảo text căn từ bên trái
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.1,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    child: Center(
-                      child: Text('1'),
-                    ),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: EdgeInsets.symmetric(
-                        horizontal:
-                            8), // Thêm padding để Text không dính sát vào viền
-                    alignment:
-                        Alignment.centerLeft, // Căn Text bắt đầu từ bên trái
-                    child: Text(
-                      '1 tỷ tiền mặt',
-                      textAlign: TextAlign.left, // Đảm bảo text căn từ bên trái
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Center(
-                      child: Text('Cách làm'),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 5,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.1,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Color.fromARGB(255, 255, 166, 115),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text('1'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 200,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: EdgeInsets.symmetric(
-                        horizontal:
-                            8), // Thêm padding để Text không dính sát vào viền
-                    alignment:
-                        Alignment.centerLeft, // Căn Text bắt đầu từ bên trái
-                    child: Text(
-                      '1 tỷ tiền mặt',
-                      textAlign: TextAlign.left, // Đảm bảo text căn từ bên trái
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 5,),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.blue, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 1
-                  ),
-                  SizedBox(width: 8), // Khoảng cách giữa các hình ảnh
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.red, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 2
-                  ),
-                  SizedBox(width: 8), // Khoảng cách giữa các hình ảnh
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.green, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 3
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 5,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.1,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Color.fromARGB(255, 255, 166, 115),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text('1'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 200,
-                    decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 255, 166, 115),
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: EdgeInsets.symmetric(
-                        horizontal:
-                            8), // Thêm padding để Text không dính sát vào viền
-                    alignment:
-                        Alignment.centerLeft, // Căn Text bắt đầu từ bên trái
-                    child: Text(
-                      '1 tỷ tiền mặt',
-                      textAlign: TextAlign.left, // Đảm bảo text căn từ bên trái
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 5,),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.blue, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 1
-                  ),
-                  SizedBox(width: 8), // Khoảng cách giữa các hình ảnh
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.red, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 2
-                  ),
-                  SizedBox(width: 8), // Khoảng cách giữa các hình ảnh
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.green, // Thay đổi màu sắc tùy theo yêu cầu
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    // Widget hình ảnh 3
-                  ),
-                ],
-              ),
-              SizedBox(height: 10,),
               Center(
-                child: Container(
-                  height: 200,
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10)
+                child: Text(
+                  'Tên món ăn : Hahasd asdiasjd sạdha',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Text(
+                'Mô tả món ăn : Hahasd asdiasjd sạdha qweqwe qweqwe qweqwe qweqwe qweqwe qweqwe njhfj',
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Divider(
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
                   ),
-                  child: Column(
+                  Expanded(
+                    flex: 3,
+                    child: Center(
+                      child: Text(
+                        'Nguyên liệu',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Divider(
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              ItemDetailRecipe(
+                  index: '1',
+                  title:
+                      '1 tỷ tiền mặt 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 213123 123123 '),
+              SizedBox(
+                height: 10,
+              ),
+              ItemDetailRecipe(
+                  index: '1',
+                  title:
+                      '1 tỷ tiền mặt 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 213123 123123 '),
+              SizedBox(
+                height: 10,
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Divider(
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: Text(
+                        'Cách làm',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Divider(
+                      color: Colors.black,
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              ItemDetailRecipe(
+                index: '2',
+                title:
+                    '1 tỷ tiền mặt 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 123123 213123 123123 ',
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(),
-                      Text('Được đăng tải bởi'),
-                      Text('Phạm Duy Đạt'),
-                      Text('ngày 12 tháng 11 năm 2002'),
                       Container(
-                        height: 40,
-                        width: 100,
-                        color: Colors.amber,
-                      )
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        height: MediaQuery.of(context).size.width * 0.25,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: NetworkImage(
+                              'https://giadinh.mediacdn.vn/296230595582509056/2022/12/21/an-gi-102-16715878746102005998080.jpg',
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.05 / 3,
+                      ),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        height: MediaQuery.of(context).size.width * 0.25,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.05 / 3,
+                      ),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        height: MediaQuery.of(context).size.width * 0.25,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              )
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Divider(),
+              SizedBox(
+                height: 5,
+              ),
+              Center(
+                child: Container(
+                  height: 60,
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: 10,
+                        ),
+                        RatingBar.builder(
+                          initialRating: 0,
+                          minRating: 1,
+                          direction: Axis.horizontal,
+                          allowHalfRating: true,
+                          itemCount: 5,
+                          itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                          itemBuilder: (context, _) => Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                          ),
+                          onRatingUpdate: (rating) {
+                            print(rating);
+                          },
+                        ),
+                        Text(
+                          'Đánh giá 4.5/5 từ 100 thành viên',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Divider(),
+              SizedBox(
+                height: 5,
+              ),
+              Center(
+                child: Container(
+                  height: 180,
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.comment),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Text('Bình luận'),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Text('4')
+                          ],
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CommentScreen()),
+                              );
+                            },
+                            child: Text('Xem tất cả bình luận')),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Text('Phạm Duy Đạt'),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Text('Ngon quá')
+                          ],
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Container(
+                              height: 40,
+                              width: MediaQuery.of(context).size.width * 0.7,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: 'Bình luận ngay',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding:
+                                      EdgeInsets.fromLTRB(20, 10, 10, 10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              Divider(),
+              SizedBox(
+                height: 5,
+              ),
+              Center(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    height: 250,
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 20,
+                        ),
+                        CircleAvatar(
+                          radius: 50, // Đặt giá trị bạn muốn cho chiều cao
+                          backgroundImage: NetworkImage(
+                              'https://giadinh.mediacdn.vn/296230595582509056/2022/12/21/an-gi-102-16715878746102005998080.jpg'),
+                        ),
+                        Text('Được đăng tải bởi'),
+                        Text('Phạm Duy Đạt'),
+                        Text('ngày 12 tháng 11 năm 2002'),
+                        Container(
+                          height: 40,
+                          width: 100,
+                          color: Colors.amber,
+                          child: Center(child: Text('Theo dõi ngay')),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              Divider(),
+              SizedBox(
+                height: 5,
+              ),
+              Center(
+                child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Các món mới từ Phạm Duy Đạt',
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        ListView.builder(
+                          physics: NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: 4,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              child: Center(
+                                  child: Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: ItemRecipe(
+                                  name:
+                                      'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
+                                  star: '4.3',
+                                  favorite: '2000',
+                                  avatar: '',
+                                  fullname: 'Phạm Duy Đạt',
+                                  image: 'assets/food_intro.jpg',
+                                ),
+                              )),
+                            );
+                          },
+                        ),
+                      ],
+                    )),
+              ),
             ],
           ),
         ),

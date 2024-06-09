@@ -44,7 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: Icon(Icons.notifications),
               onPressed: () {
-                // Handle app icon pressed
+                Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NotifyScreen()),
+      );
               },
             ),
           ],

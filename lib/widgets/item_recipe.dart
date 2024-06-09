@@ -25,6 +25,9 @@ class ItemRecipe extends StatefulWidget {
 }
 
 class _ItemRecipeState extends State<ItemRecipe> {
+
+  bool isFavorite = false;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -59,7 +62,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
                       widget.name,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
-                      style: TextStyle(fontSize: 20),
+                      style: TextStyle(fontSize: 15),
                     ),
                     Column(
                       children: [
@@ -114,8 +117,8 @@ class _ItemRecipeState extends State<ItemRecipe> {
                         topRight: Radius.circular(10),
                         bottomRight: Radius.circular(10),
                       ),
-                      child: Image.asset(
-                        widget.image,
+                      child: Image.network(
+                        'https://giadinh.mediacdn.vn/296230595582509056/2022/12/21/an-gi-102-16715878746102005998080.jpg',
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -123,9 +126,17 @@ class _ItemRecipeState extends State<ItemRecipe> {
                   Positioned(
                     right: 10,
                     bottom: 10,
-                    child: Icon(
-                      Icons.favorite,
-                      color: Colors.white,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          isFavorite = !isFavorite; // Đổi trạng thái yêu thích
+                        });
+                      },
+                      child: Icon(
+                        Icons.favorite,
+                        size: 36.0, 
+                        color: isFavorite ? Colors.red : Colors.white, // Đổi màu dựa trên trạng thái
+                      ),
                     ),
                   ),
                 ],
