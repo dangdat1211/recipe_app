@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
@@ -316,7 +317,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                 'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
                             star: '4.3',
                             favorite: '2000',
-                            avatar: '',
+                            avatar: 'assets/food_intro.jpg',
                             fullname: 'Phạm Duy Đạt',
                             image: 'assets/food_intro.jpg',
                           ),

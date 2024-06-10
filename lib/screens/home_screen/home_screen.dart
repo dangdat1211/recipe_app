@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/following_screen.dart';
 import 'package:recipe_app/screens/screens.dart';
 
@@ -45,13 +46,13 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.notifications),
               onPressed: () {
                 Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NotifyScreen()),
-      );
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotifyScreen()),
+                );
               },
             ),
           ],
-          backgroundColor: Color(0xFFFF7622),
+          backgroundColor: mainColor,
         ),
         body: Padding(
           padding: EdgeInsets.only(left: 16, right: 16),
@@ -63,7 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Tab(text: 'Đang theo dõi'),
                 ],
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               Expanded(
                 child: TabBarView(
                   children: [

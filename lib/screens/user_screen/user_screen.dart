@@ -206,7 +206,7 @@ class _UserScreenState extends State<UserScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => SignInScreen()),
+                                  builder: (context) => ManageMyRecipe()),
                             );
                           },
                           child: Container(
@@ -241,7 +241,7 @@ class _UserScreenState extends State<UserScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('Công thức của mày'),
+                                        Text('Công thức của bạn'),
                                         Icon(Icons.arrow_right)
                                       ],
                                     ))

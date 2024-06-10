@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_app/constants/colors.dart';
 
 class ItemUser extends StatefulWidget {
-  const ItemUser({super.key, required this.avatar, required this.fullname, required this.username, required this.recipe, required this.follow});
+  const ItemUser(
+      {super.key,
+      required this.avatar,
+      required this.fullname,
+      required this.username,
+      required this.recipe,
+      required this.follow});
 
   final String avatar;
   final String fullname;
@@ -35,23 +42,26 @@ class _ItemUserState extends State<ItemUser> {
                   height: 30,
                   width: 100,
                   decoration: BoxDecoration(
-                      color: Color.fromARGB(255, 255, 206, 175),
+                      border: Border.all(
+                        color: Colors.grey,
+                        width: 1.0,
+                      ),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(10)),
                   child: Center(
-                    child: widget.follow ? Text(
-                      'Theo dõi ngay',
-                      style: TextStyle(
-                        color: Color(0xFFFF7622),
-                      ),
-                    )
-                    :
-                    Text(
-                      'Đã theo dõi',
-                      style: TextStyle(
-                        color: Color(0xFFFF7622),
-                      ),
-                    )
-                  )),
+                      child: widget.follow
+                          ? Text(
+                              'Theo dõi ngay',
+                              style: TextStyle(
+                                color: Color(0xFFFF7622),
+                              ),
+                            )
+                          : Text(
+                              'Đã theo dõi',
+                              style: TextStyle(
+                                color: Color(0xFFFF7622),
+                              ),
+                            ))),
             )
           ],
         ),

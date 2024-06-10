@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/screens.dart';
+import '';
 
 class ItemRecipe extends StatefulWidget {
   const ItemRecipe({
@@ -45,12 +47,19 @@ class _ItemRecipeState extends State<ItemRecipe> {
               width: MediaQuery.of(context).size.width*0.55,
               height: 142,
               decoration: BoxDecoration(
-                color: Color.fromARGB(255, 255, 248, 243),
+                color: mainColorBackground,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
                 ),
-                
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: Offset(0, 2), // changes position of shadow
+                  ),
+                ],   
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
