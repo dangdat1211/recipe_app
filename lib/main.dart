@@ -26,11 +26,11 @@ class MainApp extends StatelessWidget {
             primary: Color(0xFFFF7622),
             outline: Colors.grey),
         scaffoldBackgroundColor:
-            Colors.grey[100], // Màu nền tùy chỉnh cho tất cả các trang
+            Colors.grey[100], 
         primarySwatch: Colors.orange,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         appBarTheme: AppBarTheme(
-          color: Colors.grey[100], // Màu nền AppBar trùng với màu nền Scaffold
+          color: Colors.grey[100], 
         ),
       ),
       home: Scaffold(

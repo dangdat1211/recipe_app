@@ -1,10 +1,11 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
 class EditProfile extends StatefulWidget {
@@ -17,12 +18,18 @@ class EditProfile extends StatefulWidget {
 class _EditProfileState extends State<EditProfile> {
   final TextEditingController _fullnameController = TextEditingController();
   final FocusNode _fullnameFocusNode = FocusNode();
-
   String? _fullnameError;
 
+  final TextEditingController _usernameController = TextEditingController();
+  final FocusNode _usernameFocusNode = FocusNode();
+  String? _usernameError;
+
+  final TextEditingController _bioController = TextEditingController();
+  final FocusNode _bioFocusNode = FocusNode();
+  String? _bioError;
 
   Uint8List? _image;
-  File? selectedIMage;
+  File? selectedImage;
 
   Future _pickImageFromGallery() async {
     try {
@@ -30,28 +37,74 @@ class _EditProfileState extends State<EditProfile> {
           await ImagePicker().pickImage(source: ImageSource.gallery);
       if (returnImage == null) return;
       setState(() {
-        selectedIMage = File(returnImage.path);
+        selectedImage = File(returnImage.path);
         _image = File(returnImage.path).readAsBytesSync();
       });
       Navigator.of(context).pop();
     } on PlatformException catch (e) {
-      print('Faile to pick image');
+      print('Failed to pick image');
     }
   }
 
-//Camera
   Future _pickImageFromCamera() async {
     try {
       final returnImage =
           await ImagePicker().pickImage(source: ImageSource.camera);
       if (returnImage == null) return;
       setState(() {
-        selectedIMage = File(returnImage.path);
+        selectedImage = File(returnImage.path);
         _image = File(returnImage.path).readAsBytesSync();
       });
       Navigator.of(context).pop();
     } on PlatformException catch (e) {
-      print('Faile to pick image');
+      print('Failed to pick image');
+    }
+  }
+
+  Future<String?> _uploadImageToFirebase(File image) async {
+    try {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference storageReference =
+          FirebaseStorage.instance.ref().child('profile_images/$fileName');
+      UploadTask uploadTask = storageReference.putFile(image);
+      TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => {});
+      String downloadURL = await taskSnapshot.ref.getDownloadURL();
+      return downloadURL;
+    } catch (e) {
+      print('Failed to upload image: $e');
+      return null;
+    }
+  }
+
+  void _saveProfileData() async {
+    String? imageUrl;
+    if (selectedImage != null) {
+      imageUrl = await _uploadImageToFirebase(selectedImage!);
+    }
+
+    String fullname = _fullnameController.text;
+    String username = _usernameController.text;
+    String bio = _bioController.text;
+
+    setState(() {
+      _fullnameError = fullname.isEmpty ? 'Tên hồ sơ không được để trống' : null;
+      _usernameError = username.isEmpty ? 'Tên người dùng không được để trống' : null;
+      _bioError = bio.isEmpty ? 'Tiểu sử không được để trống' : null;
+    });
+
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (_fullnameError == null && _usernameError == null && _bioError == null) {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser?.uid).update({
+        'fullname': fullname,
+        'username': username,
+        'bio': bio,
+        if (imageUrl != null) 'avatar': imageUrl,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Cập nhật hồ sơ thành công'),
+      ));
     }
   }
 
@@ -101,47 +154,36 @@ class _EditProfileState extends State<EditProfile> {
                 ),
                 SizedBox(height: 10,),
                 InputForm(
-                  controller: _fullnameController, 
-                  focusNode: _fullnameFocusNode, 
-                  errorText: _fullnameError, 
+                  controller: _usernameController, 
+                  focusNode: _usernameFocusNode, 
+                  errorText: _usernameError, 
                   label: 'username'
                 ),
                 SizedBox(height: 10,),
                 InputForm(
-                  controller: _fullnameController, 
-                  focusNode: _fullnameFocusNode, 
-                  errorText: _fullnameError, 
+                  controller: _bioController, 
+                  focusNode: _bioFocusNode, 
+                  errorText: _bioError, 
                   label: 'Tiểu sử'
                 ),
                 SizedBox(height: 10,),
                 GestureDetector(
-                onTap: () {
-                  String email = _fullnameController.text;
-
-                  setState(() {
-                    _fullnameError =
-                        email.isEmpty ? 'Email cannot be empty' : null;
-                  });
-
-                  if (_fullnameError == null ) {
-                    
-                  }
-                },
-                child: Container(
-                  height: 50,
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFF7622),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Lưu cập nhật',
-                      style: TextStyle(color: Colors.white),
+                  onTap: _saveProfileData,
+                  child: Container(
+                    height: 50,
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFF7622),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Lưu cập nhật',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ),
-              ),
               ],
             ),
           ),
@@ -164,9 +206,7 @@ class _EditProfileState extends State<EditProfile> {
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: () {
-                        _pickImageFromGallery();
-                      },
+                      onTap: _pickImageFromGallery,
                       child: const SizedBox(
                         child: Column(
                           children: [
@@ -182,9 +222,7 @@ class _EditProfileState extends State<EditProfile> {
                   ),
                   Expanded(
                     child: InkWell(
-                      onTap: () {
-                        _pickImageFromCamera();
-                      },
+                      onTap: _pickImageFromCamera,
                       child: const SizedBox(
                         child: Column(
                           children: [

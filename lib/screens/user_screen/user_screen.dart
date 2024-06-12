@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
+import 'package:recipe_app/screens/user_screen/widgets/ui_container.dart';
+import 'package:recipe_app/screens/user_screen/widgets/ui_menu.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -201,205 +203,70 @@ class _UserScreenState extends State<UserScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        GestureDetector(
-                          onTap: () {
+                        UIMenu(
+                          ontap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (context) => ManageMyRecipe()),
                             );
-                          },
-                          child: Container(
-                            height: 50,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.account_circle,
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                Container(
-                                    width: MediaQuery.of(context).size.width *
-                                        0.74,
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Công thức của bạn'),
-                                        Icon(Icons.arrow_right)
-                                      ],
-                                    ))
-                              ],
-                            ),
-                          ),
+                          }, 
+                          icon: Icons.calculate, 
+                          title: 'Công thức của bạn'
                         ),
                         SizedBox(
                           height: 10,
                         ),
-                        GestureDetector(
-                          onTap: () {
+                        UIMenu(
+                          ontap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (context) => SignInScreen()),
                             );
-                          },
-                          child: Container(
-                            height: 50,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.account_circle,
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                Container(
-                                    width: MediaQuery.of(context).size.width *
-                                        0.74,
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Công thức yêu thích'),
-                                        Icon(Icons.arrow_right)
-                                      ],
-                                    ))
-                              ],
-                            ),
-                          ),
+                          }, 
+                          icon: Icons.privacy_tip, 
+                          title: 'Cài đặt quyền riêng tư'
                         ),
                         SizedBox(
                           height: 10,
                         ),
-                        GestureDetector(
-                          onTap: () {
+                        UIMenu(
+                          ontap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ChangePasswordScreen()),
+                            );
+                          }, 
+                          icon: Icons.privacy_tip, 
+                          title: 'Đổi mật khẩu'
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        UIMenu(
+                          ontap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (context) => SignInScreen()),
                             );
-                          },
-                          child: Container(
-                            height: 50,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.account_circle,
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                Container(
-                                    width: MediaQuery.of(context).size.width *
-                                        0.74,
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Công thức của mày'),
-                                        Icon(Icons.arrow_right)
-                                      ],
-                                    ))
-                              ],
-                            ),
-                          ),
+                          }, 
+                          icon: Icons.notifications, 
+                          title: 'Cài đặt thông báo'
                         ),
                         SizedBox(
-                          height: 10,
+                          height: 20,
                         ),
-                        GestureDetector(
-                          onTap: () {
+                        UIContainer(
+                          ontap: () {
                             _signOut();
-                          },
-                          child: Container(
-                              height: 50,
-                              width: MediaQuery.of(context).size.width * 0.5,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.5),
-                                    spreadRadius: 5,
-                                    blurRadius: 7,
-                                    offset: Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text('Đăng xuất'),
-                              )),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            printName();
-                          },
-                          child: Container(
-                              height: 50,
-                              width: MediaQuery.of(context).size.width * 0.5,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.5),
-                                    spreadRadius: 5,
-                                    blurRadius: 7,
-                                    offset: Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text('Test'),
-                              )),
+                          }, 
+                          color: Colors.red,
+                          title: 'Đăng xuất'
                         )
+
                       ],
                     ),
         ),

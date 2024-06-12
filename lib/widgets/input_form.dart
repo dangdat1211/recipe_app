@@ -39,7 +39,9 @@ class _InputFormState extends State<InputForm> {
               )
             : null,
         labelText: widget.label,
-        border: OutlineInputBorder(),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
         errorText: widget.errorText,
         contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         labelStyle: TextStyle(fontSize: 16),
