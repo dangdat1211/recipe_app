@@ -122,20 +122,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'username': _usernameController.text,
             'fullname': _fullnameController.text,
             'email': _emailController.text,
-            'avatar': '', 
+            'bio': '',
+            'avatar': 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png', 
+            'status': true,
+            'createAt': DateTime.now(),
+            'updateAt': '',
+            'role': false,
+            'favorites': [
+            ],
             'followers': [
-              'ádasd',
-              'ádasd'
             ], 
-            'following': [
-              'dfsdf',
-              'qưeqwe',
-              'qưeqwe'             
+            'followings': [           
             ], 
             'recipes': [
-              '32432',
-              '342342'
-            ], 
+            ],            
           })
           .then((value) => print("User Added"))
           .catchError((error) => print("Failed to add user: $error"));

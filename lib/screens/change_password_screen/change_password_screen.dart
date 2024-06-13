@@ -29,17 +29,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirm Change Password'),
-          content: Text('Are you sure you want to change your password?'),
+          title: Text('Bạn chắc chắn muốn đổi mật khẩu'),
           actions: <Widget>[
             TextButton(
-              child: Text('No'),
+              child: Text('Không'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Yes'),
+              child: Text('Có'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _changePassword();
@@ -60,14 +59,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       // Validate current password
       if (_currentPasswordController.text.isEmpty) {
-        _currentPasswordError = 'Current password is required';
+        _currentPasswordError = 'Chưa nhập mật khẩu hiện tại';
       }
 
       // Validate new password
       if (_newPasswordController.text.isEmpty) {
-        _newPasswordError = 'New password is required';
+        _newPasswordError = 'Chưa nhập mật khẩu mới';
       } else if (_newPasswordController.text != _confirmPasswordController.text) {
-        _confirmPasswordError = 'Passwords do not match';
+        _confirmPasswordError = 'Mật khẩu không trùng';
       }
     });
 
@@ -160,7 +159,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               focusNode: _currentPasswordFocusNode,
               errorText: _currentPasswordError,
               isPassword: true,
-              label: 'Current Password',
+              label: 'Mật khẩu hiện tại',
             ),
             SizedBox(height: 16),
             InputForm(
@@ -168,7 +167,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               focusNode: _newPasswordFocusNode,
               errorText: _newPasswordError,
               isPassword: true,
-              label: 'New Password',
+              label: 'Mật khẩu mới',
             ),
             SizedBox(height: 16),
             InputForm(
@@ -176,7 +175,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               focusNode: _confirmPasswordFocusNode,
               errorText: _confirmPasswordError,
               isPassword: true,
-              label: 'Confirm Password',
+              label: 'Nhập lại mật khẩu mới',
             ),
             SizedBox(height: 20),
             UiButton(

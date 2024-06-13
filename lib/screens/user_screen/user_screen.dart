@@ -142,7 +142,7 @@ class _UserScreenState extends State<UserScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ProfileUser()),
+                                  builder: (context) => ProfileUser(userId: currentUser!.uid,)),
                             );
                           },
                           child: Container(
@@ -167,8 +167,10 @@ class _UserScreenState extends State<UserScreen> {
                                 Padding(
                                   padding: const EdgeInsets.only(left: 10),
                                   child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/food_intro.jpg', // Đường dẫn tới hình ảnh của bạn trong thư mục assets
+                                    child: Image.network(
+                                      userProfile!['avatar'].isNotEmpty
+                                          ? userProfile!['avatar']
+                                          : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
                                       width: 50,
                                       height: 50,
                                       fit: BoxFit.cover,
@@ -187,7 +189,7 @@ class _UserScreenState extends State<UserScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'dsd',
+                                        userProfile!['fullname'],
                                         style: TextStyle(
                                             color: Color(0xFFFF7622),
                                             fontSize: 25),
@@ -204,69 +206,79 @@ class _UserScreenState extends State<UserScreen> {
                           height: 10,
                         ),
                         UIMenu(
-                          ontap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ManageMyRecipe()),
-                            );
-                          }, 
-                          icon: Icons.calculate, 
-                          title: 'Công thức của bạn'
-                        ),
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ManageMyRecipe()),
+                              );
+                            },
+                            icon: Icons.calculate,
+                            title: 'Công thức của bạn'),
                         SizedBox(
                           height: 10,
                         ),
                         UIMenu(
-                          ontap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => SignInScreen()),
-                            );
-                          }, 
-                          icon: Icons.privacy_tip, 
-                          title: 'Cài đặt quyền riêng tư'
-                        ),
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        SettingPrivacyScreen()),
+                              );
+                            },
+                            icon: Icons.privacy_tip,
+                            title: 'Cài đặt quyền riêng tư'),
                         SizedBox(
                           height: 10,
                         ),
                         UIMenu(
-                          ontap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ChangePasswordScreen()),
-                            );
-                          }, 
-                          icon: Icons.privacy_tip, 
-                          title: 'Đổi mật khẩu'
-                        ),
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangePasswordScreen()),
+                              );
+                            },
+                            icon: Icons.privacy_tip,
+                            title: 'Đổi mật khẩu'),
                         SizedBox(
                           height: 10,
                         ),
                         UIMenu(
-                          ontap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => SignInScreen()),
-                            );
-                          }, 
-                          icon: Icons.notifications, 
-                          title: 'Cài đặt thông báo'
-                        ),
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        SettingNotifyScreen()),
+                              );
+                            },
+                            icon: Icons.notifications,
+                            title: 'Cài đặt thông báo'),
+                        SizedBox(height: 10,),
+                        if (userProfile!['role'] == true) 
+                          UIMenu(
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangePasswordScreen()),
+                              );
+                            },
+                            icon: Icons.beach_access,
+                            title: 'Chức năng quản trị'),
                         SizedBox(
                           height: 20,
                         ),
                         UIContainer(
-                          ontap: () {
-                            _signOut();
-                          }, 
-                          color: Colors.red,
-                          title: 'Đăng xuất'
-                        )
-
+                            ontap: () {
+                              _signOut();
+                            },
+                            color: Colors.red,
+                            title: 'Đăng xuất')
                       ],
                     ),
         ),

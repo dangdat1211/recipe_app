@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
+import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -25,10 +26,69 @@ class _ProposeScreenState extends State<ProposeScreen> {
   ];
 
   List<String> recipes = ["Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4"];
-
   Set<String> selectedIngredients = {};
-
   String selectedValue = 'Mới cập nhật';
+
+  User? currentUser = FirebaseAuth.instance.currentUser;
+
+  // Get all user with id
+  Future<List<Map<String, dynamic>>> fetchAllUsersWithId() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('followers', descending: true)
+        .limit(10)
+        .get();
+
+    List<Map<String, dynamic>> users = querySnapshot.docs
+        .map((doc) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          return data;
+        })
+        .where((user) => user['id'] != currentUser?.uid)
+        .toList();
+
+    return users;
+  }
+
+  Future<List<String>> fetchFollowedUsers() async {
+    String currentUserId = currentUser!.uid;
+    DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .get();
+
+    List<dynamic> followedUsers = docSnapshot['followings'] ?? [];
+    print(followedUsers);
+    return List<String>.from(followedUsers);
+  }
+
+  Future<void> toggleFollow(String userId) async {
+    String currentUserId = currentUser!.uid;
+
+    DocumentReference currentUserRef =
+        FirebaseFirestore.instance.collection('users').doc(currentUserId);
+    DocumentSnapshot currentUserSnapshot = await currentUserRef.get();
+    List<dynamic> followings = currentUserSnapshot['followings'] ?? [];
+
+    DocumentReference otherUser =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    DocumentSnapshot otherUserSnapshot = await otherUser.get();
+    List<dynamic> followers = otherUserSnapshot['followers'] ?? [];
+
+    if (followings.contains(userId)) {
+      // Nếu đang theo dõi, xóa userId khỏi danh sách
+      followings.remove(userId);
+      followers.remove(currentUserId);
+    } else {
+      // Nếu chưa theo dõi, thêm userId vào danh sách
+      followings.add(userId);
+      followers.add(currentUserId);
+    }
+
+    await currentUserRef.update({'followings': followings});
+    await otherUser.update({'followers': followers});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -232,38 +292,83 @@ class _ProposeScreenState extends State<ProposeScreen> {
           SizedBox(
             height: 10,
           ),
-          Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text('Người dùng nổi bật'),
-                  Container(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: recipes.length,
-                      itemBuilder: (context, index) {
-                        return ItemUser(
-                          avatar: "avatar", 
-                          fullname: "Phạm Duy Đạt", 
-                          username: "username", 
-                          recipe: "4", 
-                          follow: false
-                        );
-                      },
+          FutureBuilder<List<String>>(
+            future: fetchFollowedUsers(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Lỗi: ${snapshot.error}'));
+              }
+              List<String> followedUsers = snapshot.data ?? [];
+              return FutureBuilder<List<Map<String, dynamic>>>(
+                future: fetchAllUsersWithId(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Lỗi: ${snapshot.error}'));
+                  }
+                  List<Map<String, dynamic>> users = snapshot.data ?? [];
+                  return Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text('Người dùng nổi bật'),
+                          Container(
+                            height: 200,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: users.length,
+                              itemBuilder: (context, index) {
+                                final user = users[index];
+                                bool isFollowing =
+                                    followedUsers.contains(user['id']);
+                                return ItemUser(
+                                  ontap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              ProfileUser(userId: user['id'])),
+                                    );
+                                  },
+                                  avatar: (user['avatar'] != null &&
+                                          user['avatar'].isNotEmpty)
+                                      ? user['avatar']
+                                      : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
+                                  fullname: user['fullname'] ?? 'N/A',
+                                  username: user['username'] ?? 'N/A',
+                                  recipe: (user['recipes'] as List)
+                                      .length
+                                      .toString(),
+                                  follow: isFollowing,
+                                  clickFollow: () async {
+                                    await toggleFollow(user['id']);
+                                    // setState(
+                                    //     () {});
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
           SizedBox(
             height: 10,
@@ -331,13 +436,4 @@ class _ProposeScreenState extends State<ProposeScreen> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: Scaffold(
-      appBar: AppBar(title: Text('Propose Screen')),
-      body: ProposeScreen(),
-    ),
-  ));
 }

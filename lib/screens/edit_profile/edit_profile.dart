@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,6 +31,33 @@ class _EditProfileState extends State<EditProfile> {
 
   Uint8List? _image;
   File? selectedImage;
+  String _getimage = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
+
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (currentUser != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+      _fullnameController.text = userData['fullname'] ?? '';
+      _usernameController.text = userData['username'] ?? '';
+      _bioController.text = userData['bio'] ?? '';
+
+      if (userData['avatar'] != null) {
+        setState(() {
+          _getimage = userData['avatar'];
+        });
+      }
+    }
+  }
 
   Future _pickImageFromGallery() async {
     try {
@@ -66,7 +94,8 @@ class _EditProfileState extends State<EditProfile> {
       String fileName = DateTime.now().millisecondsSinceEpoch.toString();
       Reference storageReference =
           FirebaseStorage.instance.ref().child('profile_images/$fileName');
-      UploadTask uploadTask = storageReference.putFile(image);
+      SettableMetadata metadata = SettableMetadata(contentType: 'image/jpeg');
+      UploadTask uploadTask = storageReference.putFile(image, metadata);
       TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => {});
       String downloadURL = await taskSnapshot.ref.getDownloadURL();
       return downloadURL;
@@ -77,6 +106,10 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   void _saveProfileData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     String? imageUrl;
     if (selectedImage != null) {
       imageUrl = await _uploadImageToFirebase(selectedImage!);
@@ -92,8 +125,6 @@ class _EditProfileState extends State<EditProfile> {
       _bioError = bio.isEmpty ? 'Tiểu sử không được để trống' : null;
     });
 
-    User? currentUser = FirebaseAuth.instance.currentUser;
-
     if (_fullnameError == null && _usernameError == null && _bioError == null) {
       await FirebaseFirestore.instance.collection('users').doc(currentUser?.uid).update({
         'fullname': fullname,
@@ -105,6 +136,12 @@ class _EditProfileState extends State<EditProfile> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Cập nhật hồ sơ thành công'),
       ));
+
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -128,10 +165,9 @@ class _EditProfileState extends State<EditProfile> {
                     _image != null
                         ? CircleAvatar(
                             radius: 50, backgroundImage: MemoryImage(_image!))
-                        : const CircleAvatar(
+                        : CircleAvatar(
                             radius: 50,
-                            backgroundImage: NetworkImage(
-                                "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"),
+                            backgroundImage: NetworkImage( _getimage.isNotEmpty ? _getimage : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"),
                           ),
                     Positioned(
                         bottom: -4,
@@ -177,10 +213,14 @@ class _EditProfileState extends State<EditProfile> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
-                      child: Text(
-                        'Lưu cập nhật',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Text(
+                              'Lưu cập nhật',
+                              style: TextStyle(color: Colors.white),
+                            ),
                     ),
                   ),
                 ),
