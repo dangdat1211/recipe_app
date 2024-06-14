@@ -14,7 +14,7 @@ export './edit_profile/edit_profile.dart';
 export './home_screen/propose_screen.dart';
 export './detail_recipe.dart/detail_recipe.dart';
 export './add_recipe/add_info_recipe.dart';
-export './comment_screen.dart/comment_screen.dart ';
+export './comment_screen/comment_screen.dart ';
 export './notify_screen/notify_screen.dart';
 export './manage_my_recipe/manage_my_recipe.dart';
 export './change_password_screen/change_password_screen.dart';

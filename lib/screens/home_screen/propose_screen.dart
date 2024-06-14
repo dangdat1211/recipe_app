@@ -106,7 +106,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     Query query = FirebaseFirestore.instance.collection('recipes');
 
-    query = query.where('status', isEqualTo: 'Đã phê duyệt');
+    query = query.where('status', isEqualTo: 'Đợi phê duyệt');
 
 
 

@@ -42,6 +42,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -302,7 +303,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              const CommentScreen()),
+                                               CommentScreen(recipeId: widget.recipeId)),
                                     );
                                   },
                                   child: Text('Xem tất cả bình luận')),

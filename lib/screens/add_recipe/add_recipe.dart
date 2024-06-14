@@ -97,10 +97,42 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         mainImageUrl = await _uploadFile(_image!);
       }
 
-      // Prepare ingredients and steps data
+      // Prepare ingredients data
       final ingredients =
           _ingredientsControllers.map((controller) => controller.text).toList();
-      final steps = [];
+
+      // Prepare recipe data
+      final recipeData = {
+        'namerecipe': _nameController.text,
+        'description': _descriptionController.text,
+        'ration': _servingsController.text,
+        'time': _timeController.text,
+        'ingredients': ingredients,
+        'steps': [], // Will be updated later
+        'image': mainImageUrl ?? '',
+        'level': 'Khó cvl',
+        'likes': [],
+        'rates': [],
+        'comments': [],
+        'status': 'Đợi phê duyệt',
+        'userID': currentUser!.uid,
+        'urlYoutube': _youtubeController.text,
+        'createAt': FieldValue.serverTimestamp(),
+        'updateAt': FieldValue.serverTimestamp(),
+      };
+
+      // Add the recipe document and get its ID
+      DocumentReference recipeDoc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .add(recipeData);
+      String recipeId = recipeDoc.id;
+
+      // Collection reference for steps
+      CollectionReference stepsCollection =
+          FirebaseFirestore.instance.collection('steps');
+
+      // List to store step IDs
+      List<String> stepIds = [];
 
       for (int i = 0; i < _stepsControllers.length; i++) {
         final stepText = _stepsControllers[i].text;
@@ -112,35 +144,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           stepImageUrls.add(imageUrl);
         }
 
-        steps.add({
+        // Create a step document with recipeID and order
+        DocumentReference stepDoc = await stepsCollection.add({
           'title': stepText,
           'images': stepImageUrls,
+          'recipeID': recipeId,
+          'order': i + 1,
         });
+
+        stepIds.add(stepDoc.id);
       }
 
-      final recipeData = {
-        'namerecipe': _nameController.text,
-        'description': _descriptionController.text,
-        'ration': _servingsController.text,
-        'time': _timeController.text,
-        'ingredients': ingredients,
-        'steps': steps,
-        'image': mainImageUrl ?? '',
-        'level': 'Khó cvl',
-        'likes': [],
-        'rates': [],
-        'comments': [],
-        'status': 'Phê duyệt',
-        'userID': currentUser!.uid,
-        'urlYoutube': _youtubeController.text,
-        'createAt': FieldValue.serverTimestamp(),
-        'updateAt': FieldValue.serverTimestamp(),
-      };
+      await recipeDoc.update({'steps': stepIds});
 
-      await FirebaseFirestore.instance.collection('recipes').add(recipeData);
+      DocumentReference userDoc =
+          FirebaseFirestore.instance.collection('users').doc(currentUser!.uid);
+      await userDoc.update({
+        'recipes': FieldValue.arrayUnion([recipeId]),
+        'updateAt': FieldValue
+            .serverTimestamp(), 
+      });
 
       setState(() {
-        _isLoading = false; // Dừng hiển thị vòng tròn xoay
+        _isLoading = false; 
       });
 
       // Chuyển hướng tới trang ManageMyRecipe
