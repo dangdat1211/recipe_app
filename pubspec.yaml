@@ -9,12 +9,14 @@ environment:
 dependencies:
   cloud_firestore: ^4.15.8
   convex_bottom_bar: ^3.2.0
+  cupertino_icons: ^1.0.8
   firebase_auth: ^4.17.8
   firebase_core: ^2.27.0
   firebase_storage: ^11.6.9
   flutter:
     sdk: flutter
   flutter_rating_bar: ^4.0.1
+  font_awesome_flutter: ^10.7.0
   hive_flutter: ^1.1.0
   image_picker: ^1.0.8
   smooth_page_indicator: ^1.1.0

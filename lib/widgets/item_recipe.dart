@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/screens.dart';
 import '';
@@ -12,9 +13,10 @@ class ItemRecipe extends StatefulWidget {
     required this.favorite,
     required this.avatar,
     required this.fullname,
-    required this.image,
+    required this.image, required this.ontap,
   });
 
+  final VoidCallback ontap;
   final String name;
   final String star;
   final String favorite;
@@ -27,39 +29,41 @@ class ItemRecipe extends StatefulWidget {
 }
 
 class _ItemRecipeState extends State<ItemRecipe> {
-
   bool isFavorite = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => DetailReCipe()),
-        );
-      },
+      onTap: widget.ontap,
       child: Container(
-        width: MediaQuery.of(context).size.width*0.8,
+        width: MediaQuery.of(context).size.width * 0.8 +2,
+        height: 142,
+        decoration: BoxDecoration(
+          color: mainColorBackground,
+          border: Border.all(width: 1, color: Colors.grey),
+          borderRadius: BorderRadius.circular(10),
+          
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: Offset(0, 2), 
+            ),
+          ],
+        ),
         child: Row(
           children: [
             Container(
-              width: MediaQuery.of(context).size.width*0.55,
+              width: MediaQuery.of(context).size.width * 0.55,
               height: 142,
+              
               decoration: BoxDecoration(
-                color: mainColorBackground,
+                
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: Offset(0, 2), // changes position of shadow
-                  ),
-                ],   
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -95,7 +99,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
                         Row(
                           children: [
                             CircleAvatar(
-                              backgroundImage: AssetImage(widget.avatar),
+                              backgroundImage: NetworkImage(widget.avatar),
                             ),
                             SizedBox(
                               width: 5,
@@ -110,7 +114,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
               ),
             ),
             Container(
-              width: MediaQuery.of(context).size.width*0.25,
+              width: MediaQuery.of(context).size.width * 0.25 ,
               height: 142,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.only(
@@ -123,12 +127,12 @@ class _ItemRecipeState extends State<ItemRecipe> {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(10),
-                        bottomRight: Radius.circular(10),
+                        topRight: Radius.circular(9),
+                        bottomRight: Radius.circular(9),
                       ),
                       child: Image.network(
-                        'https://giadinh.mediacdn.vn/296230595582509056/2022/12/21/an-gi-102-16715878746102005998080.jpg',
-                        fit: BoxFit.cover,
+                        widget.image,
+                        fit: BoxFit.fitHeight,
                       ),
                     ),
                   ),
@@ -143,11 +147,30 @@ class _ItemRecipeState extends State<ItemRecipe> {
                       },
                       child: Icon(
                         Icons.favorite,
-                        size: 36.0, 
-                        color: isFavorite ? Colors.red : Colors.white, // Đổi màu dựa trên trạng thái
+                        size: 36.0,
+                        color: isFavorite
+                            ? Colors.red
+                            : Colors.white, // Đổi màu dựa trên trạng thái
                       ),
                     ),
                   ),
+                  // Positioned(
+                  //   left: 10,
+                  //   bottom: 10,
+                  //   child: GestureDetector(
+                  //     onTap: () {
+                  //       setState(() {
+                  //         isFavorite = !isFavorite; // Đổi trạng thái yêu thích
+                  //       });
+                  //     },
+                  //     child: isFavorite ?
+                  //       Icon(CupertinoIcons.heart_fill, color: Colors.red,)
+                  //     : 
+                  //       Container(
+                  //         color: Colors.white,
+                  //         child: Icon(CupertinoIcons.heart)) 
+                  //   ),
+                  // ),
                 ],
               ),
             ),

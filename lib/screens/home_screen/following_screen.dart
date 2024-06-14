@@ -43,6 +43,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
                             child: Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: ItemRecipe(
+                            ontap: () {
+                              
+                            },
                             name:
                                 'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
                             star: '4.3',

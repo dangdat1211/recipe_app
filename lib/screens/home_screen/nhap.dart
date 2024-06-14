@@ -106,10 +106,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     Query query = FirebaseFirestore.instance.collection('recipes');
 
-    query = query.where('status', isEqualTo: 'Đã phê duyệt');
-
-
-
     if (selectedValue == 'Mới cập nhật') {
       query = query.orderBy('updateAt', descending: true);
     } else if (selectedValue == 'Nhiều tim nhất') {
