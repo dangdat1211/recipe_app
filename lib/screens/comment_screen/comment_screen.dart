@@ -1,11 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class CommentScreen extends StatefulWidget {
   final String recipeId;
+  final String userId;
+  final bool autoFocus;
 
-  const CommentScreen({Key? key, required this.recipeId}) : super(key: key);
+  const CommentScreen({Key? key, required this.recipeId, required this.userId, this.autoFocus = false})
+      : super(key: key);
 
   @override
   State<CommentScreen> createState() => _CommentScreenState();
@@ -13,15 +17,48 @@ class CommentScreen extends StatefulWidget {
 
 class _CommentScreenState extends State<CommentScreen> {
   List<Map<String, dynamic>> comments = [];
-
   TextEditingController _commentController = TextEditingController();
-
   User? currentUser = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? currentUserData;
+  bool isLoadingComments = true;
+  bool isLoadingUser = true; 
+  FocusNode _focusNode = FocusNode(); 
 
   @override
   void initState() {
     super.initState();
     _loadComments();
+    _loadCurrentUser();
+
+    if (widget.autoFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FocusScope.of(context).requestFocus(_focusNode); 
+      });
+    }
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      if (currentUser != null) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser!.uid)
+            .get();
+        setState(() {
+          currentUserData = userSnapshot.data() as Map<String, dynamic>?;
+          isLoadingUser = false; // Set to false when loading is complete
+        });
+      } else {
+        setState(() {
+          isLoadingUser = false; // Set to false if no current user
+        });
+      }
+    } catch (e) {
+      print('Error loading current user: $e');
+      setState(() {
+        isLoadingUser = false; // Set to false in case of error
+      });
+    }
   }
 
   Future<void> _loadComments() async {
@@ -29,14 +66,39 @@ class _CommentScreenState extends State<CommentScreen> {
       final snapshot = await FirebaseFirestore.instance
           .collection('comments')
           .where('recipeID', isEqualTo: widget.recipeId)
+          .orderBy('createdAt', descending: false)
           .get();
 
+      List<Map<String, dynamic>> loadedComments = [];
+      for (var doc in snapshot.docs) {
+        var commentData = doc.data();
+        var userId = commentData['userId'];
+        var userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+        var userData = userSnapshot.data();
+        if (userData != null) {
+          loadedComments.add({
+            'author': userData['fullname'],
+            'avatarUrl': userData['avatar'],
+            'date': commentData['createdAt'],
+            'content': commentData['content'],
+            'id': doc.id,
+            'userId': commentData['userId']
+          });
+        }
+      }
+
       setState(() {
-        comments = snapshot.docs.map((doc) => doc.data()).toList();
+        comments = loadedComments;
+        isLoadingComments = false; // Set to false when loading is complete
       });
     } catch (e) {
       print('Error loading comments: $e');
-      // Handle error loading comments from Firebase
+      setState(() {
+        isLoadingComments = false; // Set to false in case of error
+      });
     }
   }
 
@@ -45,41 +107,37 @@ class _CommentScreenState extends State<CommentScreen> {
     if (newComment.isNotEmpty) {
       try {
         await FirebaseFirestore.instance.collection('comments').add({
-          'recipeID': widget.recipeId, // Replace with actual title
-          'userId': currentUser?.uid, // Replace with actual user ID
+          'recipeID': widget.recipeId,
+          'userId': currentUser?.uid,
           'createdAt': DateTime.now().toString(),
           'content': newComment,
         });
 
-        setState(() {
-          comments.add({
-            'author': currentUser?.email, // Replace with actual author
-            'date': '12 tháng 6, 2023', // Replace with actual date format
-            'content': newComment,
-          });
-          _commentController.clear();
-        });
+        _loadComments();
+        _commentController.clear();
       } catch (e) {
         print('Error adding comment: $e');
-        // Handle error adding comment to Firebase
       }
     }
   }
 
   void _deleteComment(String commentId, int index) async {
     try {
-      await FirebaseFirestore.instance.collection('comments').doc(commentId).delete();
+      await FirebaseFirestore.instance
+          .collection('comments')
+          .doc(commentId)
+          .delete();
 
       setState(() {
         comments.removeAt(index);
       });
     } catch (e) {
       print('Error deleting comment: $e');
-      // Handle error deleting comment from Firebase
     }
   }
 
-  void _confirmDeleteComment(BuildContext context, String commentId, int index) {
+  void _confirmDeleteComment(
+      BuildContext context, String commentId, int index) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -111,50 +169,63 @@ class _CommentScreenState extends State<CommentScreen> {
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 80.0),
-            child: comments.isEmpty
-                ? Center(
-                    child: Text('Không có bình luận nào.'),
-                  )
-                : ListView.builder(
-                    itemCount: comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = comments[index];
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Container(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(comment['author'] ?? 'Unknown'),
-                                    Text(comment['date'] ?? ''),
-                                    Text(comment['content'] ?? ''),
-                                  ],
+          if (isLoadingComments)
+            Center(child: CircularProgressIndicator())
+          else
+            Padding(
+              padding: EdgeInsets.only(bottom: 80.0),
+              child: comments.isEmpty
+                  ? Center(
+                      child: Text('Không có bình luận nào.'),
+                    )
+                  : ListView.builder(
+                      itemCount: comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = comments[index];
+                        final DateTime createdAt =
+                            DateTime.parse(comment['date']);
+                        final String formattedDate =
+                            DateFormat('dd/MM/yyyy HH:mm').format(createdAt);
+
+                        return Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                backgroundImage:
+                                    NetworkImage(comment['avatarUrl'] ?? ''),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Container(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(comment['author'] ?? 'Unknown'),
+                                      Text(formattedDate),
+                                      Text(comment['content'] ?? ''),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            PopupMenuButton<int>(
-                              icon: Icon(Icons.more_vert),
-                              onSelected: (item) =>
-                                  _onSelected(context, item, comment, index),
-                              itemBuilder: (context) => [
-                                PopupMenuItem<int>(value: 0, child: Text('Xóa')),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
+                              PopupMenuButton<int>(
+                                icon: Icon(Icons.more_vert),
+                                onSelected: (item) =>
+                                    _onSelected(context, item, comment, index),
+                                itemBuilder: (context) => [
+                                  PopupMenuItem<int>(
+                                      value: 0, child: Text('Xóa')),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -162,12 +233,19 @@ class _CommentScreenState extends State<CommentScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  CircleAvatar(radius: 20),
+                  isLoadingUser
+                      ? CircularProgressIndicator()
+                      : CircleAvatar(
+                          radius: 20,
+                          backgroundImage:
+                              NetworkImage(currentUserData?['avatar']),
+                        ),
                   SizedBox(width: 10),
                   Expanded(
                     child: Container(
                       height: 40,
                       child: TextField(
+                        focusNode: _focusNode,
                         controller: _commentController,
                         decoration: InputDecoration(
                           hintText: 'Bình luận ngay',
@@ -199,7 +277,24 @@ class _CommentScreenState extends State<CommentScreen> {
       BuildContext context, int item, Map<String, dynamic> comment, int index) {
     switch (item) {
       case 0:
-        _confirmDeleteComment(context, comment['id'], index);
+        if (currentUser?.uid == comment['userId'] ||
+            currentUser?.uid == widget.userId) {
+          _confirmDeleteComment(context, comment['id'], index);
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Không đủ thẩm quyền'),
+              content: Text('Bạn chỉ có thể xóa bình luận của bạn hoặc bình luận từ công thức của bạn'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
         break;
     }
   }

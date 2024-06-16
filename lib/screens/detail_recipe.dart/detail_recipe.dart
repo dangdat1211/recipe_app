@@ -42,7 +42,6 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -150,8 +149,10 @@ class _DetailReCipeState extends State<DetailReCipe> {
                           .map((ingredient) {
                         return ItemDetailRecipe(
                           index: ((recipeData['ingredients'] as List<dynamic>)
-                              .indexOf(ingredient).toInt()
-                               + 1).toString() ,
+                                      .indexOf(ingredient)
+                                      .toInt() +
+                                  1)
+                              .toString(),
                           title: ingredient.toString(),
                         );
                       }).toList(),
@@ -210,7 +211,6 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            
                           ],
                         ),
                       ),
@@ -302,8 +302,9 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) =>
-                                               CommentScreen(recipeId: widget.recipeId)),
+                                          builder: (context) => CommentScreen(
+                                              recipeId: widget.recipeId,
+                                              userId: widget.userId)),
                                     );
                                   },
                                   child: Text('Xem tất cả bình luận')),
@@ -336,22 +337,33 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                   SizedBox(
                                     width: 10,
                                   ),
-                                  Container(
-                                    height: 40,
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.7,
-                                    child: TextField(
-                                      decoration: InputDecoration(
-                                        hintText: 'Bình luận ngay',
-                                        border: OutlineInputBorder(
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => CommentScreen(
+                                              recipeId: widget.recipeId,
+                                              userId: widget.userId,
+                                              autoFocus:
+                                                  true, // Thêm tham số này
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(),
                                           borderRadius:
                                               BorderRadius.circular(20),
-                                          borderSide: BorderSide(),
+                                          color: Colors.white,
                                         ),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        contentPadding:
-                                            EdgeInsets.fromLTRB(20, 10, 10, 10),
+                                        alignment: Alignment.centerLeft,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 16),
+                                        child: Text('Bình luận ngay'),
                                       ),
                                     ),
                                   ),
