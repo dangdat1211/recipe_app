@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/widgets/item_recipe.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -9,21 +11,24 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, String>> searchResults = [];
-  bool showResults = false;
+  List<DocumentSnapshot> searchResults = [];
+  bool isLoading = false;
 
-  void _onSearchSubmitted(String query) {
+  void _onSearchSubmitted(String query) async {
     if (query.isNotEmpty) {
       setState(() {
-        showResults = true;
-        searchResults = List.generate(
-          10,
-          (index) => {
-            'title': 'Recipe $index for "$query"',
-            'description': 'Description of recipe $index',
-            'image': 'https://via.placeholder.com/150'
-          },
-        );
+        isLoading = true;
+      });
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          // .where('namerecipe', isGreaterThanOrEqualTo: query)
+          // .where('namerecipe', isLessThan: query + '\uf8ff')
+          .get();
+      print('Số lượng kết quả tìm kiếm: ${snapshot.docs.length}');
+      setState(() {
+        searchResults = snapshot.docs;
+        isLoading = false;
       });
     }
   }
@@ -31,7 +36,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _clearSearch() {
     setState(() {
       _searchController.clear();
-      showResults = false;
+      searchResults.clear();
     });
   }
 
@@ -52,34 +57,71 @@ class _SearchScreenState extends State<SearchScreen> {
           onChanged: (value) {
             if (value.isEmpty) {
               setState(() {
-                showResults = false;
+                searchResults.clear();
               });
+            } else {
+              _onSearchSubmitted(value);
             }
           },
-          onSubmitted: _onSearchSubmitted,
         ),
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
       ),
-      body: showResults
-          ? ListView.builder(
-              itemCount: searchResults.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  leading: Image.network(
-                    searchResults[index]['image']!,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : searchResults.isNotEmpty
+              ? Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    color: Colors.white,
+                    child: ListView.builder(
+                      itemCount: searchResults.length,
+                      itemBuilder: (context, index) {
+                        final recipe =
+                            searchResults[index].data() as Map<String, dynamic>;
+                        final userId = recipe['userID'] as String;
+
+                        return FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(userId)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Text('Đang kết nối');
+                            }
+
+                            if (snapshot.hasError) {
+                              return Text('Lỗi: ${snapshot.error}');
+                            }
+
+                            final user =
+                                snapshot.data!.data() as Map<String, dynamic>;
+                            print('Dữ liệu người dùng: $user');
+                            if (recipe['namerecipe'].toString().toLowerCase().contains(_searchController.text.toString().toLowerCase())) {
+                              return ItemRecipe(
+                                name: recipe['namerecipe'],
+                                star: recipe['rates'].length.toString(),
+                                favorite: recipe['likes'].length.toString(),
+                                avatar: user['avatar'],
+                                fullname: user['fullname'],
+                                image: recipe['image'],
+                                ontap: () {
+                                  // Xử lý sự kiện khi nhấn vào công thức
+                                },
+                              );
+                            }
+                            return  Container();
+                          },
+                        );
+                      },
+                    ),
                   ),
-                  title: Text(searchResults[index]['title']!),
-                  subtitle: Text(searchResults[index]['description']!),
-                );
-              },
-            )
-          : Center(
-              child: Text('No search results'),
-            ),
+                )
+              : Center(
+                  child: Text('Không có kết quả tìm kiếm'),
+                ),
     );
   }
 }

@@ -2,13 +2,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 
 class CommentScreen extends StatefulWidget {
   final String recipeId;
   final String userId;
   final bool autoFocus;
 
-  const CommentScreen({Key? key, required this.recipeId, required this.userId, this.autoFocus = false})
+  const CommentScreen(
+      {Key? key,
+      required this.recipeId,
+      required this.userId,
+      this.autoFocus = false})
       : super(key: key);
 
   @override
@@ -17,12 +22,12 @@ class CommentScreen extends StatefulWidget {
 
 class _CommentScreenState extends State<CommentScreen> {
   List<Map<String, dynamic>> comments = [];
-  TextEditingController _commentController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
   User? currentUser = FirebaseAuth.instance.currentUser;
   Map<String, dynamic>? currentUserData;
   bool isLoadingComments = true;
-  bool isLoadingUser = true; 
-  FocusNode _focusNode = FocusNode(); 
+  bool isLoadingUser = true;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -32,7 +37,7 @@ class _CommentScreenState extends State<CommentScreen> {
 
     if (widget.autoFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        FocusScope.of(context).requestFocus(_focusNode); 
+        FocusScope.of(context).requestFocus(_focusNode);
       });
     }
   }
@@ -103,21 +108,53 @@ class _CommentScreenState extends State<CommentScreen> {
   }
 
   void _addComment() async {
-    final newComment = _commentController.text.trim();
-    if (newComment.isNotEmpty) {
-      try {
-        await FirebaseFirestore.instance.collection('comments').add({
-          'recipeID': widget.recipeId,
-          'userId': currentUser?.uid,
-          'createdAt': DateTime.now().toString(),
-          'content': newComment,
-        });
+    if (currentUser != null) {
+      final newComment = _commentController.text.trim();
+      if (newComment.isNotEmpty) {
+        try {
+          await FirebaseFirestore.instance.collection('comments').add({
+            'recipeID': widget.recipeId,
+            'userId': currentUser?.uid,
+            'createdAt': DateTime.now().toString(),
+            'content': newComment,
+          });
 
-        _loadComments();
-        _commentController.clear();
-      } catch (e) {
-        print('Error adding comment: $e');
+          _loadComments();
+          _commentController.clear();
+        } catch (e) {
+          print('Error adding comment: $e');
+        }
       }
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Bạn chưa đăng nhập'),
+            content: Text('Vui lòng đăng nhập để tiếp tục.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SignInScreen()),
+                  );
+                },
+                child: Text('Đăng nhập'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Hủy'),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -226,48 +263,64 @@ class _CommentScreenState extends State<CommentScreen> {
                       },
                     ),
             ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              color: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  isLoadingUser
-                      ? CircularProgressIndicator()
-                      : CircleAvatar(
-                          radius: 20,
-                          backgroundImage:
-                              NetworkImage(currentUserData?['avatar']),
-                        ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      child: TextField(
-                        focusNode: _focusNode,
-                        controller: _commentController,
-                        decoration: InputDecoration(
-                          hintText: 'Bình luận ngay',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(),
+          if (currentUser != null)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                color: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    isLoadingUser
+                        ? CircularProgressIndicator()
+                        : CircleAvatar(
+                            radius: 20,
+                            backgroundImage:
+                                NetworkImage(currentUserData?['avatar'] ?? ''),
                           ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        child: TextField(
+                          focusNode: _focusNode,
+                          controller: _commentController,
+                          decoration: InputDecoration(
+                            hintText: 'Bình luận ngay',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.send),
-                    onPressed: _addComment,
-                  ),
-                ],
+                    IconButton(
+                      icon: Icon(Icons.send),
+                      onPressed: _addComment,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          if (currentUser == null) 
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SignInScreen()));
+                },
+                child: Container(
+                  height: 100,
+                  child: Center(child: Text('Đăng nhập ngay để bình luận . Tại đây'))),
+              ),
+            )
         ],
       ),
     );
@@ -285,7 +338,8 @@ class _CommentScreenState extends State<CommentScreen> {
             context: context,
             builder: (context) => AlertDialog(
               title: Text('Không đủ thẩm quyền'),
-              content: Text('Bạn chỉ có thể xóa bình luận của bạn hoặc bình luận từ công thức của bạn'),
+              content: Text(
+                  'Bạn chỉ có thể xóa bình luận của bạn hoặc bình luận từ công thức của bạn'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),

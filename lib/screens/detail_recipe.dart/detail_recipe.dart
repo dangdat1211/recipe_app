@@ -1,5 +1,3 @@
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -109,7 +107,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
     };
   }
 
-    Future<void> _getUserRating() async {
+  Future<void> _getUserRating() async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final recipeId = widget.recipeId;
 
@@ -350,31 +348,66 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                   color: Colors.amber,
                                 ),
                                 onRatingUpdate: (rating) async {
-                                  final userRatingRef = FirebaseFirestore
-                                      .instance
-                                      .collection('rates')
-                                      .doc(
-                                          '${currentUser?.uid}_${widget.recipeId}');
+                                  if (currentUser != null) {
+                                    final userRatingRef = FirebaseFirestore
+                                        .instance
+                                        .collection('rates')
+                                        .doc(
+                                            '${currentUser?.uid}_${widget.recipeId}');
 
-                                  if (_hasRated) {
-                                    await userRatingRef
-                                        .update({'star': rating});
-                                  } else {
-                                    await userRatingRef.set({
-                                      'userId': currentUser?.uid,
-                                      'recipeId': widget.recipeId,
-                                      'star': rating,
-                                      'createAt': FieldValue.serverTimestamp(),
-                                    });
+                                    if (_hasRated) {
+                                      await userRatingRef
+                                          .update({'star': rating});
+                                    } else {
+                                      await userRatingRef.set({
+                                        'userId': currentUser?.uid,
+                                        'recipeId': widget.recipeId,
+                                        'star': rating,
+                                        'createAt':
+                                            FieldValue.serverTimestamp(),
+                                      });
+                                      setState(() {
+                                        _hasRated = true;
+                                      });
+                                    }
+
+                                    await _updateRatingState();
                                     setState(() {
-                                      _hasRated = true;
+                                      _userRating = rating;
                                     });
-                                  }
+                                  } else {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          title: Text('Bạn chưa đăng nhập'),
+                                          content: Text(
+                                              'Vui lòng đăng nhập để tiếp tục.'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
 
-                                  await _updateRatingState();
-                                  setState(() {
-                                    _userRating = rating;
-                                  });
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          const SignInScreen()),
+                                                );
+                                              },
+                                              child: Text('Đăng nhập'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: Text('Hủy'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  }
                                 },
                               ),
                               Text(
@@ -427,7 +460,9 @@ class _DetailReCipeState extends State<DetailReCipe> {
                               SizedBox(height: 5),
                               Row(
                                 children: [
-                                  CircleAvatar(radius: 20, ),
+                                  CircleAvatar(
+                                    radius: 20,
+                                  ),
                                   SizedBox(width: 10),
                                   Text('Phạm Duy Đạt'),
                                   SizedBox(width: 10),

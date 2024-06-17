@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/profile_user.dart/infomation_follow_screen.dart';
 import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
 import 'package:recipe_app/screens/screens.dart';
 
@@ -151,22 +152,48 @@ class _ProfileUserState extends State<ProfileUser> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Column(
-                              children: [
-                                Text((userProfile!['followers'] as List)
-                                    .length
-                                    .toString()),
-                                Text('Người theo dõi')
-                              ],
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        FollowersFollowingScreen(
+                                      userId: widget.userId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  Text((userProfile!['followers'] as List)
+                                      .length
+                                      .toString()),
+                                  Text('Người theo dõi')
+                                ],
+                              ),
                             ),
                             SizedBox(width: 10),
-                            Column(
-                              children: [
-                                Text((userProfile!['followings'] as List)
-                                    .length
-                                    .toString()),
-                                Text('Đang theo dõi')
-                              ],
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        FollowersFollowingScreen(
+                                      userId: widget.userId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  Text((userProfile!['followings'] as List)
+                                      .length
+                                      .toString()),
+                                  Text('Đang theo dõi')
+                                ],
+                              ),
                             ),
                             SizedBox(width: 10),
                             Column(
