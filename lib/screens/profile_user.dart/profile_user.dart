@@ -32,27 +32,28 @@ class _ProfileUserState extends State<ProfileUser> {
   }
 
   Future<void> fetchUserData() async {
-    if (currentUser != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .get();
-      setState(() {
-        userProfile = userDoc;
-      });
-    }
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .get();
+    setState(() {
+      userProfile = userDoc;
+    });
   }
 
   Future<bool> checkFollow() async {
-    String currentUserId = currentUser!.uid;
-    DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUserId)
-        .get();
+    if (currentUser != null) {
+      String currentUserId = currentUser!.uid;
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .get();
 
-    List<dynamic> followedUsers = docSnapshot['followings'] ?? [];
-    print(followedUsers);
-    return List<String>.from(followedUsers).contains(widget.userId);
+      List<dynamic> followedUsers = docSnapshot['followings'] ?? [];
+      print(followedUsers);
+      return List<String>.from(followedUsers).contains(widget.userId);
+    }
+    return false;
   }
 
   final CollectionReference _collectionRef =
@@ -60,7 +61,7 @@ class _ProfileUserState extends State<ProfileUser> {
 
   Future<List<Map<String, dynamic>>> _getData() async {
     QuerySnapshot querySnapshot =
-        await _collectionRef.where('iduser', isEqualTo: currentUser!.uid).get();
+        await _collectionRef.where('userID', isEqualTo: widget.userId).get();
     return querySnapshot.docs
         .map((doc) => doc.data() as Map<String, dynamic>)
         .toList();
@@ -117,7 +118,7 @@ class _ProfileUserState extends State<ProfileUser> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(userProfile!['fullname']),
+          title: Text(userProfile!['fullname'] ?? ''),
           centerTitle: true,
         ),
         body: RefreshIndicator(
@@ -208,7 +209,41 @@ class _ProfileUserState extends State<ProfileUser> {
                         if (currentUser?.uid != widget.userId)
                           GestureDetector(
                             onTap: () {
-                              toggleFollow(widget.userId);
+                              if (currentUser != null) {
+                                toggleFollow(widget.userId);
+                              } else {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text('Bạn chưa đăng nhập'),
+                                      content: Text(
+                                          'Vui lòng đăng nhập để tiếp tục.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const SignInScreen()),
+                                            );
+                                          },
+                                          child: Text('Đăng nhập'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Hủy'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
                             },
                             child: Container(
                               height: 50,
@@ -218,7 +253,10 @@ class _ProfileUserState extends State<ProfileUser> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
-                                child: Text(isFollowing ? 'Đang theo dõi' : 'Theo dõi ngay',
+                                child: Text(
+                                  isFollowing
+                                      ? 'Đang theo dõi'
+                                      : 'Theo dõi ngay',
                                   style: TextStyle(color: Colors.black),
                                 ),
                               ),
@@ -339,4 +377,3 @@ class _ProfileUserState extends State<ProfileUser> {
     );
   }
 }
-

@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
+import 'package:recipe_app/widgets/simple_item_recipe.dart';
 import 'package:recipe_app/widgets/ui_button.dart';
 
 class AddInfoRecipe extends StatefulWidget {
@@ -54,6 +56,23 @@ class _AddInfoRecipeState extends State<AddInfoRecipe> {
         );
       },
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _getLatestRecipes() async {
+    if (currentUser == null) {
+      return [];
+    }
+
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('recipes')
+        .where('userID', isEqualTo: currentUser!.uid)
+        .orderBy('updateAt', descending: true)
+        .limit(4)
+        .get();
+
+    return querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
   }
 
   @override
@@ -138,28 +157,46 @@ class _AddInfoRecipeState extends State<AddInfoRecipe> {
                                 ],
                               ),
                             ),
-                            ListView.builder(
-                              physics: NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              itemCount: 20,
-                              itemBuilder: (context, index) {
-                                return Container(
-                                  child: Center(
-                                      child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ItemRecipe(
-                                      ontap: () {
-                                        
-                                      },
-                                      name:
-                                          'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
-                                      star: '4.3',
-                                      favorite: '2000',
-                                      avatar: '',
-                                      fullname: 'Phạm Duy Đạt',
-                                      image: 'assets/food_intro.jpg',
-                                    ),
-                                  )),
+                            FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _getLatestRecipes(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Center(
+                                      child: CircularProgressIndicator());
+                                }
+                                if (snapshot.hasError) {
+                                  return Center(
+                                      child: Text('Lỗi: ${snapshot.error}'));
+                                }
+                                List<Map<String, dynamic>> recipes =
+                                    snapshot.data ?? [];
+                                return ListView.builder(
+                                  physics: NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  itemCount: recipes.length,
+                                  itemBuilder: (context, index) {
+                                    final recipe = recipes[index];
+                                    return Container(
+                                      child: Center(
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 10),
+                                          child: SimpleItemRecipe(
+                                            description: recipe['description'] ?? '',
+                                            onTap: () {
+                                              // Add your onTap functionality here
+                                            },
+                                            name: recipe['namerecipe'] ?? '',
+                                            star: recipe['rates'].length.toString() ,
+                                            favorite: recipe['likes'].length.toString(),
+                                            image: recipe['image'] ?? '',
+
+                                          )
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
                             ),

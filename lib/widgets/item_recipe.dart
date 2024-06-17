@@ -59,7 +59,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
               height: 142,
               
               decoration: BoxDecoration(
-                
+                border: Border.all(width: 1, color: Colors.grey),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
@@ -154,23 +154,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
                       ),
                     ),
                   ),
-                  // Positioned(
-                  //   left: 10,
-                  //   bottom: 10,
-                  //   child: GestureDetector(
-                  //     onTap: () {
-                  //       setState(() {
-                  //         isFavorite = !isFavorite; // Đổi trạng thái yêu thích
-                  //       });
-                  //     },
-                  //     child: isFavorite ?
-                  //       Icon(CupertinoIcons.heart_fill, color: Colors.red,)
-                  //     : 
-                  //       Container(
-                  //         color: Colors.white,
-                  //         child: Icon(CupertinoIcons.heart)) 
-                  //   ),
-                  // ),
+                  
                 ],
               ),
             ),

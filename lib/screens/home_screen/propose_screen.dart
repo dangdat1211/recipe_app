@@ -38,7 +38,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     super.initState();
     _fetchRecipes();
   }
-  
+
   // Get all user with id
   Future<List<Map<String, dynamic>>> fetchAllUsersWithId() async {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -60,6 +60,10 @@ class _ProposeScreenState extends State<ProposeScreen> {
   }
 
   Future<List<String>> fetchFollowedUsers() async {
+    if (currentUser == null) {
+      return [];
+    }
+
     String currentUserId = currentUser!.uid;
     DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
         .collection('users')
@@ -108,8 +112,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     query = query.where('status', isEqualTo: 'Đợi phê duyệt');
 
-
-
     if (selectedValue == 'Mới cập nhật') {
       query = query.orderBy('updateAt', descending: true);
     } else if (selectedValue == 'Nhiều tim nhất') {
@@ -127,7 +129,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     for (var recipeDoc in recipeDocs) {
       var recipeData = recipeDoc.data() as Map<String, dynamic>;
-      var recipeId = recipeDoc.id; 
+      var recipeId = recipeDoc.id;
 
       var userId = recipeData['userID'];
 
@@ -156,7 +158,10 @@ class _ProposeScreenState extends State<ProposeScreen> {
     });
   }
 
-  void _navigateToRecipeDetail(String recipeID, String userId,) {
+  void _navigateToRecipeDetail(
+    String recipeID,
+    String userId,
+  ) {
     print('Click');
     Navigator.push(
       context,
@@ -269,9 +274,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                 return Padding(
                                   padding: const EdgeInsets.only(left: 10),
                                   child: ItemRecipe(
-                                    ontap: () {
-                                      
-                                    },
+                                    ontap: () {},
                                     name:
                                         'Cà tím nhồi thịt asdbasd asdbasd asdhgashd ádhaskd',
                                     star: '4.3',
@@ -411,15 +414,19 @@ class _ProposeScreenState extends State<ProposeScreen> {
                               itemCount: users.length,
                               itemBuilder: (context, index) {
                                 final user = users[index];
-                                bool isFollowing =
-                                    followedUsers.contains(user['id']);
+                                bool isFollowing = false;
+                                if (currentUser != null) {
+                                  isFollowing =
+                                      followedUsers.contains(user['id']);
+                                }
                                 return ItemUser(
                                   ontap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) =>
-                                              ProfileUser(userId: user['id'])),
+                                        builder: (context) =>
+                                            ProfileUser(userId: user['id']),
+                                      ),
                                     );
                                   },
                                   avatar: (user['avatar'] != null &&
@@ -433,9 +440,41 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                       .toString(),
                                   follow: isFollowing,
                                   clickFollow: () async {
-                                    await toggleFollow(user['id']);
-                                    // setState(
-                                    //     () {});
+                                    if (currentUser != null) {
+                                      await toggleFollow(user['id']);
+                                    } else {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text('Bạn chưa đăng nhập'),
+                                            content: Text(
+                                                'Vui lòng đăng nhập để tiếp tục.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const SignInScreen()),
+                                                  );
+                                                },
+                                                child: Text('Đăng nhập'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Hủy'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    }
                                   },
                                 );
                               },
@@ -504,7 +543,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: ItemRecipe(
                                   ontap: () {
-                                    _navigateToRecipeDetail(recipe['recipeId'], recipe['userID']);
+                                    _navigateToRecipeDetail(
+                                        recipe['recipeId'], recipe['userID']);
                                   },
                                   name: recipe['namerecipe'] ??
                                       'Không có tiêu đề',
@@ -515,10 +555,9 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                           : 0)
                                       .toStringAsFixed(1),
                                   favorite: recipe['likes'].length.toString(),
-                                  avatar: user['avatar'] ??
-                                      'assets/food_intro.jpg',
-                                  fullname:
-                                      user['fullname'] ?? 'Không rõ tên',
+                                  avatar:
+                                      user['avatar'] ?? 'assets/food_intro.jpg',
+                                  fullname: user['fullname'] ?? 'Không rõ tên',
                                   image: recipe['image'] ??
                                       'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
                                 ),

@@ -1,3 +1,5 @@
+
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -53,13 +55,14 @@ class _DetailReCipeState extends State<DetailReCipe> {
         _hasRated = result['hasRated'];
       });
     });
+    _getUserRating();
   }
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>>
       _fetchUserRecipes() async {
     final userRecipesSnapshot = await FirebaseFirestore.instance
         .collection('recipes')
-        .where('authorId', isEqualTo: widget.userId)
+        .where('userID', isEqualTo: widget.userId)
         .get();
 
     return userRecipesSnapshot.docs;
@@ -104,6 +107,22 @@ class _DetailReCipeState extends State<DetailReCipe> {
       'ratingCount': ratingCount,
       'hasRated': hasRated
     };
+  }
+
+    Future<void> _getUserRating() async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final recipeId = widget.recipeId;
+
+    final ratingSnapshot = await FirebaseFirestore.instance
+        .collection('rates')
+        .where('userId', isEqualTo: currentUserId)
+        .where('recipeId', isEqualTo: recipeId)
+        .get();
+
+    if (ratingSnapshot.docs.isNotEmpty) {
+      final ratingData = ratingSnapshot.docs.first.data();
+      _userRating = ratingData['star']?.toDouble() ?? 0.0;
+    }
   }
 
   Future<void> _updateRatingState() async {
@@ -408,7 +427,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                               SizedBox(height: 5),
                               Row(
                                 children: [
-                                  CircleAvatar(radius: 20),
+                                  CircleAvatar(radius: 20, ),
                                   SizedBox(width: 10),
                                   Text('Phạm Duy Đạt'),
                                   SizedBox(width: 10),
@@ -475,17 +494,68 @@ class _DetailReCipeState extends State<DetailReCipe> {
                               CircleAvatar(
                                 radius: 50,
                                 backgroundImage: NetworkImage(
-                                  'https://giadinh.mediacdn.vn/296230595582509056/2022/12/21/an-gi-102-16715878746102005998080.jpg',
+                                  userData['avatar'] ?? '',
                                 ),
                               ),
                               Text('Được đăng tải bởi'),
-                              Text('Phạm Duy Đạt'),
-                              Text('ngày 12 tháng 11 năm 2002'),
-                              Container(
-                                height: 40,
-                                width: 100,
-                                color: Colors.amber,
-                                child: Center(child: Text('Theo dõi ngay')),
+                              Text(userData['fullname'] ?? ''),
+                              Text(
+                                  'Ngày tạo công thức: ${recipeData['createAt']?.toDate().toString() ?? ''}'),
+                              GestureDetector(
+                                onTap: () async {
+                                  final currentUserId = currentUser?.uid;
+                                  final userId = widget.userId;
+                                  final userRef = FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(currentUserId);
+
+                                  final userOther = FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(userId);
+
+                                  final userSnapshot = await userRef.get();
+                                  final userData = userSnapshot.data();
+                                  final followings =
+                                      userData?['followings'] ?? [];
+
+                                  if (followings.contains(userId)) {
+                                    // Nếu đã theo dõi, hủy theo dõi
+                                    await userRef.update({
+                                      'followings':
+                                          FieldValue.arrayRemove([userId])
+                                    });
+                                    await userOther.update({
+                                      'followers': FieldValue.arrayRemove(
+                                          [currentUserId])
+                                    });
+                                  } else {
+                                    // Nếu chưa theo dõi, thêm vào danh sách theo dõi
+                                    await userRef.update({
+                                      'followings':
+                                          FieldValue.arrayUnion([userId])
+                                    });
+                                    await userOther.update({
+                                      'followers':
+                                          FieldValue.arrayUnion([currentUserId])
+                                    });
+                                  }
+
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  height: 40,
+                                  width: 100,
+                                  color: Colors.amber,
+                                  child: Center(
+                                    child: Text(
+                                      userData['followers']?.contains(
+                                                  currentUser?.uid) ==
+                                              true
+                                          ? 'Đang theo dõi'
+                                          : 'Theo dõi',
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -508,7 +578,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Text(
-                                'Các món mới từ ${userData['fullName']}',
+                                'Các món mới từ ${userData['fullname']}',
                                 textAlign: TextAlign.start,
                                 style: TextStyle(
                                   fontSize: 20,
@@ -537,8 +607,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                             '2000', // Replace with actual favorite count
                                         avatar:
                                             '', // Replace with actual avatar URL
-                                        fullname: userData['fullName'],
-                                        image: 'assets/food_intro.jpg',
+                                        fullname: userData['fullname'],
+                                        image: '',
                                       ),
                                     ),
                                   ),
