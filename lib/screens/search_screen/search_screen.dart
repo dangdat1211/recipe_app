@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -11,7 +13,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<DocumentSnapshot> searchResults = [];
+  List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
 
   void _onSearchSubmitted(String query) async {
@@ -26,8 +28,34 @@ class _SearchScreenState extends State<SearchScreen> {
           // .where('namerecipe', isLessThan: query + '\uf8ff')
           .get();
       print('Số lượng kết quả tìm kiếm: ${snapshot.docs.length}');
+
+      searchResultsWithUserData = [];
+
+      for (var recipeDoc in snapshot.docs) {
+        var recipeData = recipeDoc.data() as Map<String, dynamic>;
+        var recipeId = recipeDoc.id;
+
+        var userId = recipeData['userID'];
+
+        var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        var userData = userDoc.data();
+
+        if (userData != null) {
+          recipeData['recipeId'] = recipeId;
+
+          bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+
+          if (recipeData['namerecipe'].toString().toLowerCase().contains(query.toLowerCase())) {
+            searchResultsWithUserData.add({
+              'recipe': recipeData,
+              'user': userData,
+              'isFavorite': isFavorite,
+            });
+          }
+        }
+      }
+
       setState(() {
-        searchResults = snapshot.docs;
         isLoading = false;
       });
     }
@@ -36,9 +64,10 @@ class _SearchScreenState extends State<SearchScreen> {
   void _clearSearch() {
     setState(() {
       _searchController.clear();
-      searchResults.clear();
+      searchResultsWithUserData.clear();
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -54,52 +83,38 @@ class _SearchScreenState extends State<SearchScreen> {
               onPressed: _clearSearch,
             ),
           ),
-          onChanged: (value) {
-            if (value.isEmpty) {
-              setState(() {
-                searchResults.clear();
-              });
-            } else {
-              _onSearchSubmitted(value);
-            }
-          },
+          onSubmitted: _onSearchSubmitted,
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              _onSearchSubmitted(_searchController.text);
+            },
+          ),
+        ],
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : searchResults.isNotEmpty
+          : searchResultsWithUserData.isNotEmpty
               ? Center(
                   child: Container(
                     width: MediaQuery.of(context).size.width * 0.9,
                     color: Colors.white,
-                    child: ListView.builder(
-                      itemCount: searchResults.length,
-                      itemBuilder: (context, index) {
-                        final recipe =
-                            searchResults[index].data() as Map<String, dynamic>;
-                        final userId = recipe['userID'] as String;
-
-                        return FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(userId)
-                              .get(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return Text('Đang kết nối');
-                            }
-
-                            if (snapshot.hasError) {
-                              return Text('Lỗi: ${snapshot.error}');
-                            }
-
-                            final user =
-                                snapshot.data!.data() as Map<String, dynamic>;
-                            print('Dữ liệu người dùng: $user');
-                            if (recipe['namerecipe'].toString().toLowerCase().contains(_searchController.text.toString().toLowerCase())) {
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(21.0),
+                        child: Container(
+                          child: ListView.builder(
+                            itemCount: searchResultsWithUserData.length,
+                            itemBuilder: (context, index) {
+                              final recipeWithUser = searchResultsWithUserData[index];
+                              final recipe = recipeWithUser['recipe'];
+                              final user = recipeWithUser['user'];
+                              final isFavorite = recipeWithUser['isFavorite'];
+                          
                               return ItemRecipe(
                                 name: recipe['namerecipe'],
                                 star: recipe['rates'].length.toString(),
@@ -110,12 +125,16 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ontap: () {
                                   // Xử lý sự kiện khi nhấn vào công thức
                                 },
+                                isFavorite: isFavorite,
+                                onFavoritePressed: () {
+                                  FavoriteService.toggleFavorite(context,recipe['recipeId']);
+                                  _onSearchSubmitted(_searchController.text);
+                                } 
                               );
-                            }
-                            return  Container();
-                          },
-                        );
-                      },
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 )

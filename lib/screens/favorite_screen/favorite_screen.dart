@@ -88,6 +88,10 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                 avatar: '',
                                 fullname: 'Phạm Duy Đạt',
                                 image: 'assets/food_intro.jpg',
+                                isFavorite: false,
+                                onFavoritePressed: () {
+                                  
+                                },
                               ),
                             )
                           ),

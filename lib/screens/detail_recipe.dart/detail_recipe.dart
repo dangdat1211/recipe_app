@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -35,6 +36,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
   bool _hasRated = false;
   double _userRating = 0.0;
 
+  bool _isFavorite = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +57,11 @@ class _DetailReCipeState extends State<DetailReCipe> {
       });
     });
     _getUserRating();
+    isRecipeFavorite(widget.recipeId).then((isFavorite) {
+      setState(() {
+        _isFavorite = isFavorite;
+      });
+    });
   }
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>>
@@ -132,12 +140,91 @@ class _DetailReCipeState extends State<DetailReCipe> {
     });
   }
 
+  // Favorite
+  Future<bool> isRecipeFavorite(String recipeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return false;
+    }
+
+    final favoriteSnapshot = await FirebaseFirestore.instance
+        .collection('favorites')
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('recipeId', isEqualTo: recipeId)
+        .limit(1)
+        .get();
+
+    return favoriteSnapshot.docs.isNotEmpty;
+  }
+
+  Future<void> toggleFavorite(String recipeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      // Người dùng chưa đăng nhập, không thể ưu thích
+      return;
+    }
+
+    final favoriteRef = FirebaseFirestore.instance.collection('favorites');
+    final favoriteSnapshot = await favoriteRef
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('recipeId', isEqualTo: recipeId)
+        .limit(1)
+        .get();
+
+    if (favoriteSnapshot.docs.isNotEmpty) {
+      // Công thức đã được ưu thích, xóa ưu thích
+      await favoriteRef.doc(favoriteSnapshot.docs.first.id).delete();
+      setState(() {
+        _isFavorite = false;
+      });
+    } else {
+      // Công thức chưa được ưu thích, thêm ưu thích
+      await favoriteRef.add({
+        'userId': currentUser.uid,
+        'recipeId': widget.recipeId,
+        'createAt': FieldValue.serverTimestamp(),
+      });
+      setState(() {
+        _isFavorite = true;
+      });
+    }
+  }
+
+  Widget _buildYoutubePlayerOrImage(String? urlYoutube, String imageUrl) {
+    if (urlYoutube == null ||
+        YoutubePlayer.convertUrlToId(urlYoutube) == null) {
+      return Image.network(
+        imageUrl,
+        height: 200,
+        width: 355,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return YoutubePlayer(
+      controller: YoutubePlayerController(
+        initialVideoId: YoutubePlayer.convertUrlToId(urlYoutube).toString(),
+        flags: YoutubePlayerFlags(autoPlay: false),
+      ),
+      showVideoProgressIndicator: true,
+      onReady: () {},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.favorite)),
+          IconButton(
+            onPressed: () {
+              toggleFavorite(widget.recipeId);
+            },
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : null,
+            ),
+          ),
           IconButton(onPressed: () {}, icon: Icon(Icons.more_vert)),
         ],
       ),
@@ -182,15 +269,20 @@ class _DetailReCipeState extends State<DetailReCipe> {
                       child: Container(
                         height: 200,
                         width: 355,
-                        child: YoutubePlayer(
-                          controller: YoutubePlayerController(
-                              initialVideoId: YoutubePlayer.convertUrlToId(
-                                      recipeData['urlYoutube'])
-                                  .toString(),
-                              flags: YoutubePlayerFlags(autoPlay: false)),
-                          showVideoProgressIndicator: true,
-                          onReady: () {},
+                        child: _buildYoutubePlayerOrImage(
+                          recipeData['urlYoutube'],
+                          recipeData[
+                              'image'], // Ensure this field exists in your data
                         ),
+                        // YoutubePlayer(
+                        //   controller: YoutubePlayerController(
+                        //       initialVideoId: YoutubePlayer.convertUrlToId(
+                        //               recipeData['urlYoutube'])
+                        //           .toString(),
+                        //       flags: YoutubePlayerFlags(autoPlay: false)),
+                        //   showVideoProgressIndicator: true,
+                        //   onReady: () {},
+                        // ),
                       ),
                     ),
                     SizedBox(height: 10),
@@ -628,28 +720,64 @@ class _DetailReCipeState extends State<DetailReCipe> {
                               itemCount: userRecipesSnapshot.length,
                               itemBuilder: (context, index) {
                                 var recipe = userRecipesSnapshot[index].data();
-                                return Container(
-                                  child: Center(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: ItemRecipe(
-                                        ontap: () {},
-                                        name: recipe?['namerecipe'],
-                                        star:
-                                            '4.3', // Replace with actual star rating
-                                        favorite:
-                                            '2000', // Replace with actual favorite count
-                                        avatar:
-                                            '', // Replace with actual avatar URL
-                                        fullname: userData['fullname'],
-                                        image: '',
+                                return FutureBuilder<bool>(
+                                  future: FavoriteService.isRecipeFavorite(
+                                      userRecipesSnapshot[index].id),
+                                  builder: (context, snapshot) {
+                                    final isFavorite = snapshot.data ?? false;
+                                    return Container(
+                                      child: Center(
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 10),
+                                          child: ItemRecipe(
+                                            ontap: () {
+                                              // Navigate to recipe detail screen
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      DetailReCipe(
+                                                    recipeId:
+                                                        userRecipesSnapshot[
+                                                                index]
+                                                            .id,
+                                                    userId: widget.userId,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            name: recipe?['namerecipe'],
+                                            star: recipe?['rates']
+                                                        ?.isNotEmpty ==
+                                                    true
+                                                ? (recipe!['rates'].reduce(
+                                                            (a, b) => a + b) /
+                                                        recipe['rates'].length)
+                                                    .toStringAsFixed(1)
+                                                : '0.0',
+                                            favorite: recipe?['likes']
+                                                    ?.length
+                                                    .toString() ??
+                                                '0',
+                                            avatar: userData['avatar'] ?? '',
+                                            fullname: userData['fullname'],
+                                            image: recipe?['image'] ?? '',
+                                            onFavoritePressed: () {
+                                              FavoriteService.toggleFavorite(
+                                                  context,
+                                                  userRecipesSnapshot[index]
+                                                      .id);
+                                            },
+                                            isFavorite: isFavorite,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 );
                               },
-                            ),
+                            )
                           ],
                         ),
                       ),

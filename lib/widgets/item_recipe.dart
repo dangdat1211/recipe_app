@@ -13,7 +13,10 @@ class ItemRecipe extends StatefulWidget {
     required this.favorite,
     required this.avatar,
     required this.fullname,
-    required this.image, required this.ontap,
+    required this.image,
+    required this.ontap,
+    required this.isFavorite,
+    required this.onFavoritePressed,
   });
 
   final VoidCallback ontap;
@@ -23,32 +26,45 @@ class ItemRecipe extends StatefulWidget {
   final String avatar;
   final String fullname;
   final String image;
+  final bool isFavorite;
+  final VoidCallback onFavoritePressed;
 
   @override
   State<ItemRecipe> createState() => _ItemRecipeState();
 }
 
 class _ItemRecipeState extends State<ItemRecipe> {
-  bool isFavorite = false;
+  late bool _isFavorite;
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = widget.isFavorite;
+  }
+
+  void _toggleFavorite() {
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+    widget.onFavoritePressed();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.ontap,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8 +2,
+        width: MediaQuery.of(context).size.width * 0.8 + 2,
         height: 142,
         decoration: BoxDecoration(
           color: mainColorBackground,
           border: Border.all(width: 1, color: Colors.grey),
           borderRadius: BorderRadius.circular(10),
-          
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
               spreadRadius: 2,
               blurRadius: 5,
-              offset: Offset(0, 2), 
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -57,9 +73,13 @@ class _ItemRecipeState extends State<ItemRecipe> {
             Container(
               width: MediaQuery.of(context).size.width * 0.55,
               height: 142,
-              
               decoration: BoxDecoration(
-                border: Border.all(width: 1, color: Colors.grey),
+                border: Border(
+                  right: BorderSide(
+                    width: 1,
+                    color: Colors.grey,
+                  ),
+                ),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
@@ -114,7 +134,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
               ),
             ),
             Container(
-              width: MediaQuery.of(context).size.width * 0.25 ,
+              width: MediaQuery.of(context).size.width * 0.25,
               height: 142,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.only(
@@ -141,20 +161,15 @@ class _ItemRecipeState extends State<ItemRecipe> {
                     bottom: 10,
                     child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          isFavorite = !isFavorite; // Đổi trạng thái yêu thích
-                        });
+                        _toggleFavorite();
                       },
                       child: Icon(
                         Icons.favorite,
                         size: 36.0,
-                        color: isFavorite
-                            ? Colors.red
-                            : Colors.white, // Đổi màu dựa trên trạng thái
+                        color: _isFavorite ? Colors.red : Colors.white,
                       ),
                     ),
                   ),
-                  
                 ],
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -144,9 +145,12 @@ class _ProposeScreenState extends State<ProposeScreen> {
         // Thêm recipeId vào dữ liệu recipe
         recipeData['recipeId'] = recipeId;
 
+        bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+
         recipesWithUserData.add({
           'recipe': recipeData,
           'user': userData,
+          'isFavorite': isFavorite,
         });
       }
 
@@ -282,6 +286,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                     avatar: '',
                                     fullname: 'Phạm Duy Đạt',
                                     image: 'assets/food_intro.jpg',
+                                    isFavorite: false,
+                                    onFavoritePressed: () {},
                                   ),
                                 );
                               }
@@ -536,6 +542,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                           final recipeWithUser = recipesWithUserData[index];
                           final recipe = recipeWithUser['recipe'];
                           final user = recipeWithUser['user'];
+                          bool test = false;
+                          test = recipeWithUser['isFavorite'];
 
                           return Container(
                             child: Center(
@@ -560,6 +568,9 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                   fullname: user['fullname'] ?? 'Không rõ tên',
                                   image: recipe['image'] ??
                                       'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
+                                  isFavorite: test,
+                                  onFavoritePressed: () =>
+                                      FavoriteService.toggleFavorite(context ,recipe['recipeId']),
                                 ),
                               ),
                             ),

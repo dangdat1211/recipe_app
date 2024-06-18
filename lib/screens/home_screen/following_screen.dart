@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
+import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class FollowingScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class FollowingScreen extends StatefulWidget {
 
 class _FollowingScreenState extends State<FollowingScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  List<DocumentSnapshot> recipes = [];
+  List<Map<String, dynamic>> recipesWithUserData = [];
   bool isLoading = false;
   DocumentSnapshot? lastDocument;
   bool hasMoreRecipes = true;
@@ -50,7 +51,28 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
     if (querySnapshot.docs.isNotEmpty) {
       lastDocument = querySnapshot.docs.last;
-      recipes.addAll(querySnapshot.docs);
+
+      for (var recipeDoc in querySnapshot.docs) {
+        var recipeData = recipeDoc.data() as Map<String, dynamic>;
+        var recipeId = recipeDoc.id;
+
+        var userId = recipeData['userID'];
+
+        var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        var userData = userDoc.data();
+
+        if (userData != null) {
+          recipeData['recipeId'] = recipeId;
+
+          bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+
+          recipesWithUserData.add({
+            'recipe': recipeData,
+            'user': userData,
+            'isFavorite': isFavorite,
+          });
+        }
+      }
     } else {
       hasMoreRecipes = false;
     }
@@ -102,126 +124,100 @@ class _FollowingScreenState extends State<FollowingScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        child: currentUser != null
-            ? Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          'Công thức từ người bạn theo dõi',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: recipes.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == recipes.length) {
-                            if (hasMoreRecipes) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                child: ElevatedButton(
-                                  onPressed: isLoading ? null : fetchRecipes,
-                                  child: isLoading
-                                      ? CircularProgressIndicator()
-                                      : Text('Load More'),
-                                ),
-                              );
-                            } else {
-                              return Container();
-                            }
-                          }
-
-                          DocumentSnapshot recipe = recipes[index];
-                          Map<String, dynamic> recipeData =
-                              recipe.data() as Map<String, dynamic>;
-
-                          return FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(recipeData['userID'])
-                                .get(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return Container();
-                              }
-
-                              if (snapshot.hasError || !snapshot.hasData) {
-                                return Container();
-                              }
-
-                              DocumentSnapshot userDoc = snapshot.data!;
-                              Map<String, dynamic> userData =
-                                  userDoc.data() as Map<String, dynamic>;
-
-                              return Container(
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ItemRecipe(
-                                      ontap: () {},
-                                      name: recipeData['namerecipe'] ?? '',
-                                      star:
-                                          recipeData['rate']?.toString() ?? '0',
-                                      favorite: recipeData['liked']
-                                              ?.length
-                                              .toString() ??
-                                          '0',
-                                      avatar: userData['avatar'] ?? '',
-                                      fullname: userData['fullname'] ?? '',
-                                      image: recipeData['image'] ?? '',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : Container(
-                height: MediaQuery.of(context).size.height*.8,
-                width: MediaQuery.of(context).size.width,
+      child: currentUser != null
+          ? Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      height: 150,
-                      child: Image.asset('assets/logo_noback.png'),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        'Công thức từ người bạn theo dõi',
+                        textAlign: TextAlign.start,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    Text('Tham gia ngay cùng cộng đồng lớn'),
-                    SizedBox(
-                      height: 30,
+                    SizedBox(height: 10),
+                    ListView.builder(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: recipesWithUserData.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == recipesWithUserData.length) {
+                          if (hasMoreRecipes) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : fetchRecipes,
+                                child: isLoading ? CircularProgressIndicator() : Text('Load More'),
+                              ),
+                            );
+                          } else {
+                            return Container();
+                          }
+                        }
+
+                        final recipeWithUser = recipesWithUserData[index];
+                        final recipe = recipeWithUser['recipe'];
+                        final user = recipeWithUser['user'];
+                        final isFavorite = recipeWithUser['isFavorite'];
+
+                        return Container(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: ItemRecipe(
+                                ontap: () {},
+                                name: recipe['namerecipe'] ?? '',
+                                star: recipe['rate']?.toString() ?? '0',
+                                favorite: recipe['liked']?.length.toString() ?? '0',
+                                avatar: user['avatar'] ?? '',
+                                fullname: user['fullname'] ?? '',
+                                image: recipe['image'] ?? '',
+                                isFavorite: isFavorite,
+                                onFavoritePressed: () => FavoriteService.toggleFavorite( context ,recipe['recipeId']),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Text('Đăng nhập ngay'),
-                    )
                   ],
                 ),
-              ));
+              ),
+            )
+          : Container(
+              height: MediaQuery.of(context).size.height * .8,
+              width: MediaQuery.of(context).size.width,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 150,
+                    child: Image.asset('assets/logo_noback.png'),
+                  ),
+                  Text('Tham gia ngay cùng cộng đồng lớn'),
+                  SizedBox(height: 30),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Text('Đăng nhập ngay'),
+                  )
+                ],
+              ),
+            ),
+    );
   }
 }
