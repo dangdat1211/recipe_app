@@ -15,7 +15,7 @@ class ViewItem extends StatefulWidget {
   final String like;
   final String date;
   final String title;
-  final Function onTap;
+  final VoidCallback onTap;
 
   @override
   State<ViewItem> createState() => _ViewItemState();
@@ -25,12 +25,15 @@ class _ViewItemState extends State<ViewItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap(),
+      onTap: widget.onTap,
       child: Stack(
         children: [
           Container(
             decoration: BoxDecoration(
-              border: Border(
+              border: Border.all(
+                width: 1,
+                color: const Color.fromARGB(255, 44, 36, 36),
+
               ),
               image: DecorationImage(
                   image: NetworkImage(widget.image), fit: BoxFit.cover),

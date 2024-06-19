@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/screens/search_screen/search_user_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
@@ -37,7 +38,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
         var userId = recipeData['userID'];
 
-        var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        var userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
         var userData = userDoc.data();
 
         if (userData != null) {
@@ -45,7 +49,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
           bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
-          if (recipeData['namerecipe'].toString().toLowerCase().contains(query.toLowerCase())) {
+          if (recipeData['namerecipe']
+              .toString()
+              .toLowerCase()
+              .contains(query.toLowerCase())) {
             searchResultsWithUserData.add({
               'recipe': recipeData,
               'user': userData,
@@ -67,7 +74,6 @@ class _SearchScreenState extends State<SearchScreen> {
       searchResultsWithUserData.clear();
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -110,27 +116,28 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: ListView.builder(
                             itemCount: searchResultsWithUserData.length,
                             itemBuilder: (context, index) {
-                              final recipeWithUser = searchResultsWithUserData[index];
+                              final recipeWithUser =
+                                  searchResultsWithUserData[index];
                               final recipe = recipeWithUser['recipe'];
                               final user = recipeWithUser['user'];
                               final isFavorite = recipeWithUser['isFavorite'];
-                          
+
                               return ItemRecipe(
-                                name: recipe['namerecipe'],
-                                star: recipe['rates'].length.toString(),
-                                favorite: recipe['likes'].length.toString(),
-                                avatar: user['avatar'],
-                                fullname: user['fullname'],
-                                image: recipe['image'],
-                                ontap: () {
-                                  // Xử lý sự kiện khi nhấn vào công thức
-                                },
-                                isFavorite: isFavorite,
-                                onFavoritePressed: () {
-                                  FavoriteService.toggleFavorite(context,recipe['recipeId']);
-                                  _onSearchSubmitted(_searchController.text);
-                                } 
-                              );
+                                  name: recipe['namerecipe'],
+                                  star: recipe['rates'].length.toString(),
+                                  favorite: recipe['likes'].length.toString(),
+                                  avatar: user['avatar'],
+                                  fullname: user['fullname'],
+                                  image: recipe['image'],
+                                  ontap: () {
+                                    // Xử lý sự kiện khi nhấn vào công thức
+                                  },
+                                  isFavorite: isFavorite,
+                                  onFavoritePressed: () {
+                                    FavoriteService.toggleFavorite(
+                                        context, recipe['recipeId']);
+                                    _onSearchSubmitted(_searchController.text);
+                                  });
                             },
                           ),
                         ),
@@ -138,8 +145,23 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                 )
-              : Center(
-                  child: Text('Không có kết quả tìm kiếm'),
+              : Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SearchUserScreen(),
+                          ),
+                        );
+                      },
+                      child: Text('Tìm kiếm người dùng'),
+                    ),
+                    Center(
+                      child: Text('Không có kết quả tìm kiếm'),
+                    ),
+                  ],
                 ),
     );
   }

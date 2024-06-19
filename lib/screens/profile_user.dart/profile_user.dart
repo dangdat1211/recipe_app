@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/profile_user.dart/infomation_follow_screen.dart';
+import 'package:recipe_app/screens/profile_user.dart/my_favorite.dart';
+import 'package:recipe_app/screens/profile_user.dart/my_recipe.dart';
 import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
 import 'package:recipe_app/screens/screens.dart';
 
@@ -306,96 +308,9 @@ class _ProfileUserState extends State<ProfileUser> {
             },
             body: TabBarView(
               children: [
-                SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    child: FutureBuilder(
-                      future: _getData(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text('Lỗi: ${snapshot.error}'));
-                        }
-                        List<Map<String, dynamic>> data = snapshot.data ?? [];
-                        return GridView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                          ),
-                          itemCount: data.length,
-                          itemBuilder: (context, index) {
-                            final item = data[index];
-                            List<String> likedList =
-                                List<String>.from(item['liked'] ?? []);
-                            return ViewItem(
-                              image: item['image'] ??
-                                  'https://static.vinwonders.com/production/mon-ngon-ha-dong-4.jpeg',
-                              rate: item['rate'] ?? '0.0',
-                              like: likedList.length.toString(),
-                              date: item['date'] ?? '12/11/2002',
-                              title: item['name'] ?? 'Com ngon',
-                              onTap: () {
-                                // Xử lý khi người dùng nhấn vào
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    child: FutureBuilder(
-                      future: _getData(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text('Lỗi: ${snapshot.error}'));
-                        }
-                        List<Map<String, dynamic>> data = snapshot.data ?? [];
-                        return GridView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                          ),
-                          itemCount: data.length,
-                          itemBuilder: (context, index) {
-                            final item = data[index];
-                            List<String> likedList =
-                                List<String>.from(item['liked'] ?? []);
-                            return ViewItem(
-                              image: item['image'] ??
-                                  'https://static.vinwonders.com/production/mon-ngon-ha-dong-4.jpeg',
-                              rate: item['rate'] ?? '0.0',
-                              like: likedList.length.toString(),
-                              date: item['date'] ?? '12/11/2002',
-                              title: item['name'] ?? 'Com ngon',
-                              onTap: () {
-                                // Xử lý khi người dùng nhấn vào
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                MyRecipe(userId: widget.userId),
+                MyFavorite(userId: widget.userId)
+                
               ],
             ),
           ),

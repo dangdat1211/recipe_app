@@ -34,6 +34,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
   List<Map<String, dynamic>> recipesWithUserData = [];
   bool isLoading = true;
 
+  bool loadingRecipe = true;
+
   @override
   void initState() {
     super.initState();

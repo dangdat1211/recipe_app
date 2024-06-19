@@ -31,6 +31,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
+  List<Map<String, dynamic>> recipesWithUserData = [];
+
   double _avgRating = 0.0;
   int _ratingCount = 0;
   bool _hasRated = false;
@@ -62,6 +64,50 @@ class _DetailReCipeState extends State<DetailReCipe> {
         _isFavorite = isFavorite;
       });
     });
+
+    _fetchRecipes();
+  }
+
+  Future<void> _fetchRecipes() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('recipes')
+        .where('userID',
+            isEqualTo:
+                widget.userId) // Lọc công thức của chủ công thức hiện tại
+        .orderBy('createAt',
+            descending: true) // Sắp xếp theo thời gian giảm dần
+        .limit(4)
+        .get();
+    final recipes = snapshot.docs;
+
+    recipesWithUserData = [];
+
+    for (var recipeDoc in recipes) {
+      var recipeData = recipeDoc.data() as Map<String, dynamic>;
+      var recipeId = recipeDoc.id;
+
+      var userId = recipeData['userID'];
+
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      var userData = userDoc.data();
+
+      if (userData != null) {
+        recipeData['recipeId'] = recipeId;
+
+        bool test = await FavoriteService.isRecipeFavorite(recipeId);
+
+        recipesWithUserData.add({
+          'recipe': recipeData,
+          'user': userData,
+          'isFavorite': test,
+        });
+      }
+    }
+
+    setState(() {});
   }
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>>
@@ -717,64 +763,39 @@ class _DetailReCipeState extends State<DetailReCipe> {
                             ListView.builder(
                               physics: NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
-                              itemCount: userRecipesSnapshot.length,
+                              itemCount: recipesWithUserData.length,
                               itemBuilder: (context, index) {
-                                var recipe = userRecipesSnapshot[index].data();
-                                return FutureBuilder<bool>(
-                                  future: FavoriteService.isRecipeFavorite(
-                                      userRecipesSnapshot[index].id),
-                                  builder: (context, snapshot) {
-                                    final isFavorite = snapshot.data ?? false;
-                                    return Container(
-                                      child: Center(
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsets.only(bottom: 10),
-                                          child: ItemRecipe(
-                                            ontap: () {
-                                              // Navigate to recipe detail screen
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      DetailReCipe(
-                                                    recipeId:
-                                                        userRecipesSnapshot[
-                                                                index]
-                                                            .id,
-                                                    userId: widget.userId,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            name: recipe?['namerecipe'],
-                                            star: recipe?['rates']
-                                                        ?.isNotEmpty ==
-                                                    true
-                                                ? (recipe!['rates'].reduce(
-                                                            (a, b) => a + b) /
-                                                        recipe['rates'].length)
-                                                    .toStringAsFixed(1)
-                                                : '0.0',
-                                            favorite: recipe?['likes']
-                                                    ?.length
-                                                    .toString() ??
-                                                '0',
-                                            avatar: userData['avatar'] ?? '',
-                                            fullname: userData['fullname'],
-                                            image: recipe?['image'] ?? '',
-                                            onFavoritePressed: () {
-                                              FavoriteService.toggleFavorite(
-                                                  context,
-                                                  userRecipesSnapshot[index]
-                                                      .id);
-                                            },
-                                            isFavorite: isFavorite,
-                                          ),
-                                        ),
+                                final recipeWithUser =
+                                    recipesWithUserData[index];
+                                final recipe = recipeWithUser['recipe'];
+                                final user = recipeWithUser['user'];
+                                final isFavorite = recipeWithUser['isFavorite'];
+
+                                return Container(
+                                  child: Center(
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: ItemRecipe(
+                                        ontap: () {
+                                          // Navigate to recipe detail screen
+                                        },
+                                        name: recipe['namerecipe'] ?? '',
+                                        star: recipe['rate']?.toString() ?? '0',
+                                        favorite: recipe['liked']
+                                                ?.length
+                                                .toString() ??
+                                            '0',
+                                        avatar: user['avatar'] ?? '',
+                                        fullname: user['fullname'] ?? '',
+                                        image: recipe['image'] ?? '',
+                                        isFavorite: isFavorite,
+                                        onFavoritePressed: () =>
+                                            FavoriteService.toggleFavorite(
+                                                context, recipe['recipeId']),
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ),
                                 );
                               },
                             )
