@@ -162,6 +162,7 @@ class _ProfileUserState extends State<ProfileUser> {
                                     builder: (context) =>
                                         FollowersFollowingScreen(
                                       userId: widget.userId,
+                                      initialTab: 1,
                                     ),
                                   ),
                                 );
@@ -184,6 +185,7 @@ class _ProfileUserState extends State<ProfileUser> {
                                     builder: (context) =>
                                         FollowersFollowingScreen(
                                       userId: widget.userId,
+                                      initialTab : 0,
                                     ),
                                   ),
                                 );

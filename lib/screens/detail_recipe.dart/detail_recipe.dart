@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
@@ -40,6 +41,21 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
   bool _isFavorite = false;
 
+  bool _isFollowing = false;
+  Future<void> _checkFollowingStatus() async {
+    final currentUserId = currentUser?.uid;
+    final userId = widget.userId;
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(currentUserId);
+    final userSnapshot = await userRef.get();
+    final userData = userSnapshot.data();
+    final followings = userData?['followings'] ?? [];
+
+    setState(() {
+      _isFollowing = followings.contains(userId);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +82,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
     });
 
     _fetchRecipes();
+    _checkFollowingStatus();
   }
 
   Future<void> _fetchRecipes() async {
@@ -203,39 +220,6 @@ class _DetailReCipeState extends State<DetailReCipe> {
     return favoriteSnapshot.docs.isNotEmpty;
   }
 
-  Future<void> toggleFavorite(String recipeId) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      // Người dùng chưa đăng nhập, không thể ưu thích
-      return;
-    }
-
-    final favoriteRef = FirebaseFirestore.instance.collection('favorites');
-    final favoriteSnapshot = await favoriteRef
-        .where('userId', isEqualTo: currentUser.uid)
-        .where('recipeId', isEqualTo: recipeId)
-        .limit(1)
-        .get();
-
-    if (favoriteSnapshot.docs.isNotEmpty) {
-      // Công thức đã được ưu thích, xóa ưu thích
-      await favoriteRef.doc(favoriteSnapshot.docs.first.id).delete();
-      setState(() {
-        _isFavorite = false;
-      });
-    } else {
-      // Công thức chưa được ưu thích, thêm ưu thích
-      await favoriteRef.add({
-        'userId': currentUser.uid,
-        'recipeId': widget.recipeId,
-        'createAt': FieldValue.serverTimestamp(),
-      });
-      setState(() {
-        _isFavorite = true;
-      });
-    }
-  }
-
   Widget _buildYoutubePlayerOrImage(String? urlYoutube, String imageUrl) {
     if (urlYoutube == null ||
         YoutubePlayer.convertUrlToId(urlYoutube) == null) {
@@ -262,15 +246,20 @@ class _DetailReCipeState extends State<DetailReCipe> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(
-            onPressed: () {
-              toggleFavorite(widget.recipeId);
-            },
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: _isFavorite ? Colors.red : null,
-            ),
-          ),
+          StatefulBuilder(builder: (context, setState) {
+            return IconButton(
+              onPressed: () async {
+                await FavoriteService.toggleFavorite(context, widget.recipeId);
+                setState(() {
+                  _isFavorite = !_isFavorite;
+                });
+              },
+              icon: Icon(
+                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: _isFavorite ? Colors.red : null,
+              ),
+            );
+          }),
           IconButton(onPressed: () {}, icon: Icon(Icons.more_vert)),
         ],
       ),
@@ -664,71 +653,89 @@ class _DetailReCipeState extends State<DetailReCipe> {
                           child: Column(
                             children: [
                               SizedBox(height: 20),
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundImage: NetworkImage(
-                                  userData['avatar'] ?? '',
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ProfileUser(
+                                              userId: widget.userId,
+                                            )),
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  radius: 50,
+                                  backgroundImage: NetworkImage(
+                                    userData['avatar'] ?? '',
+                                  ),
                                 ),
                               ),
                               Text('Được đăng tải bởi'),
                               Text(userData['fullname'] ?? ''),
                               Text(
-                                  'Ngày tạo công thức: ${recipeData['createAt']?.toDate().toString() ?? ''}'),
-                              GestureDetector(
-                                onTap: () async {
-                                  final currentUserId = currentUser?.uid;
-                                  final userId = widget.userId;
-                                  final userRef = FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(currentUserId);
+                                'Ngày tạo công thức: ${recipeData['createAt']?.toDate().toString() ?? ''}',
+                              ),
+                              StatefulBuilder(
+                                builder: (context, setState) {
+                                  return GestureDetector(
+                                    onTap: () async {
+                                      final currentUserId = currentUser?.uid;
+                                      final userId = widget.userId;
+                                      final userRef = FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(currentUserId);
 
-                                  final userOther = FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(userId);
+                                      final userOther = FirebaseFirestore
+                                          .instance
+                                          .collection('users')
+                                          .doc(userId);
 
-                                  final userSnapshot = await userRef.get();
-                                  final userData = userSnapshot.data();
-                                  final followings =
-                                      userData?['followings'] ?? [];
+                                      final userSnapshot = await userRef.get();
+                                      final userData = userSnapshot.data();
+                                      final followings =
+                                          userData?['followings'] ?? [];
 
-                                  if (followings.contains(userId)) {
-                                    // Nếu đã theo dõi, hủy theo dõi
-                                    await userRef.update({
-                                      'followings':
-                                          FieldValue.arrayRemove([userId])
-                                    });
-                                    await userOther.update({
-                                      'followers': FieldValue.arrayRemove(
-                                          [currentUserId])
-                                    });
-                                  } else {
-                                    // Nếu chưa theo dõi, thêm vào danh sách theo dõi
-                                    await userRef.update({
-                                      'followings':
-                                          FieldValue.arrayUnion([userId])
-                                    });
-                                    await userOther.update({
-                                      'followers':
-                                          FieldValue.arrayUnion([currentUserId])
-                                    });
-                                  }
-
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  height: 40,
-                                  width: 100,
-                                  color: Colors.amber,
-                                  child: Center(
-                                    child: Text(
-                                      userData['followers']?.contains(
-                                                  currentUser?.uid) ==
-                                              true
-                                          ? 'Đang theo dõi'
-                                          : 'Theo dõi',
+                                      if (followings.contains(userId)) {
+                                        // Nếu đã theo dõi, hủy theo dõi
+                                        await userRef.update({
+                                          'followings':
+                                              FieldValue.arrayRemove([userId])
+                                        });
+                                        await userOther.update({
+                                          'followers': FieldValue.arrayRemove(
+                                              [currentUserId])
+                                        });
+                                        setState(() {
+                                          _isFollowing = false;
+                                        });
+                                      } else {
+                                        await userRef.update({
+                                          'followings':
+                                              FieldValue.arrayUnion([userId])
+                                        });
+                                        await userOther.update({
+                                          'followers': FieldValue.arrayUnion(
+                                              [currentUserId])
+                                        });
+                                        setState(() {
+                                          _isFollowing = true;
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      height: 40,
+                                      width: 100,
+                                      color: Colors.amber,
+                                      child: Center(
+                                        child: Text(
+                                          _isFollowing
+                                              ? 'Đang theo dõi'
+                                              : 'Theo dõi',
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                             ],
                           ),
