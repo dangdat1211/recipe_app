@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -551,28 +552,30 @@ class _ProposeScreenState extends State<ProposeScreen> {
                             child: Center(
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
-                                child: ItemRecipe(
-                                  ontap: () {
-                                    _navigateToRecipeDetail(
-                                        recipe['recipeId'], recipe['userID']);
-                                  },
-                                  name: recipe['namerecipe'] ??
-                                      'Không có tiêu đề',
-                                  star: (recipe['rates'].isNotEmpty
-                                          ? (recipe['rates']
-                                                  .reduce((a, b) => a + b) /
-                                              recipe['rates'].length)
-                                          : 0)
-                                      .toStringAsFixed(1),
-                                  favorite: recipe['likes'].length.toString(),
-                                  avatar:
-                                      user['avatar'] ?? 'assets/food_intro.jpg',
-                                  fullname: user['fullname'] ?? 'Không rõ tên',
-                                  image: recipe['image'] ??
-                                      'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
-                                  isFavorite: test,
-                                  onFavoritePressed: () =>
-                                      FavoriteService.toggleFavorite(context ,recipe['recipeId']),
+                                child: FutureBuilder<double>(
+                                  future: RateService.getAverageRating(recipe['recipeId']),
+                                  builder: (context, snapshot) {
+                                    double averageRating = snapshot.data ?? 0.0;
+                                    return ItemRecipe(
+                                      ontap: () {
+                                        _navigateToRecipeDetail(
+                                            recipe['recipeId'], recipe['userID']);
+                                      },
+                                      name: recipe['namerecipe'] ??
+                                          'Không có tiêu đề',
+                                      star: averageRating.toStringAsFixed(1),
+                                      favorite: recipe['likes'].length.toString(),
+                                      avatar:
+                                          user['avatar'] ?? 'assets/food_intro.jpg',
+                                      fullname: user['fullname'] ?? 'Không rõ tên',
+                                      image: recipe['image'] ??
+                                          'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
+                                      isFavorite: test,
+                                      onFavoritePressed: () =>
+                                          FavoriteService.toggleFavorite(
+                                              context, recipe['recipeId']),
+                                    );
+                                  }
                                 ),
                               ),
                             ),

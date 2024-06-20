@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,14 +8,16 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:recipe_app/screens/screens.dart';
 
-class AddRecipeScreen extends StatefulWidget {
-  const AddRecipeScreen({super.key});
+class EditRecipeScreen extends StatefulWidget {
+  final String recipeId;
+
+  const EditRecipeScreen({Key? key, required this.recipeId}) : super(key: key);
 
   @override
-  State<AddRecipeScreen> createState() => _AddRecipeScreenState();
+  _EditRecipeScreenState createState() => _EditRecipeScreenState();
 }
 
-class _AddRecipeScreenState extends State<AddRecipeScreen> {
+class _EditRecipeScreenState extends State<EditRecipeScreen> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
@@ -29,7 +32,98 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
-  bool _isLoading = false; // Biến trạng thái để theo dõi khi đang tải lên
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipeData();
+  }
+
+  Future<void> _loadRecipeData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      DocumentSnapshot recipeSnapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(widget.recipeId)
+          .get();
+
+      if (recipeSnapshot.exists) {
+        Map<String, dynamic> recipeData =
+            recipeSnapshot.data() as Map<String, dynamic>;
+
+        _nameController.text = recipeData['namerecipe'] ?? '';
+        _descriptionController.text = recipeData['description'] ?? '';
+        _servingsController.text = recipeData['ration'] ?? '';
+        _timeController.text = recipeData['time'] ?? '';
+        _youtubeController.text = recipeData['urlYoutube'] ?? '';
+
+        List<dynamic> ingredientsList = recipeData['ingredients'] ?? [];
+        for (String ingredient in ingredientsList) {
+          _ingredientsControllers.add(TextEditingController(text: ingredient));
+        }
+
+        List<dynamic> stepIds = recipeData['steps'] ?? [];
+        for (int i = 0; i < stepIds.length; i++) {
+          String stepId = stepIds[i];
+          DocumentSnapshot stepSnapshot = await FirebaseFirestore.instance
+              .collection('steps')
+              .doc(stepId)
+              .get();
+
+          if (stepSnapshot.exists) {
+            Map<String, dynamic> stepData =
+                stepSnapshot.data() as Map<String, dynamic>;
+            _stepsControllers
+                .add(TextEditingController(text: stepData['title'] ?? ''));
+
+            List<dynamic> stepImageUrls = stepData['images'] ?? [];
+            List<File> stepImages = [];
+            for (String imageUrl in stepImageUrls) {
+              File? imageFile = await _getImageFileFromUrl(imageUrl);
+              if (imageFile != null) {
+                stepImages.add(imageFile);
+              }
+            }
+            _stepsImages.add(stepImages);
+          }
+        }
+
+        String? imageUrl = recipeData['image'];
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          File? imageFile = await _getImageFileFromUrl(imageUrl);
+          if (imageFile != null) {
+            setState(() {
+              _image = imageFile;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading recipe data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<File?> _getImageFileFromUrl(String url) async {
+    try {
+      final fileUrl = Uri.parse(url);
+      final fileBytes = await readBytes(fileUrl);
+      final fileName = path.basename(fileUrl.path);
+      final file = File('${Directory.systemTemp.path}/$fileName');
+      await file.writeAsBytes(fileBytes);
+      return file;
+    } catch (e) {
+      print('Error getting image file from URL: $e');
+      return null;
+    }
+  }
 
   void _addStepField() {
     setState(() {
@@ -79,7 +173,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     return await storageReference.getDownloadURL();
   }
 
-  Future<void> _uploadRecipe() async {
+  Future<void> _updateRecipe() async {
     if (_nameController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
         _servingsController.text.isEmpty ||
@@ -88,7 +182,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     }
 
     setState(() {
-      _isLoading = true; // Bắt đầu hiển thị vòng tròn xoay
+      _isLoading = true;
     });
 
     try {
@@ -97,18 +191,16 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         mainImageUrl = await _uploadFile(_image!);
       }
 
-      // Prepare ingredients data
       final ingredients =
           _ingredientsControllers.map((controller) => controller.text).toList();
 
-      // Prepare recipe data
       final recipeData = {
         'namerecipe': _nameController.text,
         'description': _descriptionController.text,
         'ration': _servingsController.text,
         'time': _timeController.text,
         'ingredients': ingredients,
-        'steps': [], // Will be updated later
+        'steps': [],
         'image': mainImageUrl ?? '',
         'level': 'Khó cvl',
         'likes': [],
@@ -117,70 +209,73 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         'status': 'Đợi phê duyệt',
         'userID': currentUser!.uid,
         'urlYoutube': _youtubeController.text,
-        'createAt': FieldValue.serverTimestamp(),
         'updateAt': FieldValue.serverTimestamp(),
-        'hiden': false,
-        'official': true
       };
 
-      // Add the recipe document and get its ID
-      DocumentReference recipeDoc = await FirebaseFirestore.instance
-          .collection('recipes')
-          .add(recipeData);
-      String recipeId = recipeDoc.id;
+      DocumentReference recipeDoc =
+          FirebaseFirestore.instance.collection('recipes').doc(widget.recipeId);
+      await recipeDoc.update(recipeData);
 
-      // Collection reference for steps
       CollectionReference stepsCollection =
           FirebaseFirestore.instance.collection('steps');
 
-      // List to store step IDs
       List<String> stepIds = [];
+
+      List<dynamic>? oldStepIds = recipeData['steps'] as List<dynamic>?;
+      if (oldStepIds != null) {
+        for (String oldStepId in oldStepIds) {
+          await stepsCollection.doc(oldStepId).delete();
+        }
+      }
 
       for (int i = 0; i < _stepsControllers.length; i++) {
         final stepText = _stepsControllers[i].text;
         final stepImages = _stepsImages[i];
-
         final stepImageUrls = [];
         for (File image in stepImages) {
           final imageUrl = await _uploadFile(image);
           stepImageUrls.add(imageUrl);
         }
 
-        // Create a step document with recipeID and order
-        DocumentReference stepDoc = await stepsCollection.add({
+        DocumentReference? existingStepDoc;
+        List<dynamic>? stepList = recipeData['steps'] as List<dynamic>?;
+        if (stepList != null && i < stepList.length) {
+          existingStepDoc = await stepsCollection.doc(stepList[i]);
+        } else {
+          existingStepDoc = stepsCollection.doc();
+        }
+
+        await existingStepDoc.set({
           'title': stepText,
           'images': stepImageUrls,
-          'recipeID': recipeId,
+          'recipeID': widget.recipeId,
           'order': i + 1,
         });
 
-        stepIds.add(stepDoc.id);
+        stepIds.add(existingStepDoc.id);
       }
 
       await recipeDoc.update({'steps': stepIds});
-
-      DocumentReference userDoc =
-          FirebaseFirestore.instance.collection('users').doc(currentUser!.uid);
-      await userDoc.update({
-        'recipes': FieldValue.arrayUnion([recipeId]),
-        'updateAt': FieldValue.serverTimestamp(),
-      });
 
       setState(() {
         _isLoading = false;
       });
 
-      // Chuyển hướng tới trang ManageMyRecipe
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
       );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Công thức đã được cập nhật thành công'),
+        ),
+      );
     } catch (e) {
       setState(() {
-        _isLoading = false; // Dừng hiển thị vòng tròn xoay nếu có lỗi xảy ra
+        _isLoading = false;
       });
 
-      // Hiển thị thông báo lỗi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Đã xảy ra lỗi: $e'),
@@ -193,19 +288,16 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text('Chỉnh sửa công thức'),
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: _updateRecipe,
             child: Text('Lưu'),
-          ),
-          TextButton(
-            onPressed: _uploadRecipe,
-            child: Text('Đăng tải'),
           ),
           IconButton(onPressed: () {}, icon: Icon(Icons.more_vert))
         ],
       ),
-      body: _isLoading // Hiển thị vòng tròn xoay khi đang tải lên
+      body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: EdgeInsets.all(16.0),
@@ -266,7 +358,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   TextField(
                     maxLines: null, // Không giới hạn số dòng
                     minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: 'Tên món ăn',
@@ -276,10 +367,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    controller: _descriptionController,
                     maxLines: null, // Không giới hạn số dòng
                     minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    controller: _descriptionController,
                     decoration: InputDecoration(
                       labelText: 'Mô tả',
                       border: OutlineInputBorder(
@@ -290,7 +380,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   TextField(
                     maxLines: null, // Không giới hạn số dòng
                     minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
                     controller: _servingsController,
                     decoration: InputDecoration(
                       labelText: 'Khẩu phần',
@@ -302,7 +391,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   TextField(
                     maxLines: null, // Không giới hạn số dòng
                     minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
                     controller: _timeController,
                     decoration: InputDecoration(
                       labelText: 'Thời gian nấu',
@@ -314,7 +402,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   TextField(
                     maxLines: null, // Không giới hạn số dòng
                     minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
                     controller: _youtubeController,
                     decoration: InputDecoration(
                       labelText: 'Video youtube hướng dẫn',
@@ -346,7 +433,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                               null, // Không giới hạn số dòng
                                           minLines:
                                               1, // Chiều cao tối thiểu là 3 dòng
-                                          
                                           controller: controller,
                                           decoration: InputDecoration(
                                             labelText:
@@ -396,9 +482,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                     children: [
                                       Expanded(
                                         child: TextField(
-                                          maxLines: null, // Không giới hạn số dòng
-                                          minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                                          
+                                          maxLines:
+                                              null, // Không giới hạn số dòng
+                                          minLines:
+                                              1, // Chiều cao tối thiểu là 3 dòng
                                           controller: controller,
                                           decoration: InputDecoration(
                                             labelText: 'Bước ${index + 1}',

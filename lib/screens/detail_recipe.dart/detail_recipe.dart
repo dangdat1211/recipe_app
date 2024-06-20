@@ -4,9 +4,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:recipe_app/screens/add_recipe/edit_recipe.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -67,7 +69,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
         FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
     _userRecipesFuture = _fetchUserRecipes();
     _stepsFuture = _fetchSteps();
-    _fetchAverageRating().then((result) {
+    RateService.fetchAverageRating(widget.recipeId).then((result) {
       setState(() {
         _avgRating = result['avgRating'];
         _ratingCount = result['ratingCount'];
@@ -246,6 +248,19 @@ class _DetailReCipeState extends State<DetailReCipe> {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          currentUser!.uid == widget.userId
+              ? IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                           EditRecipeScreen(recipeId: widget.recipeId),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.edit))
+              : Container(),
           StatefulBuilder(builder: (context, setState) {
             return IconButton(
               onPressed: () async {
@@ -514,7 +529,6 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                             TextButton(
                                               onPressed: () {
                                                 Navigator.of(context).pop();
-
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
@@ -783,24 +797,33 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                     child: Padding(
                                       padding:
                                           const EdgeInsets.only(bottom: 10),
-                                      child: ItemRecipe(
-                                        ontap: () {
-                                          // Navigate to recipe detail screen
-                                        },
-                                        name: recipe['namerecipe'] ?? '',
-                                        star: recipe['rate']?.toString() ?? '0',
-                                        favorite: recipe['liked']
-                                                ?.length
-                                                .toString() ??
-                                            '0',
-                                        avatar: user['avatar'] ?? '',
-                                        fullname: user['fullname'] ?? '',
-                                        image: recipe['image'] ?? '',
-                                        isFavorite: isFavorite,
-                                        onFavoritePressed: () =>
-                                            FavoriteService.toggleFavorite(
-                                                context, recipe['recipeId']),
-                                      ),
+                                      child: FutureBuilder<double>(
+                                          future: RateService.getAverageRating(
+                                              recipe['recipeId']),
+                                          builder: (context, snapshot) {
+                                            double averageRating =
+                                                snapshot.data ?? 0.0;
+                                            return ItemRecipe(
+                                              ontap: () {
+                                                // Navigate to recipe detail screen
+                                              },
+                                              name: recipe['namerecipe'] ?? '',
+                                              star: averageRating
+                                                  .toStringAsFixed(1),
+                                              favorite: recipe['liked']
+                                                      ?.length
+                                                      .toString() ??
+                                                  '0',
+                                              avatar: user['avatar'] ?? '',
+                                              fullname: user['fullname'] ?? '',
+                                              image: recipe['image'] ?? '',
+                                              isFavorite: isFavorite,
+                                              onFavoritePressed: () =>
+                                                  FavoriteService
+                                                      .toggleFavorite(context,
+                                                          recipe['recipeId']),
+                                            );
+                                          }),
                                     ),
                                   ),
                                 );

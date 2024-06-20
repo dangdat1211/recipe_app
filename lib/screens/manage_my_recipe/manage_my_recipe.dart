@@ -29,6 +29,20 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
     super.dispose();
   }
 
+  void _handlePopupMenuSelection(String value, String recipeId) {
+    switch (value) {
+      case 'edit':
+        // Navigate to edit recipe screen
+        break;
+      case 'delete':
+        // Delete recipe from Firestore
+        break;
+      case 'hide':
+        // Hide recipe from the list
+        break;
+    }
+  }
+
   Widget buildRecipeList(String status) {
     Query recipesQuery = FirebaseFirestore.instance
         .collection('recipes')
@@ -74,16 +88,47 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
                     fit: BoxFit.cover,
                   ),
                 ),
-                title: Text(recipe['namerecipe']),
+                title: Text(
+                  recipe['namerecipe'],
+                  overflow: TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold
+                  ),
+                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(recipe['description']),
+                    Text(
+                      recipe['description'],
+                      overflow: TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
+                      maxLines: 1,
+                    ),
                     Text(
                       'Status: ${recipe['status']}',
                       style: TextStyle(
                         color: getStatusColor(recipe['status']),
                       ),
+                    ),
+                  ],
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) =>
+                      _handlePopupMenuSelection(value, recipeId),
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Text('Sửa'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Xóa'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'hide',
+                      child: Text('Ẩn'),
                     ),
                   ],
                 ),
