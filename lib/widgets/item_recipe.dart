@@ -124,7 +124,14 @@ class _ItemRecipeState extends State<ItemRecipe> {
                             SizedBox(
                               width: 5,
                             ),
-                            Text(widget.fullname),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.35,
+                              child: Text(
+                                widget.fullname,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            )
                           ],
                         ),
                       ],

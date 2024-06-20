@@ -248,6 +248,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          currentUser != null 
+          ?
           currentUser!.uid == widget.userId
               ? IconButton(
                   onPressed: () {
@@ -260,7 +262,9 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     );
                   },
                   icon: Icon(Icons.edit))
-              : Container(),
+              : Container()
+          : Container(),
+
           StatefulBuilder(builder: (context, setState) {
             return IconButton(
               onPressed: () async {

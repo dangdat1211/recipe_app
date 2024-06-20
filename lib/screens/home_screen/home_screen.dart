@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/following_screen.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +13,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    NotificationService notificationService = NotificationService();
+    notificationService.firebaseInit(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
