@@ -135,7 +135,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'followings': [           
             ], 
             'recipes': [
-            ],            
+            ],    
+            'FCM': ''        
           })
           .then((value) => print("User Added"))
           .catchError((error) => print("Failed to add user: $error"));

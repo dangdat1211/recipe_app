@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -79,6 +81,16 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           );
         } else {
+
+          String? FCMToken = await NotificationService().getDeviceToken();
+
+          if (FCMToken != null) {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(userCredential.user!.uid)
+                .update({'FCM': FCMToken});
+          }
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(

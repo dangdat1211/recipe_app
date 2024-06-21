@@ -22,11 +22,12 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('Notification permission granted.');
-    } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      print('Notification permission denied.');
+      print('User granted permission');
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
+      print('User granted provisional permission');
     } else {
-      print('Notification permission not determined.');
+      print('User declined or has not accepted permission');
     }
   }
 
@@ -81,7 +82,8 @@ class NotificationService {
       importance: Importance.max,
     );
 
-    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+    AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
       channel.id,
       channel.name,
       channelDescription: 'This channel is used for important notifications.',
@@ -90,7 +92,8 @@ class NotificationService {
       ticker: 'ticker',
     );
 
-    DarwinNotificationDetails darwinNotificationDetails = DarwinNotificationDetails(
+    DarwinNotificationDetails darwinNotificationDetails =
+        DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -102,7 +105,7 @@ class NotificationService {
     );
 
     await _flutterLocalNotificationsPlugin.show(
-      0,
+      message.notification.hashCode,
       message.notification?.title ?? 'No Title',
       message.notification?.body ?? 'No Body',
       notificationDetails,

@@ -49,10 +49,23 @@ class _SearchScreenState extends State<SearchScreen> {
 
           bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
-          if (recipeData['namerecipe']
+          bool nameMatch = recipeData['namerecipe']
               .toString()
               .toLowerCase()
-              .contains(query.toLowerCase())) {
+              .contains(query.toLowerCase());
+
+          // Kiểm tra nguyên liệu
+          bool ingredientMatch = false;
+          if (recipeData['ingredients'] != null &&
+              recipeData['ingredients'] is List) {
+            ingredientMatch = (recipeData['ingredients'] as List).any(
+                (ingredient) => ingredient
+                    .toString()
+                    .toLowerCase()
+                    .contains(query.toLowerCase()));
+          }
+
+          if (nameMatch || ingredientMatch) {
             searchResultsWithUserData.add({
               'recipe': recipeData,
               'user': userData,
