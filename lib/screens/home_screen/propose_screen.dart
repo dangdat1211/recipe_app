@@ -187,7 +187,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     Query query = FirebaseFirestore.instance.collection('recipes');
 
-    query = query.where('status', isEqualTo: 'Đợi phê duyệt');
+    query = query.where('status', isEqualTo: 'Đã được phê duyệt');
 
     if (selectedValue == 'Mới cập nhật') {
       query = query.orderBy('updateAt', descending: true);
@@ -547,7 +547,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                   avatar: (user['avatar'] != null &&
                                           user['avatar'].isNotEmpty)
                                       ? user['avatar']
-                                      : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
+                                      : 'https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a',
                                   fullname: user['fullname'] ?? 'N/A',
                                   username: user['username'] ?? 'N/A',
                                   recipe: (user['recipes'] as List)
@@ -642,7 +642,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                               FirebaseFirestore.instance.collection('recipes');
 
                           query =
-                              query.where('status', isEqualTo: 'Đợi phê duyệt');
+                              query.where('status', isEqualTo: 'Đã được phê duyệt');
 
                           if (selectedValue == 'Mới cập nhật') {
                             query = query.orderBy('updateAt', descending: true);

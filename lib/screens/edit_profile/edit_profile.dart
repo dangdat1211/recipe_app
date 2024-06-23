@@ -31,7 +31,7 @@ class _EditProfileState extends State<EditProfile> {
 
   Uint8List? _image;
   File? selectedImage;
-  String _getimage = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
+  String _getimage = "https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a";
 
   User? currentUser = FirebaseAuth.instance.currentUser;
   bool _isLoading = false;
@@ -167,7 +167,7 @@ class _EditProfileState extends State<EditProfile> {
                             radius: 50, backgroundImage: MemoryImage(_image!))
                         : CircleAvatar(
                             radius: 50,
-                            backgroundImage: NetworkImage( _getimage.isNotEmpty ? _getimage : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"),
+                            backgroundImage: NetworkImage( _getimage.isNotEmpty ? _getimage : "https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a"),
                           ),
                     Positioned(
                         bottom: -4,

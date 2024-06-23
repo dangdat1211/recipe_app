@@ -139,7 +139,7 @@ class _ProfileUserState extends State<ProfileUser> {
                           child: Image.network(
                             userProfile!['avatar'].isNotEmpty
                                 ? userProfile!['avatar']
-                                : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png', // Đường dẫn tới hình ảnh của bạn trong thư mục assets
+                                : 'https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a', // Đường dẫn tới hình ảnh của bạn trong thư mục assets
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,

@@ -20,3 +20,4 @@ export './manage_my_recipe/manage_my_recipe.dart';
 export './change_password_screen/change_password_screen.dart';
 export './setting_notify_screen/setting_notify_screen.dart';
 export './setting_privacy_screen/setting_privacy_screen.dart';
+export './admin_screen/admin_screen.dart';

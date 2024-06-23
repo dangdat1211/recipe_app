@@ -123,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'fullname': _fullnameController.text,
             'email': _emailController.text,
             'bio': '',
-            'avatar': 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png', 
+            'avatar': 'https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a', 
             'status': true,
             'createAt': DateTime.now(),
             'updateAt': '',
