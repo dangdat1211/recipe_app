@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/screens.dart';
-import '';
 
 class ItemRecipe extends StatefulWidget {
   const ItemRecipe({
@@ -35,6 +34,7 @@ class ItemRecipe extends StatefulWidget {
 
 class _ItemRecipeState extends State<ItemRecipe> {
   late bool _isFavorite;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +53,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
     return GestureDetector(
       onTap: widget.ontap,
       child: Container(
+        margin: EdgeInsets.all(8.0),
         width: MediaQuery.of(context).size.width * 0.8 + 2,
         height: 142,
         decoration: BoxDecoration(
@@ -95,7 +96,10 @@ class _ItemRecipeState extends State<ItemRecipe> {
                       widget.name,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
-                      style: TextStyle(fontSize: 15),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Column(
                       children: [
@@ -104,34 +108,36 @@ class _ItemRecipeState extends State<ItemRecipe> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.star),
+                                Icon(Icons.star, color: Colors.yellow),
+                                SizedBox(width: 4),
                                 Text(widget.star),
                               ],
                             ),
                             Row(
                               children: [
-                                Icon(Icons.favorite),
+                                Icon(Icons.favorite, color: Colors.red),
+                                SizedBox(width: 4),
                                 Text(widget.favorite),
                               ],
                             ),
                           ],
                         ),
+                        SizedBox(height: 8),
                         Row(
                           children: [
                             CircleAvatar(
                               backgroundImage: NetworkImage(widget.avatar),
+                              radius: 18,
                             ),
-                            SizedBox(
-                              width: 5,
-                            ),
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.35,
+                            SizedBox(width: 8),
+                            Expanded(
                               child: Text(
                                 widget.fullname,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
+                                style: TextStyle(fontSize: 14),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ],
@@ -159,7 +165,7 @@ class _ItemRecipeState extends State<ItemRecipe> {
                       ),
                       child: Image.network(
                         widget.image,
-                        fit: BoxFit.fitHeight,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
@@ -167,13 +173,18 @@ class _ItemRecipeState extends State<ItemRecipe> {
                     right: 10,
                     bottom: 10,
                     child: GestureDetector(
-                      onTap: () {
-                        _toggleFavorite();
-                      },
+                      onTap: _toggleFavorite,
                       child: Icon(
                         Icons.favorite,
                         size: 36.0,
                         color: _isFavorite ? Colors.red : Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                     ),
                   ),

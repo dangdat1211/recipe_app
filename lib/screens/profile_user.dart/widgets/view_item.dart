@@ -26,84 +26,136 @@ class _ViewItemState extends State<ViewItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onTap,
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                width: 1,
-                color: const Color.fromARGB(255, 44, 36, 36),
-
+      child: Container(
+        margin: EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            width: 1,
+            color: const Color.fromARGB(255, 44, 36, 36),
+          ),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              offset: Offset(0, 2),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            children: [
+              Image.network(
+                widget.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
               ),
-              image: DecorationImage(
-                  image: NetworkImage(widget.image), fit: BoxFit.cover),
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          Positioned(
-            top: 3,
-            left: 3,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.star,
-                  color: Colors.white,
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: Colors.yellow,
+                      size: 18,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      widget.rate,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  widget.rate,
-                  style: TextStyle(color: Colors.white),
-                )
-              ],
-            ),
-          ),
-          Positioned(
-            top: 3,
-            right: 3,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.favorite,
-                  color: Colors.white,
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.favorite,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      widget.like,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  widget.like,
-                  style: TextStyle(color: Colors.white),
-                )
-              ],
-            ),
-          ),
-          Positioned(
-              bottom: 0,
-              left: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color.fromARGB(255, 255, 172, 128),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(10),
-                    bottomRight: Radius.circular(10),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 10, right: 10),
+                  padding: const EdgeInsets.all(8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         widget.date,
-                        // style: TextStyle(color: Colors.white),
-                      ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.46,
-                        child: Text(
-                          widget.title,
-                          // style: TextStyle(color: Colors.white),
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
                         ),
-                      )
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              offset: Offset(0, 1),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
-              ))
-        ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

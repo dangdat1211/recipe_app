@@ -73,43 +73,76 @@ class _SignInScreenState extends State<SignInScreen> {
           password: password,
         );
 
-        if (userCredential.user != null &&
-            !userCredential.user!.emailVerified) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Please verify your email before signing in.'),
-            ),
-          );
-        } else {
+        if (userCredential.user != null) {
+          // Kiểm tra trạng thái isActive trong Firestore
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userCredential.user!.uid)
+              .get();
 
-          String? FCMToken = await NotificationService().getDeviceToken();
+          if (userDoc.exists) {
+            bool isActive = userDoc.get('status') ?? true;
 
-          if (FCMToken != null) {
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(userCredential.user!.uid)
-                .update({'FCM': FCMToken});
+            if (!isActive) {
+              // Tài khoản đã bị vô hiệu hóa
+              await FirebaseAuth.instance.signOut();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Tài khoản này đã bị vô hiệu hóa.'),
+                ),
+              );
+              return;
+            }
+
+            if (!userCredential.user!.emailVerified) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'Vui lòng xác minh email của bạn trước khi đăng nhập.'),
+                ),
+              );
+            } else {
+              String? FCMToken = await NotificationService().getDeviceToken();
+
+              if (FCMToken != null) {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userCredential.user!.uid)
+                    .update({'FCM': FCMToken});
+              }
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => NavigateScreen()),
+              );
+            }
+          } else {
+            // Không tìm thấy dữ liệu người dùng trong Firestore
+            await FirebaseAuth.instance.signOut();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Không tìm thấy dữ liệu người dùng.'),
+              ),
+            );
           }
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    NavigateScreen()), // Replace with your home screen
-          );
         }
       } on FirebaseAuthException catch (e) {
         setState(() {
           if (e.code == 'user-not-found') {
-            _emailError = 'No user found for that email.';
+            _emailError = 'Không tìm thấy người dùng với email này.';
           } else if (e.code == 'invalid-credential') {
             _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
           } else {
-            _emailError = e.code;
+            _emailError = e.message ?? e.code;
           }
         });
       } catch (e) {
         print(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã xảy ra lỗi không xác định.'),
+          ),
+        );
       }
     }
   }

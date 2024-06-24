@@ -55,6 +55,26 @@ class _UserScreenState extends State<UserScreen> {
     );
   }
 
+  Future<void> deactivateAccount() async {
+    try {
+      // Đánh dấu tài khoản là đã bị vô hiệu hóa trong Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .update({'status': false});
+
+      // Bạn có thể thêm các bước bổ sung ở đây, như xóa dữ liệu người dùng, v.v.
+
+      // Lưu ý: Firebase Authentication không có tính năng vô hiệu hóa tài khoản tích hợp sẵn.
+      // Nếu bạn muốn hoàn toàn xóa tài khoản khỏi Firebase Auth, bạn có thể sử dụng:
+      // await FirebaseAuth.instance.currentUser!.delete();
+      // Tuy nhiên, hãy cẩn thận vì điều này sẽ xóa vĩnh viễn tài khoản.
+    } catch (e) {
+      print('Lỗi khi vô hiệu hóa tài khoản: $e');
+      rethrow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,7 +162,9 @@ class _UserScreenState extends State<UserScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ProfileUser(userId: currentUser!.uid,)),
+                                  builder: (context) => ProfileUser(
+                                        userId: currentUser!.uid,
+                                      )),
                             );
                           },
                           child: Container(
@@ -257,21 +279,109 @@ class _UserScreenState extends State<UserScreen> {
                             },
                             icon: Icons.notifications,
                             title: 'Cài đặt thông báo'),
-                        SizedBox(height: 10,),
-                        if (userProfile!['role'] == true) 
-                          UIMenu(
-                            ontap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        AdminScreen()),
-                              );
-                            },
-                            icon: Icons.beach_access,
-                            title: 'Chức năng quản trị'),
                         SizedBox(
-                          height: 20,
+                          height: 10,
+                        ),
+                        if (userProfile!['role'] == true)
+                          UIMenu(
+                              ontap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => AdminScreen()),
+                                );
+                              },
+                              icon: Icons.beach_access,
+                              title: 'Chức năng quản trị'),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        UIMenu(
+                          ontap: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                String password = '';
+                                String errorMessage = '';
+                                return StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return AlertDialog(
+                                      title: Text('Vô hiệu hóa tài khoản'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                              'Vui lòng nhập mật khẩu để xác nhận vô hiệu hóa tài khoản.'),
+                                          SizedBox(height: 10),
+                                          TextField(
+                                            obscureText: true,
+                                            onChanged: (value) {
+                                              password = value;
+                                            },
+                                            decoration: InputDecoration(
+                                              hintText: 'Nhập mật khẩu',
+                                            ),
+                                          ),
+                                          if (errorMessage.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0),
+                                              child: Text(
+                                                errorMessage,
+                                                style: TextStyle(
+                                                    color: Colors.red),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: Text('Hủy'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: Text('Vô hiệu hóa'),
+                                          onPressed: () async {
+                                            try {
+                                              UserCredential userCredential =
+                                                  await FirebaseAuth.instance
+                                                      .signInWithEmailAndPassword(
+                                                email: currentUser!.email!,
+                                                password: password,
+                                              );
+
+                                              await deactivateAccount();
+                                              await FirebaseAuth.instance
+                                                  .signOut();
+                                              Navigator.of(context).pop();
+                                              Navigator.of(context)
+                                                  .pushReplacement(
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        SignInScreen()),
+                                              );
+                                            } catch (e) {
+                                              setState(() {
+                                                errorMessage =
+                                                    'Mật khẩu không đúng. Vui lòng thử lại.';
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          icon: Icons.no_accounts,
+                          title: 'Vô hiệu hóa tài khoản',
+                        ),
+                        SizedBox(
+                          height: 10,
                         ),
                         UIContainer(
                             ontap: () {

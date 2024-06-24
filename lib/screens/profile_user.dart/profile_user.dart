@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/profile_user.dart/infomation_follow_screen.dart';
 import 'package:recipe_app/screens/profile_user.dart/my_favorite.dart';
 import 'package:recipe_app/screens/profile_user.dart/my_recipe.dart';
-import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
 import 'package:recipe_app/screens/screens.dart';
 
 class ProfileUser extends StatefulWidget {

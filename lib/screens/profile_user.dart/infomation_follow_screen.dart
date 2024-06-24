@@ -30,7 +30,6 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
     _tabController =
         TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
     _fetchFollowersAndFollowings();
-    _initFollowingUsers();
   }
 
   Future<void> _fetchFollowersAndFollowings() async {
@@ -42,6 +41,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
       followings = List<String>.from(userDoc['followings'] ?? []);
       followers = List<String>.from(userDoc['followers'] ?? []);
     });
+    _initFollowingUsers();
   }
 
   void _initFollowingUsers() async {
@@ -51,10 +51,11 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
           .collection('users')
           .doc(currentUserId)
           .get();
-      List<dynamic> followings = userDoc.get('followings') ?? [];
+      List<dynamic> currentUserFollowings = userDoc.get('followings') ?? [];
       setState(() {
         followingUsers = {
-          for (String userId in followings) userId: true,
+          for (String userId in [...followings, ...followers])
+            userId: currentUserFollowings.contains(userId),
         };
       });
     }
@@ -93,49 +94,47 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
     });
   }
 
-  String _searchQuery = '';
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-    future: FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
-    builder: (context, snapshot) {
-      if (snapshot.hasData) {
-        Map<String, dynamic> userData = snapshot.data!.data() as Map<String, dynamic>;
-        String fullname = userData['fullname'] ?? '';
+      future: FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          Map<String, dynamic> userData = snapshot.data!.data() as Map<String, dynamic>;
+          String fullname = userData['fullname'] ?? '';
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(fullname),
-            centerTitle: true,
-            bottom: TabBar(
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(fullname),
+              centerTitle: true,
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(text: 'Đang theo dõi'),
+                  Tab(text: 'Người theo dõi'),
+                ],
+              ),
+            ),
+            body: TabBarView(
               controller: _tabController,
-              tabs: [
-                Tab(text: 'Đang theo dõi'),
-                Tab(text: 'Người theo dõi'),
+              children: [
+                _buildFollowingsList(),
+                _buildFollowersList(),
               ],
             ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildFollowingsList(),
-              _buildFollowersList(),
-            ],
-          ),
-        );
-      } else {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('Loading...'),
-          ),
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      }
-    },
-  );
+          );
+        } else {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('Loading...'),
+            ),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+      },
+    );
   }
 
   Widget _buildFollowingsList() {
@@ -157,22 +156,18 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
                 ),
                 title: Text(userData['fullname']),
                 subtitle: Text(userData['email']),
-                trailing: followingUsers.containsKey(userId)
-                    ? ElevatedButton(
-                        onPressed: () async {
-                          await _toggleFollow(userId);
-                        },
-                        child: Text(
-                          followingUsers[userId]! ? 'Bỏ theo dõi' : 'Theo dõi',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: followingUsers[userId]!
-                              ? Colors.red
-                              : Colors.blue,
-                        ),
-                      )
-                    : SizedBox(),
+                trailing: ElevatedButton(
+                  onPressed: () async {
+                    await _toggleFollow(userId);
+                  },
+                  child: Text(
+                    followingUsers[userId] == true ? 'Bỏ theo dõi' : 'Theo dõi',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: followingUsers[userId] == true ? Colors.red : Colors.blue,
+                  ),
+                ),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -212,22 +207,18 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
                 ),
                 title: Text(userData['fullname']),
                 subtitle: Text(userData['email']),
-                trailing: followingUsers.containsKey(userId)
-                    ? ElevatedButton(
-                        onPressed: () async {
-                          await _toggleFollow(userId);
-                        },
-                        child: Text(
-                          followingUsers[userId]! ? 'Unfollow' : 'Follow',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: followingUsers[userId]!
-                              ? Colors.red
-                              : Colors.blue,
-                        ),
-                      )
-                    : SizedBox(),
+                trailing: ElevatedButton(
+                  onPressed: () async {
+                    await _toggleFollow(userId);
+                  },
+                  child: Text(
+                    followingUsers[userId] == true ? 'Bỏ theo dõi' : 'Theo dõi',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: followingUsers[userId] == true ? Colors.red : Colors.blue,
+                  ),
+                ),
               );
             } else {
               return ListTile(

@@ -18,6 +18,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
   bool isLoading = false;
   DocumentSnapshot? lastDocument;
   bool hasMoreRecipes = true;
+  bool isFollowingAnyone = false;
 
   @override
   void initState() {
@@ -37,9 +38,20 @@ class _FollowingScreenState extends State<FollowingScreen> {
       isLoading = true;
     });
 
+    List<String> followingUserIds = await getFollowingUserIds();
+    
+    isFollowingAnyone = followingUserIds.isNotEmpty;
+
+    if (!isFollowingAnyone) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
     Query query = FirebaseFirestore.instance
         .collection('recipes')
-        .where('userID', whereIn: await getFollowingUserIds())
+        .where('userID', whereIn: followingUserIds)
         .orderBy('updateAt', descending: true)
         .limit(10);
 
@@ -124,7 +136,6 @@ class _FollowingScreenState extends State<FollowingScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -150,50 +161,61 @@ class _FollowingScreenState extends State<FollowingScreen> {
                       ),
                     ),
                     SizedBox(height: 10),
-                    ListView.builder(
-                      physics: NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: recipesWithUserData.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == recipesWithUserData.length) {
-                          if (hasMoreRecipes) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: ElevatedButton(
-                                onPressed: isLoading ? null : fetchRecipes,
-                                child: isLoading ? CircularProgressIndicator() : Text('Load More'),
-                              ),
-                            );
-                          } else {
-                            return Container();
+                    if (!isFollowingAnyone)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text(
+                            'Bạn chưa theo dõi ai.',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        physics: NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: recipesWithUserData.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == recipesWithUserData.length) {
+                            if (hasMoreRecipes) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: ElevatedButton(
+                                  onPressed: isLoading ? null : fetchRecipes,
+                                  child: isLoading ? CircularProgressIndicator() : Text('Load More'),
+                                ),
+                              );
+                            } else {
+                              return Container();
+                            }
                           }
-                        }
 
-                        final recipeWithUser = recipesWithUserData[index];
-                        final recipe = recipeWithUser['recipe'];
-                        final user = recipeWithUser['user'];
-                        final isFavorite = recipeWithUser['isFavorite'];
+                          final recipeWithUser = recipesWithUserData[index];
+                          final recipe = recipeWithUser['recipe'];
+                          final user = recipeWithUser['user'];
+                          final isFavorite = recipeWithUser['isFavorite'];
 
-                        return Container(
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: ItemRecipe(
-                                ontap: () {},
-                                name: recipe['namerecipe'] ?? '',
-                                star: recipe['rate']?.toString() ?? '0',
-                                favorite: recipe['liked']?.length.toString() ?? '0',
-                                avatar: user['avatar'] ?? '',
-                                fullname: user['fullname'] ?? '',
-                                image: recipe['image'] ?? '',
-                                isFavorite: isFavorite,
-                                onFavoritePressed: () => FavoriteService.toggleFavorite( context ,recipe['recipeId']),
+                          return Container(
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: ItemRecipe(
+                                  ontap: () {},
+                                  name: recipe['namerecipe'] ?? '',
+                                  star: recipe['rate']?.toString() ?? '0',
+                                  favorite: recipe['liked']?.length.toString() ?? '0',
+                                  avatar: user['avatar'] ?? '',
+                                  fullname: user['fullname'] ?? '',
+                                  image: recipe['image'] ?? '',
+                                  isFavorite: isFavorite,
+                                  onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId']),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),

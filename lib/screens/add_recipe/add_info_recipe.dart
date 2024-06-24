@@ -171,6 +171,19 @@ class _AddInfoRecipeState extends State<AddInfoRecipe> {
                                 }
                                 List<Map<String, dynamic>> recipes =
                                     snapshot.data ?? [];
+                                
+                                if (recipes.isEmpty) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: Text(
+                                        'Bạn chưa có công thức nào.',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
                                 return ListView.builder(
                                   physics: NeverScrollableScrollPhysics(),
                                   shrinkWrap: true,
@@ -188,10 +201,9 @@ class _AddInfoRecipeState extends State<AddInfoRecipe> {
                                               // Add your onTap functionality here
                                             },
                                             name: recipe['namerecipe'] ?? '',
-                                            star: recipe['rates'].length.toString() ,
+                                            star: recipe['rates'].length.toString(),
                                             favorite: recipe['likes'].length.toString(),
                                             image: recipe['image'] ?? '',
-
                                           )
                                         ),
                                       ),

@@ -47,7 +47,7 @@ class _AdminScreenState extends State<AdminScreen> {
               MaterialPageRoute(builder: (context) => const AdminMethod()),
             );
           }),
-          _buildAdminTile('Tài khoản', Icons.account_balance, () {
+          _buildAdminTile('Tài khoản', Icons.verified_user, () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AdminAccount()),
