@@ -23,15 +23,14 @@ class SimpleItemRecipe extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8 + 2,
-        height: 142,
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(width: 1, color: Colors.grey),
+          border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.1),
               spreadRadius: 2,
               blurRadius: 5,
               offset: Offset(0, 2),
@@ -40,47 +39,54 @@ class SimpleItemRecipe extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: MediaQuery.of(context).size.width * 0.55,
-              height: 142,
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    description,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  Row(
-                    children: [
-                      Text('$star stars'),
-                      SizedBox(width: 10),
-                      Text('$favorite favorites'),
-                    ],
-                  ),
-                ],
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      description,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.yellow, size: 16),
+                        SizedBox(width: 4),
+                        Text(star),
+                        SizedBox(width: 10),
+                        Icon(Icons.favorite, color: Colors.red, size: 16),
+                        SizedBox(width: 4),
+                        Text(favorite),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            Container(
-              width: MediaQuery.of(context).size.width * 0.25,
-              height: 142,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(10),
-                  bottomRight: Radius.circular(10),
-                ),
-                image: DecorationImage(
-                  image: NetworkImage(image),
-                  fit: BoxFit.cover,
+            Expanded(
+              flex: 2,
+              child: Container(
+                height: 142,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(10),
+                    bottomRight: Radius.circular(10),
+                  ),
+                  image: DecorationImage(
+                    image: NetworkImage(image),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),

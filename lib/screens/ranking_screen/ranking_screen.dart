@@ -62,7 +62,7 @@ class _RankingScreenState extends State<RankingScreen>
                   children: [
                     Icon(Icons.search),
                     SizedBox(width: 8.0),
-                    Text('Search...'),
+                    Text('Tìm kiếm ...'),
                   ],
                 ),
               ),
@@ -71,8 +71,8 @@ class _RankingScreenState extends State<RankingScreen>
           TabBar(
             controller: _tabController,
             tabs: [
-              Tab(text: 'Recipes'),
-              Tab(text: 'Users'),
+              Tab(text: 'BXH Công thức'),
+              Tab(text: 'BXH người dùng'),
             ],
           ),
           Expanded(

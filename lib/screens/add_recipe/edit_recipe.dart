@@ -186,6 +186,13 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     });
 
     try {
+      DocumentSnapshot recipeSnapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(widget.recipeId)
+          .get();
+      Map<String, dynamic> currentRecipeData =
+          recipeSnapshot.data() as Map<String, dynamic>;
+
       String? mainImageUrl;
       if (_image != null) {
         mainImageUrl = await _uploadFile(_image!);
@@ -221,7 +228,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
       List<String> stepIds = [];
 
-      List<dynamic>? oldStepIds = recipeData['steps'] as List<dynamic>?;
+      List<dynamic>? oldStepIds = currentRecipeData['steps'] as List<dynamic>?;
       if (oldStepIds != null) {
         for (String oldStepId in oldStepIds) {
           await stepsCollection.doc(oldStepId).delete();

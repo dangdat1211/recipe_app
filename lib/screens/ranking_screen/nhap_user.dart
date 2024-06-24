@@ -67,20 +67,11 @@ class _UserRankingState extends State<UserRanking> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: _buildDropdown(),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                Map<String, dynamic> userData =
-                    users[index].data() as Map<String, dynamic>;
-                return _buildUserCard(userData, index);
-              },
-              childCount: users.length,
-            ),
+      body: Column(
+        children: [
+          _buildDropdown(),
+          Expanded(
+            child: _buildUserList(),
           ),
         ],
       ),
@@ -89,18 +80,17 @@ class _UserRankingState extends State<UserRanking> {
 
   Widget _buildDropdown() {
     return Container(
-      margin: EdgeInsets.fromLTRB(16, 16, 16, 8), // Giảm margin phía dưới
-      padding:
-          EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Giảm padding
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 2),
+            blurRadius: 5,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -108,8 +98,8 @@ class _UserRankingState extends State<UserRanking> {
         child: DropdownButton<String>(
           value: dropdownValue,
           isExpanded: true,
-          icon: Icon(Icons.arrow_drop_down, color: mainColor, size: 20),
-          style: TextStyle(color: mainColor, fontSize: 14),
+          icon: Icon(Icons.arrow_drop_down, color: Colors.teal),
+          style: TextStyle(color: Colors.teal, fontSize: 16),
           onChanged: (String? newValue) {
             setState(() {
               dropdownValue = newValue!;
@@ -145,8 +135,8 @@ class _UserRankingState extends State<UserRanking> {
         (userData['followers'] as List?)?.contains(currentUserId) == true;
 
     return Card(
-      margin: EdgeInsets.fromLTRB(16, 4, 16, 4), // Giảm margin dọc
-    elevation: 3, // Giảm độ nổi
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         contentPadding: EdgeInsets.all(16),
@@ -193,7 +183,7 @@ class _UserRankingState extends State<UserRanking> {
             SizedBox(height: 4),
             Text(
               '${(userData['followers'] as List?)?.length ?? 0} người theo dõi',
-              style: TextStyle(color: mainColor),
+              style: TextStyle(color: Colors.teal),
             ),
           ],
         ),
@@ -218,8 +208,7 @@ class _UserRankingState extends State<UserRanking> {
     );
   }
 
-  Future<void> _toggleFollow(
-      String targetUserId, bool isCurrentlyFollowing) async {
+  Future<void> _toggleFollow( String targetUserId, bool isCurrentlyFollowing) async {
     if (currentUserId == null) return;
 
     try {
@@ -275,6 +264,6 @@ class _UserRankingState extends State<UserRanking> {
     if (index == 0) return Colors.amber;
     if (index == 1) return Colors.grey[400]!;
     if (index == 2) return Colors.brown[300]!;
-    return mainColor;
+    return Colors.teal;
   }
 }

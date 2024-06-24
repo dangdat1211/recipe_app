@@ -53,7 +53,6 @@ class _ItemRecipeState extends State<ItemRecipe> {
     return GestureDetector(
       onTap: widget.ontap,
       child: Container(
-        margin: EdgeInsets.all(8.0),
         width: MediaQuery.of(context).size.width * 0.8 + 2,
         height: 142,
         decoration: BoxDecoration(
