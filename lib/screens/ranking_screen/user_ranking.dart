@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
 
 class UserRanking extends StatefulWidget {
   const UserRanking({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class _UserRankingState extends State<UserRanking> {
   String dropdownValue = 'Người theo dõi';
   List<DocumentSnapshot> users = [];
   String? currentUserId;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,7 +23,6 @@ class _UserRankingState extends State<UserRanking> {
     currentUserId = FirebaseAuth.instance.currentUser?.uid;
     fetchUsers();
 
-    // Lắng nghe các thay đổi trong thời gian thực
     FirebaseFirestore.instance
         .collection('users')
         .snapshots()
@@ -29,16 +30,22 @@ class _UserRankingState extends State<UserRanking> {
       setState(() {
         users = snapshot.docs;
         sortUsers();
+        _isLoading = false;
       });
     });
   }
 
   Future<void> fetchUsers() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('users').get();
     setState(() {
       users = snapshot.docs;
       sortUsers();
+      _isLoading = false;
     });
   }
 
@@ -60,38 +67,39 @@ class _UserRankingState extends State<UserRanking> {
         return bCount.compareTo(aCount);
       });
     }
-    users = users.take(10).toList(); // Chỉ lấy top 10
+    users = users.take(10).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: _buildDropdown(),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                Map<String, dynamic> userData =
-                    users[index].data() as Map<String, dynamic>;
-                return _buildUserCard(userData, index);
-              },
-              childCount: users.length,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: mainColor))
+          : CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildDropdown(),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      Map<String, dynamic> userData =
+                          users[index].data() as Map<String, dynamic>;
+                      return _buildUserCard(userData, index);
+                    },
+                    childCount: users.length,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildDropdown() {
     return Container(
-      margin: EdgeInsets.fromLTRB(16, 16, 16, 8), // Giảm margin phía dưới
-      padding:
-          EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Giảm padding
+      margin: EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -128,89 +136,99 @@ class _UserRankingState extends State<UserRanking> {
     );
   }
 
-  Widget _buildUserList() {
-    return ListView.builder(
-      itemCount: users.length,
-      itemBuilder: (context, index) {
-        Map<String, dynamic> userData =
-            users[index].data() as Map<String, dynamic>;
-        return _buildUserCard(userData, index);
-      },
-    );
-  }
-
   Widget _buildUserCard(Map<String, dynamic> userData, int index) {
     String userId = users[index].id;
     bool isFollowing = currentUserId != null &&
         (userData['followers'] as List?)?.contains(currentUserId) == true;
 
-    return Card(
-      margin: EdgeInsets.fromLTRB(16, 4, 16, 4), // Giảm margin dọc
-    elevation: 3, // Giảm độ nổi
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: EdgeInsets.all(16),
-        leading: Stack(
-          alignment: Alignment.center,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: NetworkImage(userData['avatar'] ?? ''),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: _getRankColor(index),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileUser(userId: userId),
+          ),
+        );
+      },
+      child: Card(
+        margin: EdgeInsets.fromLTRB(16, 4, 16, 4),
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: ListTile(
+          contentPadding: EdgeInsets.fromLTRB(16, 16, 8, 16),
+          leading: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundImage: NetworkImage(userData['avatar'] ?? ''),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: _getRankColor(index),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-        title: Text(
-          userData['fullname'] ?? '',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 4),
-            Text(
-              '@${userData['username'] ?? ''}',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            SizedBox(height: 4),
-            Text(
-              '${(userData['followers'] as List?)?.length ?? 0} người theo dõi',
-              style: TextStyle(color: mainColor),
-            ),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () {
-            _toggleFollow(userId, isFollowing);
-          },
-          child: Text(
-            isFollowing ? 'Đang theo dõi' : 'Theo dõi',
-            style: TextStyle(
-              color: isFollowing ? Colors.grey[600] : Colors.white,
-            ),
+            ],
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isFollowing ? Colors.grey[200] : mainColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+          title: Text(
+            userData['fullname'] ?? '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 4),
+              Text(
+                '@${userData['username'] ?? ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '${(userData['followers'] as List?)?.length ?? 0} người theo dõi',
+                maxLines: 1,
+                style: TextStyle(color: mainColor),
+              ),
+            ],
+          ),
+          trailing: SizedBox(
+            width: 100,
+            height: 32,
+            child: ElevatedButton(
+              onPressed: () {
+                _toggleFollow(userId, isFollowing);
+              },
+              child: Text(
+                isFollowing ? 'Đang theo dõi' : 'Theo dõi',
+                style: TextStyle(
+                  color: isFollowing ? Colors.grey[600] : Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isFollowing ? Colors.grey[200] : mainColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              ),
             ),
           ),
         ),
@@ -218,9 +236,12 @@ class _UserRankingState extends State<UserRanking> {
     );
   }
 
-  Future<void> _toggleFollow(
-      String targetUserId, bool isCurrentlyFollowing) async {
+  Future<void> _toggleFollow(String targetUserId, bool isCurrentlyFollowing) async {
     if (currentUserId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final batch = FirebaseFirestore.instance.batch();
@@ -230,7 +251,6 @@ class _UserRankingState extends State<UserRanking> {
           FirebaseFirestore.instance.collection('users').doc(targetUserId);
 
       if (isCurrentlyFollowing) {
-        // Hủy theo dõi
         batch.update(currentUserDoc, {
           'following': FieldValue.arrayRemove([targetUserId])
         });
@@ -238,7 +258,6 @@ class _UserRankingState extends State<UserRanking> {
           'followers': FieldValue.arrayRemove([currentUserId])
         });
       } else {
-        // Theo dõi
         batch.update(currentUserDoc, {
           'following': FieldValue.arrayUnion([targetUserId])
         });
@@ -249,25 +268,17 @@ class _UserRankingState extends State<UserRanking> {
 
       await batch.commit();
 
-      // Cập nhật UI
       setState(() {
-        // int index = users.indexWhere((user) => user.id == targetUserId);
-        // if (index != -1) {
-        //   Map<String, dynamic> userData =
-        //       users[index].data() as Map<String, dynamic>;
-        //   List followers = userData['followers'] ?? [];
-        //   if (isCurrentlyFollowing) {
-        //     followers.remove(currentUserId);
-        //   } else {
-        //     followers.add(currentUserId);
-        //   }
-        //   userData['followers'] = followers;
-        //   users[index] = users[index].copyWith(data: () => userData);
-        // }
+        _isLoading = false;
       });
     } catch (e) {
       print('Error toggling follow: $e');
-      // Có thể thêm xử lý lỗi ở đây, ví dụ: hiển thị thông báo cho người dùng
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred. Please try again.')),
+      );
     }
   }
 

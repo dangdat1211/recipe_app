@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/search_screen/search_user_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
@@ -25,8 +26,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       final snapshot = await FirebaseFirestore.instance
           .collection('recipes')
-          // .where('namerecipe', isGreaterThanOrEqualTo: query)
-          // .where('namerecipe', isLessThan: query + '\uf8ff')
           .get();
       print('Số lượng kết quả tìm kiếm: ${snapshot.docs.length}');
 
@@ -34,7 +33,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
       for (var recipeDoc in snapshot.docs) {
         var recipeData = recipeDoc.data() as Map<String, dynamic>;
-        var recipeId = recipeDoc.id;
+        var recipeId = recipeDoc.id;  // Lấy document ID
 
         var userId = recipeData['userID'];
 
@@ -45,8 +44,6 @@ class _SearchScreenState extends State<SearchScreen> {
         var userData = userDoc.data();
 
         if (userData != null) {
-          recipeData['recipeId'] = recipeId;
-
           bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
           bool nameMatch = recipeData['namerecipe']
@@ -54,7 +51,6 @@ class _SearchScreenState extends State<SearchScreen> {
               .toLowerCase()
               .contains(query.toLowerCase());
 
-          // Kiểm tra nguyên liệu
           bool ingredientMatch = false;
           if (recipeData['ingredients'] != null &&
               recipeData['ingredients'] is List) {
@@ -70,6 +66,7 @@ class _SearchScreenState extends State<SearchScreen> {
               'recipe': recipeData,
               'user': userData,
               'isFavorite': isFavorite,
+              'recipeId': recipeId,  // Thêm recipeId vào đây
             });
           }
         }
@@ -124,33 +121,38 @@ class _SearchScreenState extends State<SearchScreen> {
                     color: Colors.white,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(21.0),
+                        padding: const EdgeInsets.all(17.0),
                         child: Container(
                           child: ListView.builder(
                             itemCount: searchResultsWithUserData.length,
                             itemBuilder: (context, index) {
-                              final recipeWithUser =
-                                  searchResultsWithUserData[index];
+                              final recipeWithUser = searchResultsWithUserData[index];
                               final recipe = recipeWithUser['recipe'];
                               final user = recipeWithUser['user'];
                               final isFavorite = recipeWithUser['isFavorite'];
+                              final recipeId = recipeWithUser['recipeId'];
 
                               return ItemRecipe(
-                                  name: recipe['namerecipe'],
-                                  star: recipe['rates'].length.toString(),
-                                  favorite: recipe['likes'].length.toString(),
-                                  avatar: user['avatar'],
-                                  fullname: user['fullname'],
-                                  image: recipe['image'],
-                                  ontap: () {
-                                    // Xử lý sự kiện khi nhấn vào công thức
-                                  },
-                                  isFavorite: isFavorite,
-                                  onFavoritePressed: () {
-                                    FavoriteService.toggleFavorite(
-                                        context, recipe['recipeId']);
-                                    _onSearchSubmitted(_searchController.text);
-                                  });
+                                name: recipe['namerecipe'],
+                                star: recipe['rates'].length.toString(),
+                                favorite: recipe['likes'].length.toString(),
+                                avatar: user['avatar'],
+                                fullname: user['fullname'],
+                                image: recipe['image'],
+                                ontap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DetailReCipe(recipeId: recipeId, userId: recipe['userID'],),
+                                    ),
+                                  );
+                                },
+                                isFavorite: isFavorite,
+                                onFavoritePressed: () {
+                                  FavoriteService.toggleFavorite(context, recipeId);
+                                  _onSearchSubmitted(_searchController.text);
+                                },
+                              );
                             },
                           ),
                         ),

@@ -32,10 +32,10 @@ class _NavigateScreenState extends State<NavigateScreen> {
         style: TabStyle.fixed,
         items: [
           TabItem(icon: Icons.home, title: 'Trang chủ'),
-          TabItem(icon: Icons.abc, title: 'Khám phá'),
+          TabItem(icon: Icons.explore, title: 'Khám phá'),
           TabItem(icon: Icons.add, title: 'Đăng tải'),
           TabItem(icon: Icons.notifications, title: 'Thông báo'),
-          TabItem(icon: Icons.person, title: 'Profile'),
+          TabItem(icon: Icons.person, title: 'Hồ sơ'),
         ],
         backgroundColor: Color(0xFFFF7622),
         initialActiveIndex: 0,

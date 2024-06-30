@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
 
 class MyRecipe extends StatefulWidget {
@@ -18,8 +20,17 @@ class _MyRecipeState extends State<MyRecipe> {
     QuerySnapshot querySnapshot =
         await _collectionRef.where('userID', isEqualTo: widget.userId).get();
     return querySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
+        .map((doc) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id; // Add the document ID to the data
+          return data;
+        })
         .toList();
+  }
+
+  String _formatTimestamp(Timestamp timestamp) {
+    DateTime dateTime = timestamp.toDate();
+    return DateFormat('dd/MM/yyyy').format(dateTime);
   }
 
   @override
@@ -48,16 +59,27 @@ class _MyRecipeState extends State<MyRecipe> {
               itemCount: data.length,
               itemBuilder: (context, index) {
                 final item = data[index];
-                List<String> likedList = List<String>.from(item['liked'] ?? []);
+                List<String> likedList = List<String>.from(item['likes'] ?? []);
+                List<String> rateList = List<String>.from(item['rates'] ?? []);
                 return ViewItem(
                   image: item['image'] ??
                       'https://static.vinwonders.com/production/mon-ngon-ha-dong-4.jpeg',
-                  rate: item['rate'] ?? '0.0',
+                  rate: rateList.length.toString(),
                   like: likedList.length.toString(),
-                  date: item['date'] ?? '12/11/2002',
-                  title: item['name'] ?? 'Com ngon',
+                  date: item['createAt'] != null
+                      ? _formatTimestamp(item['createAt'])
+                      : '12/11/2002',
+                  title: item['namerecipe'] ?? 'Com ngon',
                   onTap: () {
-                    // Xử lý khi người dùng nhấn vào
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailReCipe(
+                          recipeId: item['id'],
+                          userId: item['userID'],
+                        ),
+                      ),
+                    );
                   },
                 );
               },

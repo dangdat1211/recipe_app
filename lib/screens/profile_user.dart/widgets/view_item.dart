@@ -134,6 +134,7 @@ class _ViewItemState extends State<ViewItem> {
                       SizedBox(height: 4),
                       Text(
                         widget.title,
+                        
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -146,7 +147,7 @@ class _ViewItemState extends State<ViewItem> {
                             ),
                           ],
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

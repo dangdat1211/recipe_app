@@ -43,9 +43,18 @@ class FavoriteService {
       await favoriteRef.doc(favoriteSnapshot.docs.first.id).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bạn đã bỏ lưu công thức',
-              style: TextStyle(color: Colors.black)),
+          content: Text(
+            'Bạn đã yêu thích công thức công thức',
+            style: TextStyle(color: Colors.black),
+          ),
           backgroundColor: mainColorBackground,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          duration:
+              Duration(seconds: 2), // Giảm thời gian hiển thị xuống 2 giây
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
 
@@ -63,9 +72,18 @@ class FavoriteService {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bạn đã thêm công thức vào mục yêu thích',
-              style: TextStyle(color: Colors.black)),
+          content: Text(
+            'Bạn đã bỏ lưu công thức',
+            style: TextStyle(color: Colors.black),
+          ),
           backgroundColor: mainColorBackground,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          duration:
+              Duration(seconds: 2), // Giảm thời gian hiển thị xuống 2 giây
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
 

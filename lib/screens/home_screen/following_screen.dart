@@ -16,6 +16,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   List<Map<String, dynamic>> recipesWithUserData = [];
   bool isLoading = false;
+  bool isInitialLoading = true;  // Thêm biến này
   DocumentSnapshot? lastDocument;
   bool hasMoreRecipes = true;
   bool isFollowingAnyone = false;
@@ -45,6 +46,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
     if (!isFollowingAnyone) {
       setState(() {
         isLoading = false;
+        isInitialLoading = false;  // Thêm dòng này
       });
       return;
     }
@@ -91,6 +93,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
     setState(() {
       isLoading = false;
+      isInitialLoading = false;  // Thêm dòng này
     });
   }
 
@@ -140,86 +143,90 @@ class _FollowingScreenState extends State<FollowingScreen> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: currentUser != null
-          ? Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Text(
-                        'Công thức từ người bạn theo dõi',
-                        textAlign: TextAlign.start,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    if (!isFollowingAnyone)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
+          ? isInitialLoading
+              ? Center(
+                  child: CircularProgressIndicator(),
+                )
+              : Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10),
                           child: Text(
-                            'Bạn chưa theo dõi ai.',
-                            style: TextStyle(fontSize: 16),
+                            'Công thức từ người bạn theo dõi',
+                            textAlign: TextAlign.start,
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ),
-                      )
-                    else
-                      ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: recipesWithUserData.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == recipesWithUserData.length) {
-                            if (hasMoreRecipes) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                child: ElevatedButton(
-                                  onPressed: isLoading ? null : fetchRecipes,
-                                  child: isLoading ? CircularProgressIndicator() : Text('Load More'),
-                                ),
-                              );
-                            } else {
-                              return Container();
-                            }
-                          }
-
-                          final recipeWithUser = recipesWithUserData[index];
-                          final recipe = recipeWithUser['recipe'];
-                          final user = recipeWithUser['user'];
-                          final isFavorite = recipeWithUser['isFavorite'];
-
-                          return Container(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: ItemRecipe(
-                                  ontap: () {},
-                                  name: recipe['namerecipe'] ?? '',
-                                  star: recipe['rate']?.toString() ?? '0',
-                                  favorite: recipe['liked']?.length.toString() ?? '0',
-                                  avatar: user['avatar'] ?? '',
-                                  fullname: user['fullname'] ?? '',
-                                  image: recipe['image'] ?? '',
-                                  isFavorite: isFavorite,
-                                  onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId']),
-                                ),
+                        SizedBox(height: 10),
+                        if (!isFollowingAnyone)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Text(
+                                'Bạn chưa theo dõi ai.',
+                                style: TextStyle(fontSize: 16),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            )
+                          )
+                        else
+                          ListView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: recipesWithUserData.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == recipesWithUserData.length) {
+                                if (hasMoreRecipes) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    child: ElevatedButton(
+                                      onPressed: isLoading ? null : fetchRecipes,
+                                      child: isLoading ? CircularProgressIndicator() : Text('Xem thêm'),
+                                    ),
+                                  );
+                                } else {
+                                  return Container();
+                                }
+                              }
+
+                              final recipeWithUser = recipesWithUserData[index];
+                              final recipe = recipeWithUser['recipe'];
+                              final user = recipeWithUser['user'];
+                              final isFavorite = recipeWithUser['isFavorite'];
+
+                              return Container(
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: ItemRecipe(
+                                      ontap: () {},
+                                      name: recipe['namerecipe'] ?? '',
+                                      star: recipe['rate']?.toString() ?? '0',
+                                      favorite: recipe['liked']?.length.toString() ?? '0',
+                                      avatar: user['avatar'] ?? '',
+                                      fullname: user['fullname'] ?? '',
+                                      image: recipe['image'] ?? '',
+                                      isFavorite: isFavorite,
+                                      onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId']),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                )
           : Container(
               height: MediaQuery.of(context).size.height * .8,
               width: MediaQuery.of(context).size.width,
