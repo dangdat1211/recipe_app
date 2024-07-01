@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 import 'package:recipe_app/widgets/ui_button.dart';
 
@@ -51,87 +52,74 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   Future<void> _changePassword() async {
-    setState(() {
-      // Reset error messages
-      _currentPasswordError = null;
-      _newPasswordError = null;
-      _confirmPasswordError = null;
+  setState(() {
+    // Reset error messages
+    _currentPasswordError = null;
+    _newPasswordError = null;
+    _confirmPasswordError = null;
 
-      // Validate current password
-      if (_currentPasswordController.text.isEmpty) {
-        _currentPasswordError = 'Chưa nhập mật khẩu hiện tại';
-      }
+    // Validate inputs
+    if (_currentPasswordController.text.isEmpty) {
+      _currentPasswordError = 'Chưa nhập mật khẩu hiện tại';
+    }
+    if (_newPasswordController.text.isEmpty) {
+      _newPasswordError = 'Chưa nhập mật khẩu mới';
+    } else if (_newPasswordController.text != _confirmPasswordController.text) {
+      _confirmPasswordError = 'Mật khẩu không trùng';
+    }
+  });
 
-      // Validate new password
-      if (_newPasswordController.text.isEmpty) {
-        _newPasswordError = 'Chưa nhập mật khẩu mới';
-      } else if (_newPasswordController.text != _confirmPasswordController.text) {
-        _confirmPasswordError = 'Mật khẩu không trùng';
-      }
-    });
+  if (_currentPasswordError == null && _newPasswordError == null && _confirmPasswordError == null) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('Changing Password'),
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Please wait...'),
+          ],
+        ),
+      ),
+    );
 
-    if (_currentPasswordError == null && _newPasswordError == null && _confirmPasswordError == null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false, // Prevent dismissing by tapping outside
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Changing Password'),
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text('Please wait...'),
-              ],
-            ),
-          );
-        },
+    try {
+      UserService userService = UserService();
+      await userService.changePassword(
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
       );
 
-      try {
-        User? user = FirebaseAuth.instance.currentUser;
+      Navigator.of(context).pop(); 
 
-        if (user != null) {
-          // Reauthenticate the user
-          AuthCredential credential = EmailAuthProvider.credential(
-            email: user.email!,
-            password: _currentPasswordController.text,
-          );
-
-          await user.reauthenticateWithCredential(credential);
-
-          // Update the password
-          await user.updatePassword(_newPasswordController.text);
-
-          Navigator.of(context).pop(); // Close the progress dialog
-
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Text('Password Changed'),
-                content: Text('Your password has been successfully changed.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Password Changed'),
+          content: Text('Your password has been successfully changed.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      Navigator.of(context).pop(); 
+      setState(() {
+        if(e.code =='weak-password') {
+          _newPasswordError = 'Mật khẩu mới quá yếu';
+        } else  {
+          _currentPasswordError = 'Mật khẩu không chính xác';
         }
-      } catch (error) {
-        Navigator.of(context).pop(); // Close the progress dialog
-
-        setState(() {
-          _currentPasswordError = 'Current password is incorrect';
-        });
-      }
+        
+      });
     }
   }
+}
 
   @override
   void dispose() {

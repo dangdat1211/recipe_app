@@ -5,6 +5,7 @@ import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/screens/user_screen/widgets/ui_container.dart';
 import 'package:recipe_app/screens/user_screen/widgets/ui_menu.dart';
+import 'package:recipe_app/service/auth_service.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -47,33 +48,16 @@ class _UserScreenState extends State<UserScreen> {
     print(currentUser!.uid);
   }
 
+  AuthService _authService = AuthService();
+
   Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
+    await _authService.signOut();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => NavigateScreen()),
     );
   }
 
-  Future<void> deactivateAccount() async {
-    try {
-      // Đánh dấu tài khoản là đã bị vô hiệu hóa trong Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser!.uid)
-          .update({'status': false});
-
-      // Bạn có thể thêm các bước bổ sung ở đây, như xóa dữ liệu người dùng, v.v.
-
-      // Lưu ý: Firebase Authentication không có tính năng vô hiệu hóa tài khoản tích hợp sẵn.
-      // Nếu bạn muốn hoàn toàn xóa tài khoản khỏi Firebase Auth, bạn có thể sử dụng:
-      // await FirebaseAuth.instance.currentUser!.delete();
-      // Tuy nhiên, hãy cẩn thận vì điều này sẽ xóa vĩnh viễn tài khoản.
-    } catch (e) {
-      print('Lỗi khi vô hiệu hóa tài khoản: $e');
-      rethrow;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +336,7 @@ class _UserScreenState extends State<UserScreen> {
                                                 password: password,
                                               );
 
-                                              await deactivateAccount();
+                                              await AuthService().disableAccount(currentUser!.uid);
                                               await FirebaseAuth.instance
                                                   .signOut();
                                               Navigator.of(context).pop();

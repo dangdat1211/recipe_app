@@ -3,6 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/service/auth_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -93,9 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  CollectionReference users = FirebaseFirestore.instance.collection('users');
+  final AuthService _authService = AuthService();
 
   Future<void> _register() async {
     if (_usernameController.text.isEmpty ||
@@ -107,55 +106,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     try {
-      // Đăng ký tài khoản mới với email và mật khẩu
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      await _authService.registerUser(
+        username: _usernameController.text,
+        fullname: _fullnameController.text,
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      // Gửi email xác minh đến người dùng
-      await userCredential.user!.sendEmailVerification();
-      
-      users.doc(userCredential.user?.uid)
-          .set({
-            'username': _usernameController.text,
-            'fullname': _fullnameController.text,
-            'email': _emailController.text,
-            'bio': '',
-            'avatar': 'https://firebasestorage.googleapis.com/v0/b/recipe-app-5a80e.appspot.com/o/profile_images%2F1719150232272?alt=media&token=ea875488-b4bd-43f1-b858-d6eba92e982a', 
-            'status': true,
-            'createAt': DateTime.now(),
-            'updateAt': '',
-            'role': false,
-            'favorites': [
-            ],
-            'followers': [
-            ], 
-            'followings': [           
-            ], 
-            'recipes': [
-            ],    
-            'FCM': ''        
-          })
-          .then((value) => print("User Added"))
-          .catchError((error) => print("Failed to add user: $error"));
-
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text('Email xác minh đã được gửi đến ' + _emailController.text),
+        content: Text('Email xác minh đã được gửi đến ${_emailController.text}'),
       ));
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        setState(() {
-          _emailError = 'Email này đã được sử dụng';
-        });
-      } else {
-        setState(() {
-          _emailError = 'Lỗi đăng ký: ' + e.message!;
-        });
-      }
+      setState(() {
+        if (e.code == 'email-already-in-use') {
+          _emailError= 'Email đã được sử dụng';
+        }
+        if (e.code == 'invalid-email') {
+          _emailError= 'Sai định dạng email';
+        }
+      });
     }
   }
 

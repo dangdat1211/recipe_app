@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
 class EditProfile extends StatefulWidget {
@@ -17,6 +18,8 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> {
+  final UserService _userService = UserService();
+  
   final TextEditingController _fullnameController = TextEditingController();
   final FocusNode _fullnameFocusNode = FocusNode();
   String? _fullnameError;
@@ -110,11 +113,6 @@ class _EditProfileState extends State<EditProfile> {
       _isLoading = true;
     });
 
-    String? imageUrl;
-    if (selectedImage != null) {
-      imageUrl = await _uploadImageToFirebase(selectedImage!);
-    }
-
     String fullname = _fullnameController.text;
     String username = _usernameController.text;
     String bio = _bioController.text;
@@ -126,23 +124,34 @@ class _EditProfileState extends State<EditProfile> {
     });
 
     if (_fullnameError == null && _usernameError == null && _bioError == null) {
-      await FirebaseFirestore.instance.collection('users').doc(currentUser?.uid).update({
-        'fullname': fullname,
-        'username': username,
-        'bio': bio,
-        if (imageUrl != null) 'avatar': imageUrl,
-      });
+      try {
+        String? imageUrl;
+        if (selectedImage != null) {
+          imageUrl = await _uploadImageToFirebase(selectedImage!);
+        }
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Cập nhật hồ sơ thành công'),
-      ));
+        await _userService.saveProfileData(
+          fullname: fullname,
+          username: username,
+          bio: bio,
+          imageUrl: imageUrl,
+        );
 
-      Navigator.of(context).pop(true);
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Cập nhật hồ sơ thành công'),
+        ));
+
+        Navigator.of(context).pop(true);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi khi cập nhật hồ sơ: $e'),
+        ));
+      }
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override

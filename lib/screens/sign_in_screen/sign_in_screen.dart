@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/auth_service.dart';
 import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
@@ -67,71 +68,34 @@ class _SignInScreenState extends State<SignInScreen> {
 
     if (_emailError == null && _passwordError == null) {
       try {
-        UserCredential userCredential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        User? user = await AuthService().signInWithEmailAndPassword(email, password);
 
-        if (userCredential.user != null) {
-          // Kiểm tra trạng thái isActive trong Firestore
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userCredential.user!.uid)
-              .get();
-
-          if (userDoc.exists) {
-            bool isActive = userDoc.get('status') ?? true;
-
-            if (!isActive) {
-              // Tài khoản đã bị vô hiệu hóa
-              await FirebaseAuth.instance.signOut();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Tài khoản này đã bị vô hiệu hóa.'),
-                ),
-              );
-              return;
-            }
-
-            if (!userCredential.user!.emailVerified) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      'Vui lòng xác minh email của bạn trước khi đăng nhập.'),
-                ),
-              );
-            } else {
-              String? FCMToken = await NotificationService().getDeviceToken();
-
-              if (FCMToken != null) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userCredential.user!.uid)
-                    .update({'FCM': FCMToken});
-              }
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => NavigateScreen()),
-              );
-            }
-          } else {
-            // Không tìm thấy dữ liệu người dùng trong Firestore
-            await FirebaseAuth.instance.signOut();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Không tìm thấy dữ liệu người dùng.'),
-              ),
-            );
-          }
+        if (user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => NavigateScreen()),
+          );
         }
       } on FirebaseAuthException catch (e) {
         setState(() {
           if (e.code == 'user-not-found') {
             _emailError = 'Không tìm thấy người dùng với email này.';
+          } else if (e.code == 'invalid-email') {
+            _emailError = 'Sai định dạng email';
           } else if (e.code == 'invalid-credential') {
             _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
+          } else if (e.code == 'user-disabled') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Tài khoản này đã bị vô hiệu hóa.'),
+              ),
+            );
+          } else if (e.code == 'email-not-verified') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Vui lòng xác minh email của bạn trước khi đăng nhập.'),
+              ),
+            );
           } else {
             _emailError = e.message ?? e.code;
           }
@@ -146,7 +110,6 @@ class _SignInScreenState extends State<SignInScreen> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
