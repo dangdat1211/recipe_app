@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
+import 'package:recipe_app/models/recipe_model.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/recipe_service.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   const AddRecipeScreen({super.key});
@@ -29,7 +31,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
-  bool _isLoading = false; // Biến trạng thái để theo dõi khi đang tải lên
+  RecipeService _recipeService = RecipeService();
+
+  bool _isLoading = false; 
 
   void _addStepField() {
     setState(() {
@@ -80,114 +84,68 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   Future<void> _uploadRecipe() async {
-    if (_nameController.text.isEmpty ||
-        _descriptionController.text.isEmpty ||
-        _servingsController.text.isEmpty ||
-        _timeController.text.isEmpty) {
-      return;
+  if (_nameController.text.isEmpty ||
+      _descriptionController.text.isEmpty ||
+      _servingsController.text.isEmpty ||
+      _timeController.text.isEmpty) {
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    String? mainImageUrl;
+    if (_image != null) {
+      mainImageUrl = await _uploadFile(_image!);
     }
+
+    List<List<String>> stepImageUrls = [];
+    for (var stepImages in _stepsImages) {
+      List<String> urls = [];
+      for (var image in stepImages) {
+        String url = await _uploadFile(image);
+        urls.add(url);
+      }
+      stepImageUrls.add(urls);
+    }
+
+    final ingredients = _ingredientsControllers.map((controller) => controller.text).toList();
+    final steps = _stepsControllers.map((controller) => controller.text).toList();
+
+    final recipe = RecipeModel(
+      namerecipe: _nameController.text,
+      description: _descriptionController.text,
+      ration: _servingsController.text,
+      time: _timeController.text,
+      ingredients: ingredients,
+      steps: steps,
+      image: mainImageUrl ?? '',
+      userID: currentUser!.uid,
+      urlYoutube: _youtubeController.text,
+    );
+
+    await _recipeService.uploadRecipe(recipe, mainImageUrl, stepImageUrls);
 
     setState(() {
-      _isLoading = true; // Bắt đầu hiển thị vòng tròn xoay
+      _isLoading = false;
     });
 
-    try {
-      String? mainImageUrl;
-      if (_image != null) {
-        mainImageUrl = await _uploadFile(_image!);
-      }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
+    );
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
 
-      // Prepare ingredients data
-      final ingredients =
-          _ingredientsControllers.map((controller) => controller.text).toList();
-
-      // Prepare recipe data
-      final recipeData = {
-        'namerecipe': _nameController.text,
-        'description': _descriptionController.text,
-        'ration': _servingsController.text,
-        'time': _timeController.text,
-        'ingredients': ingredients,
-        'steps': [], // Will be updated later
-        'image': mainImageUrl ?? '',
-        'level': 'Khó cvl',
-        'likes': [],
-        'rates': [],
-        'comments': [],
-        'status': 'Đợi phê duyệt',
-        'userID': currentUser!.uid,
-        'urlYoutube': _youtubeController.text,
-        'createAt': FieldValue.serverTimestamp(),
-        'updateAt': FieldValue.serverTimestamp(),
-        'hiden': false,
-        'official': true
-      };
-
-      // Add the recipe document and get its ID
-      DocumentReference recipeDoc = await FirebaseFirestore.instance
-          .collection('recipes')
-          .add(recipeData);
-      String recipeId = recipeDoc.id;
-
-      // Collection reference for steps
-      CollectionReference stepsCollection =
-          FirebaseFirestore.instance.collection('steps');
-
-      // List to store step IDs
-      List<String> stepIds = [];
-
-      for (int i = 0; i < _stepsControllers.length; i++) {
-        final stepText = _stepsControllers[i].text;
-        final stepImages = _stepsImages[i];
-
-        final stepImageUrls = [];
-        for (File image in stepImages) {
-          final imageUrl = await _uploadFile(image);
-          stepImageUrls.add(imageUrl);
-        }
-
-        // Create a step document with recipeID and order
-        DocumentReference stepDoc = await stepsCollection.add({
-          'title': stepText,
-          'images': stepImageUrls,
-          'recipeID': recipeId,
-          'order': i + 1,
-        });
-
-        stepIds.add(stepDoc.id);
-      }
-
-      await recipeDoc.update({'steps': stepIds});
-
-      DocumentReference userDoc =
-          FirebaseFirestore.instance.collection('users').doc(currentUser!.uid);
-      await userDoc.update({
-        'recipes': FieldValue.arrayUnion([recipeId]),
-        'updateAt': FieldValue.serverTimestamp(),
-      });
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Chuyển hướng tới trang ManageMyRecipe
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
-      );
-    } catch (e) {
-      setState(() {
-        _isLoading = false; // Dừng hiển thị vòng tròn xoay nếu có lỗi xảy ra
-      });
-
-      // Hiển thị thông báo lỗi
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã xảy ra lỗi: $e'),
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Đã xảy ra lỗi: $e')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

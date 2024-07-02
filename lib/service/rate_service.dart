@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_app/constants/colors.dart';
 
 class RateService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static Future<double> getAverageRating(String recipeId) async {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('rates')
@@ -56,5 +57,43 @@ class RateService {
       'ratingCount': ratingCount,
       'hasRated': hasRated
     };
+  }
+
+  Future<double> getUserRating(String userid, String ricipeId) async {
+
+    final ratingSnapshot = await FirebaseFirestore.instance
+        .collection('rates')
+        .where('userId', isEqualTo: userid)
+        .where('recipeId', isEqualTo: ricipeId)
+        .get();
+
+    if (ratingSnapshot.docs.isNotEmpty) {
+      final ratingData = ratingSnapshot.docs.first.data();
+      return ratingData['star']?.toDouble() ?? 0.0;
+    }
+
+    return 0.0;
+  }
+
+  Future<void> updateRating(String userId, String recipeId, double rating) async {
+    final userRatingRef = _firestore.collection('rates').doc('${userId}_$recipeId');
+
+    try {
+      final docSnapshot = await userRatingRef.get();
+      
+      if (docSnapshot.exists) {
+        await userRatingRef.update({'star': rating});
+      } else {
+        await userRatingRef.set({
+          'userId': userId,
+          'recipeId': recipeId,
+          'star': rating,
+          'createAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error updating rating: $e');
+      throw e;
+    }
   }
 }

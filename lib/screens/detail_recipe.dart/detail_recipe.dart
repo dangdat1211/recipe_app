@@ -150,54 +150,15 @@ class _DetailReCipeState extends State<DetailReCipe> {
   }
 
   // rate
-  Future<Map<String, dynamic>> _fetchAverageRating() async {
-    final ratingsSnapshot = await FirebaseFirestore.instance
-        .collection('rates')
-        .where('recipeId', isEqualTo: widget.recipeId)
-        .get();
-
-    final ratings =
-        ratingsSnapshot.docs.map((doc) => doc.data()['star'] as num).toList();
-
-    final userRatingSnapshot = await FirebaseFirestore.instance
-        .collection('rates')
-        .doc('${currentUser?.uid}_${widget.recipeId}')
-        .get();
-
-    final hasRated = userRatingSnapshot.exists;
-
-    if (ratings.isEmpty) {
-      return {'avgRating': 0.0, 'ratingCount': 0, 'hasRated': hasRated};
-    }
-
-    final avgRating = ratings.reduce((a, b) => a + b) / ratings.length;
-    final ratingCount = ratings.length;
-
-    return {
-      'avgRating': avgRating.toDouble(),
-      'ratingCount': ratingCount,
-      'hasRated': hasRated
-    };
-  }
 
   Future<void> _getUserRating() async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final recipeId = widget.recipeId;
-
-    final ratingSnapshot = await FirebaseFirestore.instance
-        .collection('rates')
-        .where('userId', isEqualTo: currentUserId)
-        .where('recipeId', isEqualTo: recipeId)
-        .get();
-
-    if (ratingSnapshot.docs.isNotEmpty) {
-      final ratingData = ratingSnapshot.docs.first.data();
-      _userRating = ratingData['star']?.toDouble() ?? 0.0;
-    }
+    _userRating = await RateService()
+        .getUserRating(currentUserId.toString(), widget.recipeId);
   }
 
   Future<void> _updateRatingState() async {
-    final newAvgRating = await _fetchAverageRating();
+    final newAvgRating = await RateService.fetchAverageRating(widget.recipeId);
     setState(() {
       _avgRating = newAvgRating['avgRating'];
       _ratingCount = newAvgRating['ratingCount'];
@@ -248,23 +209,21 @@ class _DetailReCipeState extends State<DetailReCipe> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          currentUser != null 
-          ?
-          currentUser!.uid == widget.userId
-              ? IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                           EditRecipeScreen(recipeId: widget.recipeId),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.edit))
-              : Container()
-          : Container(),
-
+          currentUser != null
+              ? currentUser!.uid == widget.userId
+                  ? IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EditRecipeScreen(recipeId: widget.recipeId),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.edit))
+                  : Container()
+              : Container(),
           StatefulBuilder(builder: (context, setState) {
             return IconButton(
               onPressed: () async {
@@ -328,15 +287,6 @@ class _DetailReCipeState extends State<DetailReCipe> {
                           recipeData[
                               'image'], // Ensure this field exists in your data
                         ),
-                        // YoutubePlayer(
-                        //   controller: YoutubePlayerController(
-                        //       initialVideoId: YoutubePlayer.convertUrlToId(
-                        //               recipeData['urlYoutube'])
-                        //           .toString(),
-                        //       flags: YoutubePlayerFlags(autoPlay: false)),
-                        //   showVideoProgressIndicator: true,
-                        //   onReady: () {},
-                        // ),
                       ),
                     ),
                     SizedBox(height: 10),
@@ -495,32 +445,19 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                 ),
                                 onRatingUpdate: (rating) async {
                                   if (currentUser != null) {
-                                    final userRatingRef = FirebaseFirestore
-                                        .instance
-                                        .collection('rates')
-                                        .doc(
-                                            '${currentUser?.uid}_${widget.recipeId}');
-
-                                    if (_hasRated) {
-                                      await userRatingRef
-                                          .update({'star': rating});
-                                    } else {
-                                      await userRatingRef.set({
-                                        'userId': currentUser?.uid,
-                                        'recipeId': widget.recipeId,
-                                        'star': rating,
-                                        'createAt':
-                                            FieldValue.serverTimestamp(),
-                                      });
+                                    try {
+                                      await RateService().updateRating(
+                                          currentUser!.uid,
+                                          widget.recipeId,
+                                          rating);
+                                      await _updateRatingState();
                                       setState(() {
+                                        _userRating = rating;
                                         _hasRated = true;
                                       });
+                                    } catch (e) {
+                                      // Xử lý lỗi
                                     }
-
-                                    await _updateRatingState();
-                                    setState(() {
-                                      _userRating = rating;
-                                    });
                                   } else {
                                     showDialog(
                                       context: context,
