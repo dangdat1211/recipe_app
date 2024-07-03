@@ -6,6 +6,7 @@ import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/screens/user_screen/widgets/ui_container.dart';
 import 'package:recipe_app/screens/user_screen/widgets/ui_menu.dart';
 import 'package:recipe_app/service/auth_service.dart';
+import 'package:recipe_app/service/notification_service.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -57,7 +58,6 @@ class _UserScreenState extends State<UserScreen> {
       MaterialPageRoute(builder: (context) => NavigateScreen()),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +336,9 @@ class _UserScreenState extends State<UserScreen> {
                                                 password: password,
                                               );
 
-                                              await AuthService().disableAccount(currentUser!.uid);
+                                              await AuthService()
+                                                  .disableAccount(
+                                                      currentUser!.uid);
                                               await FirebaseAuth.instance
                                                   .signOut();
                                               Navigator.of(context).pop();
@@ -372,7 +374,20 @@ class _UserScreenState extends State<UserScreen> {
                               _signOut();
                             },
                             color: Colors.red,
-                            title: 'Đăng xuất')
+                            title: 'Đăng xuất'),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        UIContainer(
+                            ontap: () async {
+                              String? cc = await NotificationService().getDeviceToken();
+                              
+                              NotificationService.sendNotification( cc! ,
+                                  "Dm Alo", "Nội dung thông báo",
+                                  data: {'screen': 'home', 'value': 'novalue'});
+                            },
+                            color: Colors.red,
+                            title: 'Gửi thông báo')
                       ],
                     ),
         ),

@@ -16,9 +16,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    NotificationService notificationService = NotificationService();
-    notificationService.firebaseInit(context);
   }
 
   @override

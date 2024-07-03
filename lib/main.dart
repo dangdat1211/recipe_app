@@ -7,34 +7,36 @@ import 'package:recipe_app/helpers/local_storage_helper.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/notification_service.dart';
 
+// Global instance of NotificationService
+final NotificationService notificationService = NotificationService();
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-
   print("Handling a background message: ${message.messageId}");
 }
 
 Future<void> main() async {
-  
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
   await LocalStorageHelper.initLocalStorageHelper();
-  NotificationService notificationService = NotificationService();
+  
   notificationService.requestNotificationPermission();
-  // notificationService.firebaseInit();
   notificationService.getDeviceToken().then((value) {
     print('Token FCM : $value');
   });
+  
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-   runApp(const MainApp());
+  
+  runApp(const MainApp());
 }
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -42,16 +44,24 @@ class MainApp extends StatelessWidget {
             background: Colors.grey.shade100,
             primary: Color(0xFFFF7622),
             outline: Colors.grey),
-        scaffoldBackgroundColor:
-            Colors.grey[100], 
+        scaffoldBackgroundColor: Colors.grey[100],
         primarySwatch: Colors.orange,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         appBarTheme: AppBarTheme(
-          color: Colors.grey[100], 
+          color: Colors.grey[100],
         ),
       ),
-      home: Scaffold(
-        body: Center(child: SplashScreen()),
+      home: Builder(
+        builder: (BuildContext context)  {
+          // Initialize firebaseInit here
+          print('Đến đây thôi');
+          notificationService.firebaseInit(context);
+          print('Qua đây rồi');
+          
+          return Scaffold(
+            body: Center(child: SplashScreen()),
+          );
+        },
       ),
     );
   }
