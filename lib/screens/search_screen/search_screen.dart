@@ -149,7 +149,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 },
                                 isFavorite: isFavorite,
                                 onFavoritePressed: () {
-                                  FavoriteService.toggleFavorite(context, recipeId);
+                                  FavoriteService.toggleFavorite(context, recipeId, recipe['userID']);
                                   _onSearchSubmitted(_searchController.text);
                                 },
                               );

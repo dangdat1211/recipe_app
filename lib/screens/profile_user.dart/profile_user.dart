@@ -6,6 +6,7 @@ import 'package:recipe_app/screens/profile_user.dart/infomation_follow_screen.da
 import 'package:recipe_app/screens/profile_user.dart/my_favorite.dart';
 import 'package:recipe_app/screens/profile_user.dart/my_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/follow_service.dart';
 
 class ProfileUser extends StatefulWidget {
   final String userId;
@@ -72,37 +73,6 @@ class _ProfileUserState extends State<ProfileUser> {
   Future<void> _refreshPage() async {
     await fetchUserData();
     setState(() {});
-  }
-
-  Future<void> toggleFollow(String userId) async {
-    String currentUserId = currentUser!.uid;
-
-    DocumentReference currentUserRef =
-        FirebaseFirestore.instance.collection('users').doc(currentUserId);
-    DocumentSnapshot currentUserSnapshot = await currentUserRef.get();
-    List<dynamic> followings = currentUserSnapshot['followings'] ?? [];
-
-    DocumentReference otherUser =
-        FirebaseFirestore.instance.collection('users').doc(userId);
-    DocumentSnapshot otherUserSnapshot = await otherUser.get();
-    List<dynamic> followers = otherUserSnapshot['followers'] ?? [];
-
-    if (followings.contains(userId)) {
-      // Nếu đang theo dõi, xóa userId khỏi danh sách
-      followings.remove(userId);
-      followers.remove(currentUserId);
-    } else {
-      // Nếu chưa theo dõi, thêm userId vào danh sách
-      followings.add(userId);
-      followers.add(currentUserId);
-    }
-
-    await currentUserRef.update({'followings': followings});
-    await otherUser.update({'followers': followers});
-
-    setState(() {
-      isFollowing = !isFollowing;
-    });
   }
 
   @override
@@ -184,7 +154,7 @@ class _ProfileUserState extends State<ProfileUser> {
                                     builder: (context) =>
                                         FollowersFollowingScreen(
                                       userId: widget.userId,
-                                      initialTab : 0,
+                                      initialTab: 0,
                                     ),
                                   ),
                                 );
@@ -238,9 +208,13 @@ class _ProfileUserState extends State<ProfileUser> {
                           ),
                         if (currentUser?.uid != widget.userId)
                           GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               if (currentUser != null) {
-                                toggleFollow(widget.userId);
+                                await FollowService().toggleFollow(
+                                    currentUser!.uid, widget.userId);
+                                setState(() {
+                                  isFollowing = !isFollowing;
+                                });
                               } else {
                                 showDialog(
                                   context: context,
@@ -311,7 +285,6 @@ class _ProfileUserState extends State<ProfileUser> {
               children: [
                 MyRecipe(userId: widget.userId),
                 MyFavorite(userId: widget.userId)
-                
               ],
             ),
           ),

@@ -1,18 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_app/models/comment_model.dart';
+import 'package:recipe_app/service/notification_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 
 class CommentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Thêm bình luận mới
-  Future<void> addComment(String recipeId, String userId, String content) async {
+  Future<void> addComment(
+      String recipeId, String userId, String content) async {
     try {
+      final recipeSnapshot =
+          await _firestore.collection('recipes').doc(recipeId).get();
+      final recipeData = recipeSnapshot.data();
+      final String otherUserId = recipeData?['userID'] ?? '';
+
       await _firestore.collection('comments').add({
         'recipeID': recipeId,
         'userId': userId,
         'content': content,
         'createdAt': DateTime.now().toIso8601String(),
       });
+
+      if (userId != otherUserId) {
+        await NotificationService().createNotification(
+            content: 'vừa bình luận vào công thức của bạn',
+            fromUser: userId,
+            userId: otherUserId,
+            recipeId: recipeId,
+            screen: 'comment');
+        Map<String, dynamic> currentUserInfo =
+            await UserService().getUserInfo(userId);
+        await NotificationService.sendNotification(
+            currentUserInfo['FCM'],
+            'Bình luận mới mới',
+            '${currentUserInfo['fullname']} vừa bình luận vào công thức của bạn');
+      }
     } catch (e) {
       print('Error adding comment: $e');
       throw e;
@@ -32,7 +55,8 @@ class CommentService {
       for (var doc in snapshot.docs) {
         var commentData = doc.data();
         var userId = commentData['userId'];
-        var userSnapshot = await _firestore.collection('users').doc(userId).get();
+        var userSnapshot =
+            await _firestore.collection('users').doc(userId).get();
         var userData = userSnapshot.data();
         if (userData != null) {
           comments.add(CommentModel.fromFirestore({
@@ -60,7 +84,8 @@ class CommentService {
   }
 
   // Kiểm tra quyền xóa bình luận
-  bool canDeleteComment(String currentUserId, String commentUserId, String recipeUserId) {
+  bool canDeleteComment(
+      String currentUserId, String commentUserId, String recipeUserId) {
     return currentUserId == commentUserId || currentUserId == recipeUserId;
   }
 }

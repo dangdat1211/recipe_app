@@ -71,8 +71,8 @@ class _RankingScreenState extends State<RankingScreen>
           TabBar(
             controller: _tabController,
             tabs: [
-              Tab(text: 'BXH Công thức'),
-              Tab(text: 'BXH người dùng'),
+              Tab(text: 'Xếp hạng công thức'),
+              Tab(text: 'Xếp hạng người dùng'),
             ],
           ),
           Expanded(

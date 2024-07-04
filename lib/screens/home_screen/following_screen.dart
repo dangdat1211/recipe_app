@@ -216,7 +216,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
                                       fullname: user['fullname'] ?? '',
                                       image: recipe['image'] ?? '',
                                       isFavorite: isFavorite,
-                                      onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId']),
+                                      onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeID'], recipe['userId']),
                                     ),
                                   ),
                                 ),

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/service/notification_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 
 class FavoriteService {
   static Future<bool> isRecipeFavorite(String recipeId) async {
@@ -21,7 +23,7 @@ class FavoriteService {
   }
 
   static Future<void> toggleFavorite(
-      BuildContext context, String recipeId) async {
+      BuildContext context, String recipeId, String userId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       return;
@@ -44,7 +46,7 @@ class FavoriteService {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Bạn đã yêu thích công thức công thức',
+            'Bạn đã bỏ yêu thích công thức công thức',
             style: TextStyle(color: Colors.black),
           ),
           backgroundColor: mainColorBackground,
@@ -58,7 +60,6 @@ class FavoriteService {
         ),
       );
 
-      // Xóa userId khỏi danh sách likes trong recipes
       final recipeData = await recipeRef.get();
       final likes = List<String>.from(recipeData['likes'] ?? []);
       likes.remove(userId);
@@ -70,10 +71,21 @@ class FavoriteService {
         'recipeId': recipeId,
         'createAt': FieldValue.serverTimestamp(),
       });
+
+      await NotificationService().createNotification(
+        content: 'vừa mới thích công thức của bạn', 
+        fromUser: currentUser!.uid,
+        userId: userId,
+        recipeId: recipeId,
+        screen: 'recipe'
+      );
+      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(currentUser!.uid);
+      await NotificationService.sendNotification(currentUserInfo['FCM'], 'Lượt yêu thích mới từ công thức', '${currentUserInfo['fullname']} đã thích công thức của bạn ');
+                                                  
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Bạn đã bỏ lưu công thức',
+            'Bạn đã yêu thích công thức công thức',
             style: TextStyle(color: Colors.black),
           ),
           backgroundColor: mainColorBackground,

@@ -146,7 +146,7 @@ class _RecipeRankingState extends State<RecipeRanking> {
                                       image: recipe['image'],
                                       isFavorite: isFavorite,
                                       onFavoritePressed: () =>
-                                          FavoriteService.toggleFavorite(context, recipe['recipeId']),
+                                          FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']),
                                     ),
                                   ),
                                 ),

@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/following_screen.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/notification_service.dart';
+import 'package:badges/badges.dart' as badges;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,10 +16,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int unreadNotifications = 0;
+  late Stream<QuerySnapshot> _notificationsStream;
+  
   @override
   void initState() {
     super.initState();
+    _initNotificationsStream();
   }
+
+  void _initNotificationsStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _notificationsStream = FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: user.uid)
+          .where('isRead', isEqualTo: false)
+          .snapshots();
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +67,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           centerTitle: true,
           actions: [
-            IconButton(
-              icon: Icon(Icons.notifications),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NotifyScreen()),
+            StreamBuilder<QuerySnapshot>(
+              stream: _notificationsStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  unreadNotifications = snapshot.data!.docs.length;
+                }
+                return badges.Badge(
+                  position: badges.BadgePosition.topEnd(top: 0, end: 3),
+                  showBadge: unreadNotifications > 0,
+                  badgeContent: Text(
+                    unreadNotifications.toString(),
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.notifications),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotifyScreen()),
+                      );
+                    },
+                  ),
                 );
               },
             ),

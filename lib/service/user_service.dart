@@ -50,4 +50,18 @@ class UserService {
       throw FirebaseAuthException(code: e.code);
     }
   }
+
+  Future<Map<String, dynamic>> getUserInfo(String userId) async {
+  try {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      return userDoc.data() as Map<String, dynamic>;
+    } else {
+      throw Exception('User not found');
+    }
+  } catch (e) {
+    print('Error getting user info: $e');
+    rethrow;
+  }
+}
 }

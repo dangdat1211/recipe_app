@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
+import 'package:recipe_app/service/follow_service.dart';
+import 'package:recipe_app/service/notification_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 
 class UserRanking extends StatefulWidget {
   const UserRanking({Key? key}) : super(key: key);
@@ -208,12 +211,13 @@ class _UserRankingState extends State<UserRanking> {
               ),
             ],
           ),
-          trailing: SizedBox(
+          trailing: currentUserId == userId ? null : 
+          SizedBox(
             width: 100,
             height: 32,
             child: ElevatedButton(
               onPressed: () {
-                _toggleFollow(userId, isFollowing);
+                FollowService().toggleFollow(currentUserId!, userId);
               },
               child: Text(
                 isFollowing ? 'Đang theo dõi' : 'Theo dõi',
@@ -234,52 +238,6 @@ class _UserRankingState extends State<UserRanking> {
         ),
       ),
     );
-  }
-
-  Future<void> _toggleFollow(String targetUserId, bool isCurrentlyFollowing) async {
-    if (currentUserId == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-      final currentUserDoc =
-          FirebaseFirestore.instance.collection('users').doc(currentUserId);
-      final targetUserDoc =
-          FirebaseFirestore.instance.collection('users').doc(targetUserId);
-
-      if (isCurrentlyFollowing) {
-        batch.update(currentUserDoc, {
-          'following': FieldValue.arrayRemove([targetUserId])
-        });
-        batch.update(targetUserDoc, {
-          'followers': FieldValue.arrayRemove([currentUserId])
-        });
-      } else {
-        batch.update(currentUserDoc, {
-          'following': FieldValue.arrayUnion([targetUserId])
-        });
-        batch.update(targetUserDoc, {
-          'followers': FieldValue.arrayUnion([currentUserId])
-        });
-      }
-
-      await batch.commit();
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error toggling follow: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred. Please try again.')),
-      );
-    }
   }
 
   Color _getRankColor(int index) {

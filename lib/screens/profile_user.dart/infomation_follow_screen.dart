@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
+import 'package:recipe_app/service/follow_service.dart';
 
 class FollowersFollowingScreen extends StatefulWidget {
   final String userId;
@@ -97,10 +98,14 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          Map<String, dynamic> userData = snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic> userData =
+              snapshot.data!.data() as Map<String, dynamic>;
           String fullname = userData['fullname'] ?? '';
 
           return Scaffold(
@@ -156,18 +161,26 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
                 ),
                 title: Text(userData['fullname']),
                 subtitle: Text(userData['email']),
-                trailing: ElevatedButton(
+                trailing: userId == currentUser!.uid ? null :
+                ElevatedButton(
                   onPressed: () async {
-                    await _toggleFollow(userId);
+                    bool isFollowing = followingUsers[userId] ?? false;
+                    await FollowService()
+                        .toggleFollow(currentUser!.uid, userId);
+                    setState(() {
+                      followingUsers[userId] = !isFollowing;
+                    });
                   },
                   child: Text(
                     followingUsers[userId] == true ? 'Bỏ theo dõi' : 'Theo dõi',
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: followingUsers[userId] == true ? Colors.red : Colors.blue,
+                    backgroundColor: followingUsers[userId] == true
+                        ? Colors.red
+                        : Colors.blue,
                   ),
-                ),
+                ), 
                 onTap: () {
                   Navigator.push(
                     context,
@@ -207,16 +220,24 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
                 ),
                 title: Text(userData['fullname']),
                 subtitle: Text(userData['email']),
-                trailing: ElevatedButton(
+                trailing: userId == currentUser!.uid ? null :
+                ElevatedButton(
                   onPressed: () async {
-                    await _toggleFollow(userId);
+                    bool isFollowing = followingUsers[userId] ?? false;
+                    await FollowService()
+                        .toggleFollow(currentUser!.uid, userId);
+                    setState(() {
+                      followingUsers[userId] = !isFollowing;
+                    });
                   },
                   child: Text(
                     followingUsers[userId] == true ? 'Bỏ theo dõi' : 'Theo dõi',
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: followingUsers[userId] == true ? Colors.red : Colors.blue,
+                    backgroundColor: followingUsers[userId] == true
+                        ? Colors.red
+                        : Colors.blue,
                   ),
                 ),
               );

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
+import 'package:recipe_app/service/follow_service.dart';
 
 class SearchUserScreen extends StatefulWidget {
   const SearchUserScreen({super.key});
@@ -156,14 +157,21 @@ class _SearchUserScreenState extends State<SearchUserScreen> {
                       ),
                       title: Text(user['fullname']),
                       subtitle: Text(user['email']),
-                      trailing: ElevatedButton(
+                      trailing: userId == currentUser!.uid ? null : 
+                        ElevatedButton(
                         onPressed: () async {
-                          await _toggleFollow(userId);
+                          bool isFollowing = followingUsers[userId] ?? false;
+                          await FollowService()
+                              .toggleFollow(currentUser!.uid, userId);
+
+                          setState(() {
+                            followingUsers[userId] = !isFollowing;
+                          });
                         },
                         child: Text(
                           followingUsers[userId] == true
-                              ? 'Unfollow'
-                              : 'Follow',
+                              ? 'Hủy theo dõi'
+                              : 'Theo dõi',
                           style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(

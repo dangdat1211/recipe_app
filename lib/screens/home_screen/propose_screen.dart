@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/follow_service.dart';
+import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -151,34 +154,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     print(followedUsers);
     return List<String>.from(followedUsers);
   }
-
-  Future<void> toggleFollow(String userId) async {
-    String currentUserId = currentUser!.uid;
-
-    DocumentReference currentUserRef =
-        FirebaseFirestore.instance.collection('users').doc(currentUserId);
-    DocumentSnapshot currentUserSnapshot = await currentUserRef.get();
-    List<dynamic> followings = currentUserSnapshot['followings'] ?? [];
-
-    DocumentReference otherUser =
-        FirebaseFirestore.instance.collection('users').doc(userId);
-    DocumentSnapshot otherUserSnapshot = await otherUser.get();
-    List<dynamic> followers = otherUserSnapshot['followers'] ?? [];
-
-    if (followings.contains(userId)) {
-      // Nếu đang theo dõi, xóa userId khỏi danh sách
-      followings.remove(userId);
-      followers.remove(currentUserId);
-    } else {
-      // Nếu chưa theo dõi, thêm userId vào danh sách
-      followings.add(userId);
-      followers.add(currentUserId);
-    }
-
-    await currentUserRef.update({'followings': followings});
-    await otherUser.update({'followers': followers});
-  }
-
+  
   // Danh sách công thức
   Future<void> _fetchRecipes() async {
     setState(() {
@@ -395,7 +371,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                               onFavoritePressed: () {
                                                 FavoriteService.toggleFavorite(
                                                     context,
-                                                    recipe['recipeId']);
+                                                    recipe['recipeId'],recipe['userID'], );
                                               },
                                             ),
                                           );
@@ -556,7 +532,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                   follow: isFollowing,
                                   clickFollow: () async {
                                     if (currentUser != null) {
-                                      await toggleFollow(user['id']);
+                                      await FollowService().toggleFollow(currentUser!.uid, user['id']  );
                                     } else {
                                       showDialog(
                                         context: context,
@@ -743,7 +719,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                           isFavorite: test,
                                           onFavoritePressed: () =>
                                               FavoriteService.toggleFavorite(
-                                                  context, recipe['recipeId']),
+                                                  context, recipe['recipeId'], recipe['userID']),
                                         );
                                       }),
                                 ),

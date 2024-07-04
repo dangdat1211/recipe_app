@@ -8,7 +8,9 @@ import 'package:recipe_app/screens/add_recipe/edit_recipe.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -227,7 +229,21 @@ class _DetailReCipeState extends State<DetailReCipe> {
           StatefulBuilder(builder: (context, setState) {
             return IconButton(
               onPressed: () async {
-                await FavoriteService.toggleFavorite(context, widget.recipeId);
+                await FavoriteService.toggleFavorite(context, widget.recipeId, widget.userId);
+                // if (_isFavorite == false) {
+                //   await NotificationService().createNotification(
+                //       content: 'vừa mới thích công thức của bạn',
+                //       fromUser: currentUser!.uid,
+                //       userId: widget.userId,
+                //       recipeId: widget.recipeId,
+                //       screen: 'recipe');
+                //   Map<String, dynamic> currentUserInfo =
+                //       await UserService().getUserInfo(currentUser!.uid);
+                //   await NotificationService.sendNotification(
+                //       currentUserInfo['FCM'],
+                //       'Lượt yêu thích mới từ công thức',
+                //       '${currentUserInfo['fullname']} đã thích công thức của bạn ');
+                // }
                 setState(() {
                   _isFavorite = !_isFavorite;
                 });
@@ -745,25 +761,28 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                             double averageRating =
                                                 snapshot.data ?? 0.0;
                                             return ItemRecipe(
-                                              ontap: () {
-                                                // Navigate to recipe detail screen
-                                              },
-                                              name: recipe['namerecipe'] ?? '',
-                                              star: averageRating
-                                                  .toStringAsFixed(1),
-                                              favorite: recipe['liked']
-                                                      ?.length
-                                                      .toString() ??
-                                                  '0',
-                                              avatar: user['avatar'] ?? '',
-                                              fullname: user['fullname'] ?? '',
-                                              image: recipe['image'] ?? '',
-                                              isFavorite: isFavorite,
-                                              onFavoritePressed: () =>
+                                                ontap: () {
+                                                  // Navigate to recipe detail screen
+                                                },
+                                                name:
+                                                    recipe['namerecipe'] ?? '',
+                                                star: averageRating
+                                                    .toStringAsFixed(1),
+                                                favorite: recipe['liked']
+                                                        ?.length
+                                                        .toString() ??
+                                                    '0',
+                                                avatar: user['avatar'] ?? '',
+                                                fullname:
+                                                    user['fullname'] ?? '',
+                                                image: recipe['image'] ?? '',
+                                                isFavorite: isFavorite,
+                                                onFavoritePressed: () async {
                                                   FavoriteService
                                                       .toggleFavorite(context,
-                                                          recipe['recipeId']),
-                                            );
+                                                          recipe['recipeId'], recipe['userID']);
+                                                  
+                                                });
                                           }),
                                     ),
                                   ),

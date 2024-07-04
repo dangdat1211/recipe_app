@@ -35,8 +35,27 @@ class _NotifyScreenState extends State<NotifyScreen> {
     setState(() {});
   }
 
+  Future<void> _markAllAsRead() async {
+    if (currentUser != null) {
+      WriteBatch batch = _firestore.batch();
+      QuerySnapshot notificationsSnapshot = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (var doc in notificationsSnapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+
+      await batch.commit();
+      setState(() {});
+    }
+  }
+
   Future<Map<String, dynamic>> _getUserInfo(String userId) async {
-    DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(userId).get();
     return userDoc.data() as Map<String, dynamic>;
   }
 
@@ -66,6 +85,22 @@ class _NotifyScreenState extends State<NotifyScreen> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text('Thông báo'),
+        actions: currentUser != null
+          ? [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GestureDetector(
+                  onTap: _markAllAsRead,
+                  child: Center(
+                    child: Text(
+                      'Đánh dấu tất cả là đã đọc',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+              ),
+            ]
+          : null,
       ),
       body: currentUser == null
           ? _buildNotLoggedInView()
@@ -133,7 +168,8 @@ class _NotifyScreenState extends State<NotifyScreen> {
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, index) {
-              final notification = notifications[index].data() as Map<String, dynamic>;
+              final notification =
+                  notifications[index].data() as Map<String, dynamic>;
               final Timestamp createAt = notification['createAt'] as Timestamp;
               return FutureBuilder<Map<String, dynamic>>(
                 future: _getUserInfo(notification['fromUser']),
@@ -143,12 +179,14 @@ class _NotifyScreenState extends State<NotifyScreen> {
                   }
 
                   if (userSnapshot.hasError || !userSnapshot.hasData) {
-                    return ListTile(title: Text('Không thể tải thông tin người dùng'));
+                    return ListTile(
+                        title: Text('Không thể tải thông tin người dùng'));
                   }
 
                   final userData = userSnapshot.data!;
                   return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 16.0),
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundImage: NetworkImage(userData['avatar'] ?? ''),
@@ -175,7 +213,8 @@ class _NotifyScreenState extends State<NotifyScreen> {
                           ? Icon(Icons.circle, color: Colors.blue, size: 10)
                           : null,
                       onTap: () {
-                        _handleNotificationTap(notification, notifications[index].id);
+                        _handleNotificationTap(
+                            notification, notifications[index].id);
                       },
                     ),
                   );
@@ -188,26 +227,38 @@ class _NotifyScreenState extends State<NotifyScreen> {
     );
   }
 
-  void _handleNotificationTap(Map<String, dynamic> notification, String notificationId) async {
+  void _handleNotificationTap(
+      Map<String, dynamic> notification, String notificationId) async {
     // Đánh dấu thông báo đã đọc
-    await _firestore.collection('notifications').doc(notificationId).update({'isRead': true});
+    await _firestore
+        .collection('notifications')
+        .doc(notificationId)
+        .update({'isRead': true});
 
     // Chuyển hướng dựa trên loại thông báo
     switch (notification['screen']) {
       case 'recipe':
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => DetailReCipe(recipeId: notification['recipeId'], userId: notification['fromUser'],),
+          builder: (context) => DetailReCipe(
+            recipeId: notification['recipeId'],
+            userId: notification['fromUser'],
+          ),
         ));
         break;
-      
+
       case 'comment':
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => CommentScreen(recipeId: notification['recipeId'], userId: notification['fromUser'],),
+          builder: (context) => CommentScreen(
+            recipeId: notification['recipeId'],
+            userId: notification['fromUser'],
+          ),
         ));
         break;
       case 'user':
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => ProfileUser(userId: notification['fromUser'],),
+          builder: (context) => ProfileUser(
+            userId: notification['fromUser'],
+          ),
         ));
         break;
       default:

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -205,5 +206,31 @@ class NotificationService {
         MaterialPageRoute(builder: (context) => NotifyScreen()),
       );
     
+  }
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> createNotification({
+    required String content,
+    required String fromUser,
+    required String userId,
+    required String recipeId,
+    required String screen,
+  }) async {
+    try {
+      await _firestore.collection('notifications').add({
+        'content': content,
+        'createAt': FieldValue.serverTimestamp(),
+        'fromUser': fromUser,
+        'isRead': false,
+        'recipeId': recipeId,
+        'screen': screen,
+        'userId': userId,
+      });
+      print('Notification created successfully');
+    } catch (e) {
+      print('Error creating notification: $e');
+      throw e; 
+    }
   }
 }
