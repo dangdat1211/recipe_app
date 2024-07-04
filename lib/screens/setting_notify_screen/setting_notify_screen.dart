@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/user_screen/widgets/ui_container.dart';
+import 'package:recipe_app/service/notification_service.dart';
 
 class SettingNotifyScreen extends StatefulWidget {
   const SettingNotifyScreen({super.key});
@@ -13,6 +15,18 @@ class _SettingNotifyScreenState extends State<SettingNotifyScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Cài đặt thông báo'),
+      ),
+      body: Center(
+        child: UIContainer(
+            ontap: () async {
+              String? cc = await NotificationService().getDeviceToken();
+
+              NotificationService.sendNotification(
+                  cc!, "Dm Alo", "Nội dung thông báo",
+                  data: {'screen': 'home', 'value': 'novalue'});
+            },
+            color: Colors.red,
+            title: 'Gửi thông báo'),
       ),
     );
   }

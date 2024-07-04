@@ -378,16 +378,6 @@ class _UserScreenState extends State<UserScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        UIContainer(
-                            ontap: () async {
-                              String? cc = await NotificationService().getDeviceToken();
-                              
-                              NotificationService.sendNotification( cc! ,
-                                  "Dm Alo", "Nội dung thông báo",
-                                  data: {'screen': 'home', 'value': 'novalue'});
-                            },
-                            color: Colors.red,
-                            title: 'Gửi thông báo')
                       ],
                     ),
         ),
