@@ -33,6 +33,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _passwordError;
   String? _confirmPasswordError;
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +107,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       await _authService.registerUser(
         username: _usernameController.text,
@@ -114,17 +120,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Email xác minh đã được gửi đến ${_emailController.text}'),
+        content:
+            Text('Email xác minh đã được gửi đến ${_emailController.text}'),
       ));
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       setState(() {
         if (e.code == 'email-already-in-use') {
-          _emailError= 'Email đã được sử dụng';
+          _emailError = 'Email đã được sử dụng';
         }
         if (e.code == 'invalid-email') {
-          _emailError= 'Sai định dạng email';
+          _emailError = 'Sai định dạng email';
         }
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -156,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _usernameController,
                 focusNode: _usernameFocusNode,
                 errorText: _usernameError,
-                label: 'Username',
+                label: 'Tên tài khoản',
               ),
               const SizedBox(height: 10),
               InputForm(
@@ -170,14 +181,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _fullnameController,
                 focusNode: _fullnameFocusNode,
                 errorText: _fullnameError,
-                label: 'Fullname',
+                label: 'Tên đầy đủ',
               ),
               const SizedBox(height: 10),
               InputForm(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
                 errorText: _passwordError,
-                label: 'Password',
+                label: 'Mật khẩu',
                 isPassword: true,
               ),
               const SizedBox(height: 10),
@@ -185,15 +196,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _confirmPasswordController,
                 focusNode: _confirmPasswordFocusNode,
                 errorText: _confirmPasswordError,
-                label: 'Confirm Password',
+                label: 'Nhập lại mật khẩu',
                 isPassword: true,
               ),
               const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  _register();
-                },
-                child: Text('Register'),
+              GestureDetector(
+                onTap: _isLoading
+                    ? null
+                    : _register, // Vô hiệu hóa nút khi đang loading
+                child: Container(
+                  height: 50,
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                    color: 
+                         Color(0xFFFF7622),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Center(
+                    child: _isLoading
+                        ? CircularProgressIndicator(
+                            color: Colors.white) // Hiển thị loading indicator
+                        : Text(
+                            'Đăng ký',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
               ),
             ],
           ),

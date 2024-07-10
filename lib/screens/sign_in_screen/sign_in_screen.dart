@@ -1,10 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/auth_service.dart';
-import 'package:recipe_app/service/notification_service.dart';
+
 import 'package:recipe_app/widgets/input_form.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -23,6 +23,7 @@ class _SignInScreenState extends State<SignInScreen> {
   String? _passwordError;
 
   bool remember = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _SignInScreenState extends State<SignInScreen> {
       if (!_emailFocusNode.hasFocus) {
         setState(() {
           _emailError =
-              _emailController.text.isEmpty ? 'Email cannot be empty' : null;
+              _emailController.text.isEmpty ? 'Email không được để trống' : null;
         });
       }
     });
@@ -41,7 +42,7 @@ class _SignInScreenState extends State<SignInScreen> {
       if (!_passwordFocusNode.hasFocus) {
         setState(() {
           _passwordError = _passwordController.text.isEmpty
-              ? 'Password cannot be empty'
+              ? 'Mật khẩu không được để trống'
               : null;
         });
       }
@@ -62,13 +63,17 @@ class _SignInScreenState extends State<SignInScreen> {
     final String password = _passwordController.text;
 
     setState(() {
-      _emailError = email.isEmpty ? 'Email cannot be empty' : null;
-      _passwordError = password.isEmpty ? 'Password cannot be empty' : null;
+      _emailError = email.isEmpty ? 'Email không được để trống' : null;
+      _passwordError = password.isEmpty ? 'Mật khẩu không được để trống' : null;
     });
 
     if (_emailError == null && _passwordError == null) {
+      setState(() {
+        _isLoading = true; // Bắt đầu loading
+      });
       try {
-        User? user = await AuthService().signInWithEmailAndPassword(email, password);
+        User? user =
+            await AuthService().signInWithEmailAndPassword(email, password);
 
         if (user != null) {
           Navigator.pushReplacement(
@@ -93,7 +98,8 @@ class _SignInScreenState extends State<SignInScreen> {
           } else if (e.code == 'email-not-verified') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Vui lòng xác minh email của bạn trước khi đăng nhập.'),
+                content: Text(
+                    'Vui lòng xác minh email của bạn trước khi đăng nhập.'),
               ),
             );
           } else {
@@ -107,9 +113,14 @@ class _SignInScreenState extends State<SignInScreen> {
             content: Text('Đã xảy ra lỗi không xác định.'),
           ),
         );
+      } finally {
+        setState(() {
+          _isLoading = false; // Kết thúc loading
+        });
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,19 +194,24 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 10),
               GestureDetector(
-                onTap: _signIn,
+                onTap: _isLoading
+                    ? null
+                    : _signIn, // Vô hiệu hóa nút khi đang loading
                 child: Container(
                   height: 50,
                   width: MediaQuery.of(context).size.width * 0.9,
                   decoration: BoxDecoration(
-                    color: Color(0xFFFF7622),
+                    color:  Color(0xFFFF7622), // Đổi màu khi loading
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
-                    child: Text(
-                      'Đăng nhập',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: _isLoading
+                        ? CircularProgressIndicator(
+                            color: Colors.white) // Hiển thị loading indicator
+                        : Text(
+                            'Đăng nhập',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
               ),

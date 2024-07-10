@@ -26,14 +26,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _initNotificationsStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    // final user = FirebaseAuth.instance.currentUser;
+    // if (user != null) {
       _notificationsStream = FirebaseFirestore.instance
           .collection('notifications')
-          .where('userId', isEqualTo: user.uid)
+          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser ?? "" )
           .where('isRead', isEqualTo: false)
           .snapshots();
-    }
+    //}
   }
 
 

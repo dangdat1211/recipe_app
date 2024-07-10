@@ -25,13 +25,13 @@ class FollowService {
       followers.add(userId);
 
       await NotificationService().createNotification(
-        content: 'vừa mới theo dõi mày', 
+        content: 'vừa mới theo dõi bạn', 
         fromUser: userId,
         userId: otherUserId,
         recipeId: '',
         screen: 'recipe'
       );
-      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(userId);
+      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(otherUserId);
       await NotificationService.sendNotification(currentUserInfo['FCM'], 'Theo dõi mới', '${currentUserInfo['fullname']} vừa theo dõi bạn ');
 
     }

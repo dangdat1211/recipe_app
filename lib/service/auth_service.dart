@@ -27,6 +27,7 @@ class AuthService {
         fullname: fullname,
         email: email,
         createAt: DateTime.now(),
+        role: 'Thành viên'
       );
 
       await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());

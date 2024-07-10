@@ -30,7 +30,7 @@ class CommentService {
             recipeId: recipeId,
             screen: 'comment');
         Map<String, dynamic> currentUserInfo =
-            await UserService().getUserInfo(userId);
+            await UserService().getUserInfo(otherUserId);
         await NotificationService.sendNotification(
             currentUserInfo['FCM'],
             'Bình luận mới mới',

@@ -19,6 +19,7 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  String _selectedDifficulty = 'Trung bình';
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -84,12 +85,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   Future<void> _uploadRecipe() async {
-  if (_nameController.text.isEmpty ||
-      _descriptionController.text.isEmpty ||
-      _servingsController.text.isEmpty ||
-      _timeController.text.isEmpty) {
-    return;
-  }
+    if (_nameController.text.isEmpty ||
+        _descriptionController.text.isEmpty ||
+        _servingsController.text.isEmpty ||
+        _timeController.text.isEmpty ||
+        _image == null ||
+        _ingredientsControllers.any((controller) => controller.text.isEmpty) ||
+        _stepsControllers.any((controller) => controller.text.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.')),
+      );
+      return;
+    }
 
   setState(() {
     _isLoading = true;
@@ -255,6 +262,26 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
+                  ),
+                  SizedBox(height: 10.0),
+                  DropdownButtonFormField<String>(
+                    value: _selectedDifficulty,
+                    decoration: InputDecoration(
+                      labelText: 'Độ khó',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: <String>['Dễ', 'Trung bình', 'Khó']
+                      .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedDifficulty = newValue!;
+                      });
+                    },
                   ),
                   SizedBox(height: 10.0),
                   TextField(

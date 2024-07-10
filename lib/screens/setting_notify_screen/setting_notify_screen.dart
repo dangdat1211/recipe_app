@@ -19,10 +19,10 @@ class _SettingNotifyScreenState extends State<SettingNotifyScreen> {
       body: Center(
         child: UIContainer(
             ontap: () async {
-              String? cc = await NotificationService().getDeviceToken();
+              String? notify = await NotificationService().getDeviceToken();
 
               NotificationService.sendNotification(
-                  cc!, "Dm Alo", "Nội dung thông báo",
+                  notify!, "Alo", "Nội dung thông báo",
                   data: {'screen': 'home', 'value': 'novalue'});
             },
             color: Colors.red,

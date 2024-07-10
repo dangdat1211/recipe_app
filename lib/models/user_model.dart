@@ -8,7 +8,7 @@ class UserModel {
   final bool status;
   final DateTime createAt;
   final String updateAt;
-  final bool role;
+  final String role;
   final List<String> favorites;
   final List<String> followers;
   final List<String> followings;
@@ -25,7 +25,7 @@ class UserModel {
     this.status = true,
     required this.createAt,
     this.updateAt = '',
-    this.role = false,
+    this.role = '',
     this.favorites = const [],
     this.followers = const [],
     this.followings = const [],

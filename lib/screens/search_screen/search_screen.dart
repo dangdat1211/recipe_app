@@ -18,6 +18,10 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
 
+  String? selectedDifficulty;
+  String? selectedTime;
+  String? selectedMethod;
+
   void _onSearchSubmitted(String query) async {
     if (query.isNotEmpty) {
       setState(() {
@@ -85,6 +89,91 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  void _showFilterDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text('Lọc kết quả'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  DropdownButton<String>(
+                    value: selectedDifficulty,
+                    hint: Text('Độ khó'),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedDifficulty = newValue;
+                      });
+                    },
+                    items: <String>['Dễ', 'Trung bình', 'Khó']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  DropdownButton<String>(
+                    value: selectedTime,
+                    hint: Text('Mốc thời gian'),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedTime = newValue;
+                      });
+                    },
+                    items: <String>['< 30 phút', '30-60 phút', '> 60 phút']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  DropdownButton<String>(
+                    value: selectedMethod,
+                    hint: Text('Phương pháp chế biến'),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedMethod = newValue;
+                      });
+                    },
+                    items: <String>['Chiên', 'Xào', 'Nướng', 'Hấp']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Hủy'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: Text('Áp dụng'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // _applyFilters();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +197,10 @@ class _SearchScreenState extends State<SearchScreen> {
               _onSearchSubmitted(_searchController.text);
             },
           ),
+          IconButton(
+      icon: Icon(Icons.filter_list),
+      onPressed: _showFilterDialog,
+    ),
         ],
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),

@@ -79,7 +79,7 @@ class FavoriteService {
         recipeId: recipeId,
         screen: 'recipe'
       );
-      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(currentUser!.uid);
+      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(userId);
       await NotificationService.sendNotification(currentUserInfo['FCM'], 'Lượt yêu thích mới từ công thức', '${currentUserInfo['fullname']} đã thích công thức của bạn ');
                                                   
       ScaffoldMessenger.of(context).showSnackBar(
