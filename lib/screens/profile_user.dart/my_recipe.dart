@@ -20,9 +20,13 @@ class _MyRecipeState extends State<MyRecipe> {
     QuerySnapshot querySnapshot =
         await _collectionRef.where('userID', isEqualTo: widget.userId).get();
     return querySnapshot.docs
+    .where((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return  data['status'] == 'Đã được phê duyệt';
+      })
         .map((doc) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id; // Add the document ID to the data
+          data['id'] = doc.id; 
           return data;
         })
         .toList();

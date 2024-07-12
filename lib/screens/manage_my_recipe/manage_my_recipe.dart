@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
+import 'package:recipe_app/screens/add_recipe/edit_recipe.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 
 class ManageMyRecipe extends StatefulWidget {
@@ -29,17 +31,161 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
     super.dispose();
   }
 
-  void _handlePopupMenuSelection(String value, String recipeId) {
+  void _handlePopupMenuSelection(String value, String recipeId) async {
     switch (value) {
       case 'edit':
-        // Navigate to edit recipe screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => EditRecipeScreen(
+                    recipeId: recipeId,
+                  )),
+        );
         break;
       case 'delete':
-        // Delete recipe from Firestore
-        break;
+        bool? confirmDelete = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Xác nhận xóa'),
+            content: Text('Bạn có chắc chắn muốn xóa công thức này không?'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Hủy'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+              ),
+              TextButton(
+                child: Text('Xóa'),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              ),
+            ],
+          );
+        },
+      );
+
+      // Nếu người dùng xác nhận xóa, thực hiện việc xóa
+      if (confirmDelete == true) {
+        await _deleteRecipe(recipeId);
+      }
+      break;
       case 'hide':
-        // Hide recipe from the list
+        await _hideRecipe(recipeId);
         break;
+      case 'show':
+        await _showRecipe(recipeId);
+        break;
+    }
+  }
+
+  Future<void> _deleteRecipe(String recipeId) async {
+    try {
+      // Bắt đầu một batch operation
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      // Xóa công thức
+      batch.delete(
+          FirebaseFirestore.instance.collection('recipes').doc(recipeId));
+
+      // Xóa tất cả đánh giá liên quan
+      QuerySnapshot rateSnapshots = await FirebaseFirestore.instance
+          .collection('rates')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+      for (var doc in rateSnapshots.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Xóa tất cả bình luận liên quan
+      QuerySnapshot commentSnapshots = await FirebaseFirestore.instance
+          .collection('comments')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+      for (var doc in commentSnapshots.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Xóa tất cả yêu thích liên quan
+      QuerySnapshot favoriteSnapshots = await FirebaseFirestore.instance
+          .collection('favorites')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+      for (var doc in favoriteSnapshots.docs) {
+        batch.delete(doc.reference);
+      }
+
+      QuerySnapshot stepSnapshots = await FirebaseFirestore.instance
+          .collection('steps')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+      for (var doc in stepSnapshots.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Thực hiện batch operation
+      await batch.commit();
+
+      // Hiển thị thông báo xóa thành công
+      SnackBarCustom.showbar(context, 'Xóa thành công');
+
+      // Cập nhật UI nếu cần
+      setState(() {
+        // Xóa công thức khỏi danh sách hiển thị (nếu có)
+      });
+    } catch (e) {
+      print('Lỗi khi xóa công thức và dữ liệu liên quan: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Có lỗi xảy ra khi xóa công thức và dữ liệu liên quan')),
+      );
+    }
+  }
+
+  Future<void> _hideRecipe(String recipeId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+        'hidden': true,
+      });
+      // Hiển thị thông báo ẩn thành công
+      SnackBarCustom.showbar(context, 'Công thức đã được ẩn');
+      // Cập nhật UI nếu cần
+      setState(() {
+        // Ẩn công thức khỏi danh sách hiển thị (nếu có)
+      });
+    } catch (e) {
+      print('Lỗi khi ẩn công thức: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi xảy ra khi ẩn công thức')),
+      );
+    }
+  }
+
+  Future<void> _showRecipe(String recipeId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+        'hidden': false,
+      });
+      // Hiển thị thông báo ẩn thành công
+      SnackBarCustom.showbar(context, 'Công thức đã được hiện');
+      // Cập nhật UI nếu cần
+      setState(() {
+        // Ẩn công thức khỏi danh sách hiển thị (nếu có)
+      });
+    } catch (e) {
+      print('Lỗi khi ẩn công thức: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi xảy ra khi ẩn công thức')),
+      );
     }
   }
 
@@ -93,22 +239,27 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
                   overflow: TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
                   maxLines: 1,
                   style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold
-                  ),
+                      color: Colors.black, fontWeight: FontWeight.bold),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       recipe['description'],
-                      overflow: TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
+                      overflow:
+                          TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
                       maxLines: 1,
                     ),
                     Text(
-                      'Status: ${recipe['status']}',
+                      'Trạng thái: ${recipe['status']}',
                       style: TextStyle(
                         color: getStatusColor(recipe['status']),
+                      ),
+                    ),
+                    Text(
+                      recipe['hidden'] ? 'Đang ẩn' : '',
+                      style: TextStyle(
+                        color: Colors.purple,
                       ),
                     ),
                   ],
@@ -126,9 +277,9 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
                       value: 'delete',
                       child: Text('Xóa'),
                     ),
-                    const PopupMenuItem<String>(
-                      value: 'hide',
-                      child: Text('Ẩn'),
+                    PopupMenuItem<String>(
+                      value: recipe['hidden'] ? 'show' : 'hide',
+                      child: Text(recipe['hidden'] ? 'Hiện' : 'Ẩn'),
                     ),
                   ],
                 ),

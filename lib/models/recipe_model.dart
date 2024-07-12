@@ -19,7 +19,7 @@ class RecipeModel {
   final String urlYoutube;
   final Timestamp? createAt;
   final Timestamp? updateAt;
-  final bool hiden;
+  final bool hidden;
   final bool official;
 
   RecipeModel({
@@ -40,7 +40,7 @@ class RecipeModel {
     required this.urlYoutube,
     this.createAt,
     this.updateAt,
-    this.hiden = false,
+    this.hidden = false,
     this.official = true,
   });
 
@@ -62,7 +62,7 @@ class RecipeModel {
       'urlYoutube': urlYoutube,
       'createAt': createAt ?? FieldValue.serverTimestamp(),
       'updateAt': updateAt ?? FieldValue.serverTimestamp(),
-      'hiden': hiden,
+      'hidden': hidden,
       'official': official,
     };
   }
@@ -77,7 +77,7 @@ class RecipeModel {
       ingredients: List<String>.from(map['ingredients'] ?? []),
       steps: List<String>.from(map['steps'] ?? []),
       image: map['image'] ?? '',
-      level: map['level'] ?? 'Khó cvl',
+      level: map['level'] ?? '',
       likes: List<String>.from(map['likes'] ?? []),
       rates: map['rates'] ?? [],
       comments: map['comments'] ?? [],
@@ -86,7 +86,7 @@ class RecipeModel {
       urlYoutube: map['urlYoutube'] ?? '',
       createAt: map['createAt']?.toDate(),
       updateAt: map['updateAt']?.toDate(),
-      hiden: map['hiden'] ?? false,
+      hidden: map['hidden'] ?? false,
       official: map['official'] ?? true,
     );
   }

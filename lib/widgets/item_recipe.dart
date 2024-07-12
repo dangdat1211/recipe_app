@@ -107,7 +107,13 @@ class _ItemRecipeState extends State<ItemRecipe> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.star, color: Colors.yellow),
+                                Icon(Icons.star, color: Color.fromARGB(255, 255, 230, 0), shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],),
                                 SizedBox(width: 4),
                                 Text(widget.star),
                               ],

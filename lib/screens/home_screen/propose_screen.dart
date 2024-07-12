@@ -22,6 +22,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
   List<String> recipes = ["Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4"];
   String selectedIngredient = '';
 
+  List<Map<String, dynamic>> cookingMethods = [];
+
   List<Map<String, dynamic>> ingredients = [];
   Future<void> fetchIngredients() async {
     setState(() {
@@ -58,7 +60,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     try {
       QuerySnapshot recipeSnapshot =
-          await FirebaseFirestore.instance.collection('recipes').get();
+          await FirebaseFirestore.instance.collection('recipes').where('status', isEqualTo: 'Đã được phê duyệt').get();
 
       for (var doc in recipeSnapshot.docs) {
         var recipeData = doc.data() as Map<String, dynamic>;
@@ -117,6 +119,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     super.initState();
     fetchIngredients();
     _fetchRecipes();
+    fetchCookingMethods();
   }
 
   // Get all user with id
@@ -226,6 +229,37 @@ class _ProposeScreenState extends State<ProposeScreen> {
     );
   }
 
+  // Cooking method
+
+  bool loadingMedthod = false;
+
+  Future<void> fetchCookingMethods() async {
+    setState(() {
+      loadingMedthod = true;
+    });
+
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('cookingmethods')
+          .orderBy('createAt', descending: true)
+          .get();
+
+      setState(() {
+        cookingMethods = querySnapshot.docs.map((doc) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id; // Add id to map
+          return data;
+        }).toList();
+        loadingMedthod = false;
+      });
+    } catch (e) {
+      print('Error fetching cooking methods: $e');
+      setState(() {
+        loadingMedthod = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -320,66 +354,95 @@ class _ProposeScreenState extends State<ProposeScreen> {
                               ),
                             );
                           }).toList(),
+                          
                         ),
                       ),
                     ),
                     SizedBox(height: 20),
                     if (selectedIngredient.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Danh sách món'),
-                          SizedBox(height: 10),
-                          loadingRecipe
-                              ? Center(child: CircularProgressIndicator())
-                              : search.isEmpty
-                                  ? Text('Không tìm thấy công thức nào.')
-                                  : Container(
-                                      height: 142,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: search.length,
-                                        itemBuilder: (context, index) {
-                                          final recipeWithUser = search[index];
-                                          final recipe =
-                                              recipeWithUser['recipe'];
-                                          final user = recipeWithUser['user'];
-                                          final isFavorite =
-                                              recipeWithUser['isFavorite'];
+  Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Danh sách món'),
+      SizedBox(height: 10),
+      loadingRecipe
+          ? Center(child: CircularProgressIndicator())
+          : search.isEmpty
+              ? Text('Không tìm thấy công thức nào.')
+              : Container(
+                  height: 142,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: search.length + 1, // Tăng itemCount lên 1
+                    itemBuilder: (context, index) {
+                      if (index < search.length) {
+                        final recipeWithUser = search[index];
+                        final recipe = recipeWithUser['recipe'];
+                        final user = recipeWithUser['user'];
+                        final isFavorite = recipeWithUser['isFavorite'];
 
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 10),
-                                            child: ItemRecipe(
-                                              ontap: () {
-                                                _navigateToRecipeDetail(
-                                                    recipe['recipeId'],
-                                                    recipe['userID']);
-                                              },
-                                              name: recipe['namerecipe'] ??
-                                                  'Không có tiêu đề',
-                                              star: (recipe['star'] ?? 0)
-                                                  .toString(),
-                                              favorite: (recipe['likes'] ?? [])
-                                                  .length
-                                                  .toString(),
-                                              avatar: user['avatar'] ?? '',
-                                              fullname: user['fullname'] ??
-                                                  'Không rõ tên',
-                                              image: recipe['image'] ?? '',
-                                              isFavorite: isFavorite,
-                                              onFavoritePressed: () {
-                                                FavoriteService.toggleFavorite(
-                                                    context,
-                                                    recipe['recipeId'],recipe['userID'], );
-                                              },
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                        ],
-                      ),
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: ItemRecipe(
+                            ontap: () {
+                              _navigateToRecipeDetail(
+                                  recipe['recipeId'], recipe['userID']);
+                            },
+                            name: recipe['namerecipe'] ?? 'Không có tiêu đề',
+                            star: (recipe['star'] ?? 0).toString(),
+                            favorite:
+                                (recipe['likes'] ?? []).length.toString(),
+                            avatar: user['avatar'] ?? '',
+                            fullname: user['fullname'] ?? 'Không rõ tên',
+                            image: recipe['image'] ?? '',
+                            isFavorite: isFavorite,
+                            onFavoritePressed: () {
+                              FavoriteService.toggleFavorite(context,
+                                  recipe['recipeId'], recipe['userID']);
+                            },
+                          ),
+                        );
+                      } else {
+                        // Mũi tên cuối cùng
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SearchScreen(
+                                    initialSearchTerm: selectedIngredient,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text('Xem thêm'),
+                                    Icon(Icons.arrow_forward,
+                                        color: Colors.black),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+    ],
+  ),
                     if (selectedIngredient.isEmpty)
                       Container(
                         height: 300,
@@ -421,25 +484,36 @@ class _ProposeScreenState extends State<ProposeScreen> {
             height: 10,
           ),
           Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text('Các loại món ăn'),
-                  Container(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: recipes.length,
-                      itemBuilder: (context, index) {
-                        return Card(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text('Phương pháp nấu'),
+                SizedBox(height: 5,),
+                Container(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: cookingMethods.length,
+                    itemBuilder: (context, index) {
+                      final cookingMethod = cookingMethods[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SearchScreen(initialSearchTerm: cookingMethod['keysearch']),
+                            ),
+                          );
+                        },
+                        child: Card(
                           color: Colors.white,
                           child: Container(
                             width: 100,
@@ -449,19 +523,31 @@ class _ProposeScreenState extends State<ProposeScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.abc_rounded),
-                                Text(('Xào'))
+                                ClipOval(
+                                  child: Image.network(
+                                    cookingMethod['image'] ?? '',
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(Icons.error);
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 5,),
+                                Text(cookingMethod['name'] ?? 'No name')
                               ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+        ),
           SizedBox(
             height: 10,
           ),

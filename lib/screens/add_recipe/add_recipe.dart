@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/models/recipe_model.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/recipe_service.dart';
@@ -92,9 +93,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         _image == null ||
         _ingredientsControllers.any((controller) => controller.text.isEmpty) ||
         _stepsControllers.any((controller) => controller.text.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.')),
-      );
+      SnackBarCustom.showbar(context, 'Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.');
       return;
     }
 

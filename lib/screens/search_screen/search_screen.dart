@@ -7,20 +7,30 @@ import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialSearchTerm;
+  const SearchScreen({super.key, this.initialSearchTerm});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
 
   String? selectedDifficulty;
   String? selectedTime;
   String? selectedMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.initialSearchTerm);
+    if (widget.initialSearchTerm != null) {
+      _onSearchSubmitted(widget.initialSearchTerm!);
+    }
+  }
 
   void _onSearchSubmitted(String query) async {
     if (query.isNotEmpty) {
@@ -214,7 +224,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     color: Colors.white,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(17.0),
+                        padding: const EdgeInsets.only(left: 21.0, right: 22),
                         child: Container(
                           child: ListView.builder(
                             itemCount: searchResultsWithUserData.length,
@@ -225,26 +235,29 @@ class _SearchScreenState extends State<SearchScreen> {
                               final isFavorite = recipeWithUser['isFavorite'];
                               final recipeId = recipeWithUser['recipeId'];
 
-                              return ItemRecipe(
-                                name: recipe['namerecipe'],
-                                star: recipe['rates'].length.toString(),
-                                favorite: recipe['likes'].length.toString(),
-                                avatar: user['avatar'],
-                                fullname: user['fullname'],
-                                image: recipe['image'],
-                                ontap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => DetailReCipe(recipeId: recipeId, userId: recipe['userID'],),
-                                    ),
-                                  );
-                                },
-                                isFavorite: isFavorite,
-                                onFavoritePressed: () {
-                                  FavoriteService.toggleFavorite(context, recipeId, recipe['userID']);
-                                  _onSearchSubmitted(_searchController.text);
-                                },
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: ItemRecipe(
+                                  name: recipe['namerecipe'],
+                                  star: recipe['rates'].length.toString(),
+                                  favorite: recipe['likes'].length.toString(),
+                                  avatar: user['avatar'],
+                                  fullname: user['fullname'],
+                                  image: recipe['image'],
+                                  ontap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DetailReCipe(recipeId: recipeId, userId: recipe['userID'],),
+                                      ),
+                                    );
+                                  },
+                                  isFavorite: isFavorite,
+                                  onFavoritePressed: () {
+                                    FavoriteService.toggleFavorite(context, recipeId, recipe['userID']);
+                                    _onSearchSubmitted(_searchController.text);
+                                  },
+                                ),
                               );
                             },
                           ),

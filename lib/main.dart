@@ -13,8 +13,15 @@ final NotificationService notificationService = NotificationService();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
   print("Handling a background message: ${message.messageId}");
+}
+
+void handleNotificationOpen(RemoteMessage message, BuildContext context) {
+  print('Notification opened: ${message.data}');
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const SignInScreen()),
+  );
 }
 
 Future<void> main() async {
@@ -23,22 +30,44 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
   await LocalStorageHelper.initLocalStorageHelper();
-  
+
   notificationService.requestNotificationPermission();
   notificationService.getDeviceToken().then((value) {
     print('Token FCM : $value');
   });
-  
+  await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MainApp extends StatefulWidget {
+  const MainApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context)  {
+  _MainAppState createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Xử lý khi app đang chạy ở background và người dùng bấm vào thông báo
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      handleNotificationOpen(message, context);
+    });
+
+    // Xử lý khi app đã tắt hoàn toàn và được mở lại bởi thông báo
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        handleNotificationOpen(message, context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -54,12 +83,11 @@ class MainApp extends StatelessWidget {
         ),
       ),
       home: Builder(
-        builder: (BuildContext context)  {
-          // Initialize firebaseInit here
+        builder: (BuildContext context) {
           print('Đến đây thôi');
           notificationService.firebaseInit(context);
           print('Qua đây rồi');
-          
+
           return Scaffold(
             body: Center(child: SplashScreen()),
           );

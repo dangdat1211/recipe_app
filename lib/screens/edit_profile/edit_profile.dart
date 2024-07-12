@@ -109,49 +109,75 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   void _saveProfileData() async {
-    setState(() {
-      _isLoading = true;
-    });
+  setState(() {
+    _isLoading = true;
+  });
 
-    String fullname = _fullnameController.text;
-    String username = _usernameController.text;
-    String bio = _bioController.text;
+  String fullname = _fullnameController.text;
+  String username = _usernameController.text;
+  String bio = _bioController.text;
 
-    setState(() {
-      _fullnameError = fullname.isEmpty ? 'Tên hồ sơ không được để trống' : null;
-      _usernameError = username.isEmpty ? 'Tên người dùng không được để trống' : null;
-      _bioError = bio.isEmpty ? 'Tiểu sử không được để trống' : null;
-    });
+  setState(() {
+    _fullnameError = fullname.isEmpty ? 'Tên đầy đủ không được để trống' : null;
+    _bioError = bio.isEmpty ? 'Tiểu sử không được để trống' : null;
+  });
 
-    if (_fullnameError == null && _usernameError == null && _bioError == null) {
-      try {
-        String? imageUrl;
-        if (selectedImage != null) {
-          imageUrl = await _uploadImageToFirebase(selectedImage!);
-        }
+  bool isUsernameValid = await _isUsernameValid(username);
 
-        await _userService.saveProfileData(
-          fullname: fullname,
-          username: username,
-          bio: bio,
-          imageUrl: imageUrl,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Cập nhật hồ sơ thành công'),
-        ));
-
-        Navigator.of(context).pop(true);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Lỗi khi cập nhật hồ sơ: $e'),
-        ));
+  if (_fullnameError == null && _usernameError == null && _bioError == null && isUsernameValid) {
+    try {
+      String? imageUrl;
+      if (selectedImage != null) {
+        imageUrl = await _uploadImageToFirebase(selectedImage!);
       }
+
+      await _userService.saveProfileData(
+        fullname: fullname,
+        username: username,
+        bio: bio,
+        imageUrl: imageUrl,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Cập nhật hồ sơ thành công'),
+      ));
+
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Lỗi khi cập nhật hồ sơ: $e'),
+      ));
+    }
+  }
+
+  setState(() {
+    _isLoading = false;
+  });
+}
+
+  Future<bool> _isUsernameValid(String username) async {
+    // Kiểm tra ký tự in hoa và dấu cách
+    if (username.contains(RegExp(r'[A-Z\s]'))) {
+      setState(() {
+        _usernameError = 'Tên người dùng không chứa ký tự in hoa hoặc dấu cách';
+      });
+      return false;
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    // Kiểm tra tên người dùng đã tồn tại
+    QuerySnapshot result = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (result.docs.isNotEmpty && result.docs.first.id != currentUser!.uid) {
+      setState(() {
+        _usernameError = 'Tên người dùng đã tồn tại';
+      });
+      return false;
+    }
+
+    return true;
   }
 
   @override
@@ -195,14 +221,14 @@ class _EditProfileState extends State<EditProfile> {
                   controller: _fullnameController, 
                   focusNode: _fullnameFocusNode, 
                   errorText: _fullnameError, 
-                  label: 'Tên hồ sơ'
+                  label: 'Tên đầy đủ'
                 ),
                 SizedBox(height: 10,),
                 InputForm(
                   controller: _usernameController, 
                   focusNode: _usernameFocusNode, 
                   errorText: _usernameError, 
-                  label: 'username'
+                  label: 'Tên người dùng'
                 ),
                 SizedBox(height: 10,),
                 InputForm(

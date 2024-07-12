@@ -29,10 +29,13 @@ class _MyFavoriteState extends State<MyFavorite> {
           .collection('recipes')
           .doc(recipeId)
           .get();
-      if (doc.exists) {
+      if (doc.exists ) {
         Map<String, dynamic> recipeData = doc.data() as Map<String, dynamic>;
-        recipeData['id'] = doc.id; // Add the document ID to the data
-        recipes.add(recipeData);
+
+        if ( recipeData['status'] == "Đã được phê duyệt") {
+          recipeData['id'] = doc.id; 
+          recipes.add(recipeData);
+        }
       }
     }
 
