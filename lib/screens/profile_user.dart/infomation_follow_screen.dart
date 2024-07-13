@@ -62,39 +62,6 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
     }
   }
 
-  Future<void> _toggleFollow(String userId) async {
-    String currentUserId = currentUser!.uid;
-    bool isFollowing = followingUsers[userId] ?? false;
-
-    if (isFollowing) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .update({
-        'followings': FieldValue.arrayRemove([userId]),
-      });
-
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'followers': FieldValue.arrayRemove([currentUserId]),
-      });
-    } else {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .update({
-        'followings': FieldValue.arrayUnion([userId]),
-      });
-
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'followers': FieldValue.arrayUnion([currentUserId]),
-      });
-    }
-
-    setState(() {
-      followingUsers[userId] = !isFollowing;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(

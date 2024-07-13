@@ -22,8 +22,8 @@ class _SettingNotifyScreenState extends State<SettingNotifyScreen> {
               String? notify = await NotificationService().getDeviceToken();
 
               NotificationService.sendNotification(
-                  notify!, "Alo", "Nội dung thông báo",
-                  data: {'screen': 'home', 'value': 'novalue'});
+                  notify!, "Check", "Nội dung thông báo",
+                  data: {'screen': 'user', 'userId': 'L7QEDUSiRhZSK0TWt2WSg0sci9U2'});
             },
             color: Colors.red,
             title: 'Gửi thông báo'),

@@ -10,6 +10,7 @@ import 'package:recipe_app/service/notification_service.dart';
 
 // Global instance of NotificationService
 final NotificationService notificationService = NotificationService();
+final navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -82,6 +83,7 @@ class _MainAppState extends State<MainApp> {
           color: Colors.grey[100],
         ),
       ),
+      navigatorKey: navigatorKey,
       home: Builder(
         builder: (BuildContext context) {
           print('Đến đây thôi');

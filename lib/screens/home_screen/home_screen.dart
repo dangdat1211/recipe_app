@@ -100,6 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               TabBar(
+                
+                dividerColor: Colors.transparent,
                 tabs: [
                   Tab(text: 'Đề xuất cho bạn'),
                   Tab(text: 'Đang theo dõi'),

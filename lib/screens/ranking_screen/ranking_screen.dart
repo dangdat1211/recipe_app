@@ -69,6 +69,7 @@ class _RankingScreenState extends State<RankingScreen>
             ),
           ),
           TabBar(
+             dividerColor: Colors.transparent,
             controller: _tabController,
             tabs: [
               Tab(text: 'Xếp hạng công thức'),

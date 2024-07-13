@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
@@ -514,7 +515,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                           );
                         },
                         child: Card(
-                          color: Colors.white,
+                          color: cardBack,
                           child: Container(
                             width: 100,
                             decoration: BoxDecoration(

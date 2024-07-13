@@ -15,7 +15,7 @@ class FollowService {
     DocumentSnapshot otherUserSnapshot = await otherUser.get();
     List<dynamic> followers = otherUserSnapshot['followers'] ?? [];
 
-    if (followings.contains(userId)) {
+    if (followings.contains(otherUserId)) {
       // Nếu đang theo dõi, xóa userId khỏi danh sách
       followings.remove(otherUserId);
       followers.remove(userId);
@@ -32,7 +32,8 @@ class FollowService {
         screen: 'recipe'
       );
       Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(otherUserId);
-      await NotificationService.sendNotification(currentUserInfo['FCM'], 'Theo dõi mới', '${currentUserInfo['fullname']} vừa theo dõi bạn ');
+      await NotificationService.sendNotification(currentUserInfo['FCM'], 'Theo dõi mới', '${currentUserInfo['fullname']} vừa theo dõi bạn ',
+      data: {'screen': 'user', 'userId': otherUserId});
 
     }
 

@@ -43,7 +43,7 @@ class _ItemUserState extends State<ItemUser> {
     return GestureDetector(
       onTap: widget.ontap,
       child: Card(
-        color: Colors.white,
+        color: cardBack,
         child: Container(
           width: 130,
           decoration: BoxDecoration(

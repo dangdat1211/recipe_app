@@ -270,6 +270,7 @@ class _ProfileUserState extends State<ProfileUser> {
                         Text(userProfile!['bio']),
                         SizedBox(height: 10),
                         TabBar(
+                           dividerColor: Colors.transparent,
                           tabs: [
                             Tab(text: 'Công thức của bạn'),
                             Tab(text: 'Yêu thích'),

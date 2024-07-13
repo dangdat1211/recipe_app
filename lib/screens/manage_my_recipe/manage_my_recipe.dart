@@ -311,6 +311,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         title: Text('Quản lý công thức'),
         centerTitle: true,
         bottom: TabBar(
+           dividerColor: Colors.transparent,
           controller: _tabController,
           tabs: [
             Tab(text: 'Tất cả'),

@@ -80,7 +80,8 @@ class FavoriteService {
         screen: 'recipe'
       );
       Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(userId);
-      await NotificationService.sendNotification(currentUserInfo['FCM'], 'Lượt yêu thích mới từ công thức', '${currentUserInfo['fullname']} đã thích công thức của bạn ');
+      await NotificationService.sendNotification(currentUserInfo['FCM'], 'Lượt yêu thích mới từ công thức', '${currentUserInfo['fullname']} đã thích công thức của bạn ', 
+      data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': userId});
                                                   
       SnackBarCustom.showbar(context, 'Bạn đã thêm công thức vào yêu thích');
 

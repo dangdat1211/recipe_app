@@ -9,9 +9,12 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:googleapis/servicecontrol/v1.dart' as servicecontrol;
 import 'package:googleapis_auth/auth_io.dart' as auth;
+import 'package:recipe_app/main.dart';
 import 'package:recipe_app/screens/comment_screen/comment_screen.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/notify_screen/notify_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
 
 class NotificationService {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -19,8 +22,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<String> getAccessToken() async {
-
-    await dotenv.load(); 
+    await dotenv.load();
     print(dotenv.env['SERVICE_ACCOUNT_TYPE']);
     final Map<String, dynamic> serviceAccountJson = {
       "type": dotenv.env['SERVICE_ACCOUNT_TYPE'],
@@ -95,26 +97,61 @@ class NotificationService {
       iOS: ios,
     );
 
-    await _flutterLocalNotificationsPlugin.initialize(
-      initSetting,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        navigateToNotifyScreen(context);
-      },
-    );
+    await _flutterLocalNotificationsPlugin.initialize(initSetting,
+        onDidReceiveNotificationResponse: onNotificationTap,
+        onDidReceiveBackgroundNotificationResponse: onNotificationTap);
   }
 
-  void navigateToNotifyScreen(BuildContext context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => NotifyScreen()),
-  );
-}
+  static void onNotificationTap(NotificationResponse notificationResponse) {
+    final payloadData = notificationResponse.payload != null
+        ? json.decode(notificationResponse.payload!) as Map<String, dynamic>
+        : null;
+
+    if (payloadData != null) {
+      final screen = payloadData['screen'];
+      final userId = payloadData['userId'];
+      final recipeId = payloadData['recipeId'];
+
+      if (screen == 'recipe') {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+              builder: (context) => DetailReCipe(
+                    recipeId: recipeId,
+                    userId: userId,
+                  )),
+        );
+      } else if (screen == 'comment') {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+              builder: (context) => CommentScreen(
+                    recipeId: recipeId,
+                    userId: userId,
+                  )),
+        );
+      } else if (screen == 'user') {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+              builder: (context) => ProfileUser(userId: userId)),
+        );
+      }
+    } else {
+      print('Khong co gi');
+    }
+  }
 
   Future<void> firebaseInit(BuildContext context) async {
     FirebaseMessaging.onMessage.listen((message) {
       if (Platform.isAndroid) {
         initLocalNotification(context);
         showNotification(message);
+      } else {
+        // Xử lý trực tiếp cho iOS
+        String payload = json.encode(message.data);
+        onNotificationTap(NotificationResponse(
+          payload: payload,
+          notificationResponseType:
+              NotificationResponseType.selectedNotification,
+        ));
       }
       handleNotification(context, message);
     });
@@ -125,6 +162,7 @@ class NotificationService {
   }
 
   Future<void> showNotification(RemoteMessage message) async {
+    String payload = json.encode(message.data);
     AndroidNotificationChannel channel = AndroidNotificationChannel(
       Random.secure().nextInt(100000).toString(),
       'High Importance Notifications',
@@ -158,6 +196,7 @@ class NotificationService {
       message.notification?.title ?? 'No Title',
       message.notification?.body ?? 'No Body',
       notificationDetails,
+      payload: payload,
     );
   }
 
@@ -200,12 +239,10 @@ class NotificationService {
   }
 
   void handleNotification(BuildContext context, RemoteMessage message) {
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => NotifyScreen()),
-      );
-    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NotifyScreen()),
+    );
   }
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -230,7 +267,7 @@ class NotificationService {
       print('Notification created successfully');
     } catch (e) {
       print('Error creating notification: $e');
-      throw e; 
+      throw e;
     }
   }
 }

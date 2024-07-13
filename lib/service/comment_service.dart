@@ -34,7 +34,9 @@ class CommentService {
         await NotificationService.sendNotification(
             currentUserInfo['FCM'],
             'Bình luận mới mới',
-            '${currentUserInfo['fullname']} vừa bình luận vào công thức của bạn');
+            '${currentUserInfo['fullname']} vừa bình luận vào công thức của bạn',
+            data: {'screen': 'comment', 'recipeId': recipeId, 'userId': otherUserId}
+            );
       }
     } catch (e) {
       print('Error adding comment: $e');
