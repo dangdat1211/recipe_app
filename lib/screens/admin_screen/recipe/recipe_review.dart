@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
+
+import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_ingredient.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_step.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class AdminRecipeReview extends StatefulWidget {
@@ -86,6 +88,9 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
     Navigator.pop(context);
   }
 
+  bool _showAllIngredients = false;
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,6 +162,55 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                   ),
                   SizedBox(height: 15),
                   Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Divider(color: Colors.black, thickness: 1),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Center(
+                            child: Text(
+                              'Thông tin cơ bản',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Divider(color: Colors.black, thickness: 1),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10,),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Khẩu phần'),
+                            Text(recipeData['ration'])
+                          ],)
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Thời gian'),
+                            Text(recipeData['time'])
+                          ],)
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Độ khó'),
+                            Text(recipeData['level'])
+                          ],)
+                        ),
+                      ],
+                    ),
+                  SizedBox(height: 10,),
+                  Row(
                     children: [
                       Expanded(
                         flex: 3,
@@ -177,17 +231,41 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                       ),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: (recipeData['ingredients'] as List<dynamic>).asMap().entries.map((entry) {
-                      int idx = entry.key;
-                      String ingredient = entry.value;
-                      return ItemDetailRecipe(
-                        index: (idx + 1).toString(),
-                        title: ingredient,
-                      );
-                    }).toList(),
-                  ),
+                  StatefulBuilder(builder: (context, setState) {
+                      return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...(recipeData['ingredients'] as List<dynamic>).take(3).map((ingredient) {
+                          return ItemIngredient(
+                            index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
+                            title: ingredient.toString(),
+                          );
+                        }).toList(),
+                        if ((recipeData['ingredients'] as List<dynamic>).length > 3)
+                          AnimatedCrossFade(
+                            duration: Duration(milliseconds: 300),
+                            firstChild: Container(),
+                            secondChild: Column(
+                              children: (recipeData['ingredients'] as List<dynamic>).skip(3).map((ingredient) {
+                                return ItemIngredient(
+                                  index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
+                                  title: ingredient.toString(),
+                                );
+                              }).toList(),
+                            ),
+                            crossFadeState: _showAllIngredients ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                          ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllIngredients = !_showAllIngredients;
+                            });
+                          },
+                          child: Text(_showAllIngredients ? 'Ẩn bớt' : 'Hiện tất cả'),
+                        ),
+                      ],
+                    );
+                    }),
                   Row(
                     children: [
                       Expanded(
@@ -214,7 +292,7 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: stepsSnapshot.map((step) {
                       var stepData = step.data();
-                      return ItemDetailRecipe(
+                      return ItemStep(
                         index: (stepData!['order'] as int).toString(),
                         title: stepData['title'],
                         child: Container(

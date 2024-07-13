@@ -18,10 +18,13 @@ class _SearchScreenState extends State<SearchScreen> {
   TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
+  String currentSortOption = 'Mới nhất';
 
-  String? selectedDifficulty;
-  String? selectedTime;
-  String? selectedMethod;
+  Map<String, List<String>> selectedFilters = {
+    'difficulty': [],
+    'time': [],
+    'method': [],
+  };
 
   @override
   void initState() {
@@ -47,7 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
       for (var recipeDoc in snapshot.docs) {
         var recipeData = recipeDoc.data() as Map<String, dynamic>;
-        var recipeId = recipeDoc.id;  // Lấy document ID
+        var recipeId = recipeDoc.id;
 
         var userId = recipeData['userID'];
 
@@ -75,16 +78,59 @@ class _SearchScreenState extends State<SearchScreen> {
                     .contains(query.toLowerCase()));
           }
 
-          if (nameMatch || ingredientMatch) {
+          bool difficultyMatch = true;
+          if (selectedFilters['difficulty']!.isNotEmpty) {
+            difficultyMatch = selectedFilters['difficulty']!.contains(recipeData['level']);
+          }
+
+          bool methodMatch = true;
+          if (selectedFilters['method']!.isNotEmpty) {
+            methodMatch = selectedFilters['method']!.any((method) =>
+                recipeData['namerecipe']
+                    .toString()
+                    .toLowerCase()
+                    .contains(method.toLowerCase()));
+          }
+
+          bool timeMatch = true;
+          if (selectedFilters['time']!.isNotEmpty) {
+            int recipeCookingTime = int.tryParse(recipeData['time'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            print(recipeCookingTime);
+            timeMatch = selectedFilters['time']!.any((timeFilter) {
+              if (timeFilter == '< 30 phút') {
+                return recipeCookingTime < 30;
+              } else if (timeFilter == '30-60 phút') {
+                return recipeCookingTime >= 30 && recipeCookingTime <= 60;
+              } else if (timeFilter == '> 60 phút') {
+                return recipeCookingTime > 60;
+              }
+              return false;
+            });
+          }
+
+          if ((nameMatch || ingredientMatch) && difficultyMatch && methodMatch && timeMatch) {
             searchResultsWithUserData.add({
               'recipe': recipeData,
               'user': userData,
               'isFavorite': isFavorite,
-              'recipeId': recipeId,  // Thêm recipeId vào đây
+              'recipeId': recipeId,
             });
           }
         }
       }
+
+      // Sắp xếp kết quả
+      searchResultsWithUserData.sort((a, b) {
+        switch (currentSortOption) {
+          case 'Đánh giá cao nhất':
+            return (b['recipe']['rates'] as List).length.compareTo((a['recipe']['rates'] as List).length);
+          case 'Yêu thích nhiều nhất':
+            return (b['recipe']['likes'] as List).length.compareTo((a['recipe']['likes'] as List).length);
+          case 'Mới nhất':
+          default:
+            return (b['recipe']['createAt'] as Timestamp).compareTo(a['recipe']['createAt'] as Timestamp);
+        }
+      });
 
       setState(() {
         isLoading = false;
@@ -100,89 +146,89 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _showFilterDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return AlertDialog(
-            title: Text('Lọc kết quả'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  DropdownButton<String>(
-                    value: selectedDifficulty,
-                    hint: Text('Độ khó'),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedDifficulty = newValue;
-                      });
-                    },
-                    items: <String>['Dễ', 'Trung bình', 'Khó']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  DropdownButton<String>(
-                    value: selectedTime,
-                    hint: Text('Mốc thời gian'),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedTime = newValue;
-                      });
-                    },
-                    items: <String>['< 30 phút', '30-60 phút', '> 60 phút']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  DropdownButton<String>(
-                    value: selectedMethod,
-                    hint: Text('Phương pháp chế biến'),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedMethod = newValue;
-                      });
-                    },
-                    items: <String>['Chiên', 'Xào', 'Nướng', 'Hấp']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ],
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Lọc và Sắp xếp kết quả'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    DropdownButton<String>(
+                      value: currentSortOption,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          currentSortOption = newValue!;
+                        });
+                      },
+                      items: <String>['Mới nhất', 'Đánh giá cao nhất', 'Yêu thích nhiều nhất']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 20),
+                    Text('Độ khó:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ..._buildCheckboxes('difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
+                    SizedBox(height: 10),
+                    Text('Mốc thời gian:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ..._buildCheckboxes('time', ['< 30 phút', '30-60 phút', '> 60 phút'], setState),
+                    SizedBox(height: 10),
+                    Text('Phương pháp chế biến:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ..._buildCheckboxes('method', ['Rán', 'Xào', 'Nướng', 'Hấp'], setState),
+                  ],
+                ),
               ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text('Hủy'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text('Áp dụng'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // _applyFilters();
-                },
-              ),
-            ],
-          );
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Hủy'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Áp dụng'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _applyFiltersAndSort();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildCheckboxes(String filterType, List<String> options, StateSetter setState) {
+    return options.map((option) {
+      return CheckboxListTile(
+        title: Text(option),
+        value: selectedFilters[filterType]!.contains(option),
+        onChanged: (bool? value) {
+          setState(() {
+            if (value == true) {
+              selectedFilters[filterType]!.add(option);
+            } else {
+              selectedFilters[filterType]!.remove(option);
+            }
+          });
         },
       );
-    },
-  );
-}
+    }).toList();
+  }
+
+  void _applyFiltersAndSort() {
+    _onSearchSubmitted(_searchController.text);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,9 +254,9 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
           IconButton(
-      icon: Icon(Icons.filter_list),
-      onPressed: _showFilterDialog,
-    ),
+            icon: Icon(Icons.filter_list),
+            onPressed: _showFilterDialog,
+          ),
         ],
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),

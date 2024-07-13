@@ -250,7 +250,7 @@ class _NotifyScreenState extends State<NotifyScreen> {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => CommentScreen(
             recipeId: notification['recipeId'],
-            userId: notification['fromUser'],
+            userId: notification['userId'],
           ),
         ));
         break;

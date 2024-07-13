@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:recipe_app/screens/add_recipe/edit_recipe.dart';
-import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_detail_recipe.dart';
+
+import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_ingredient.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_step.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/service/notification_service.dart';
@@ -46,6 +48,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
   bool _isFavorite = false;
 
   bool _isFollowing = false;
+  bool _showAllIngredients = false;
   Future<void> _checkFollowingStatus() async {
     final currentUserId = currentUser?.uid;
     final userId = widget.userId;
@@ -308,7 +311,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     SizedBox(height: 10),
                     Center(
                       child: Text(
-                        'Tên món ăn: ${recipeData['namerecipe']}',
+                        '${recipeData['namerecipe']}',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
@@ -316,9 +319,58 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     ),
                     Text(
                       'Mô tả món ăn: ${recipeData['description']}',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.left,
                     ),
                     SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Divider(color: Colors.black, thickness: 1),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Center(
+                            child: Text(
+                              'Thông tin cơ bản',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Divider(color: Colors.black, thickness: 1),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10,),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Khẩu phần'),
+                            Text(recipeData['ration'])
+                          ],)
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Thời gian'),
+                            Text(recipeData['time'])
+                          ],)
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Column(children: [
+                            Text('Độ khó'),
+                            Text(recipeData['level'])
+                          ],)
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10,),
                     Row(
                       children: [
                         Expanded(
@@ -341,20 +393,41 @@ class _DetailReCipeState extends State<DetailReCipe> {
                         ),
                       ],
                     ),
-                    Column(
+                    StatefulBuilder(builder: (context, setState) {
+                      return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: (recipeData['ingredients'] as List<dynamic>)
-                          .map((ingredient) {
-                        return ItemDetailRecipe(
-                          index: ((recipeData['ingredients'] as List<dynamic>)
-                                      .indexOf(ingredient)
-                                      .toInt() +
-                                  1)
-                              .toString(),
-                          title: ingredient.toString(),
-                        );
-                      }).toList(),
-                    ),
+                      children: [
+                        ...(recipeData['ingredients'] as List<dynamic>).take(3).map((ingredient) {
+                          return ItemIngredient(
+                            index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
+                            title: ingredient.toString(),
+                          );
+                        }).toList(),
+                        if ((recipeData['ingredients'] as List<dynamic>).length > 3)
+                          AnimatedCrossFade(
+                            duration: Duration(milliseconds: 300),
+                            firstChild: Container(),
+                            secondChild: Column(
+                              children: (recipeData['ingredients'] as List<dynamic>).skip(3).map((ingredient) {
+                                return ItemIngredient(
+                                  index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
+                                  title: ingredient.toString(),
+                                );
+                              }).toList(),
+                            ),
+                            crossFadeState: _showAllIngredients ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                          ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllIngredients = !_showAllIngredients;
+                            });
+                          },
+                          child: Text(_showAllIngredients ? 'Ẩn bớt' : 'Hiện tất cả'),
+                        ),
+                      ],
+                    );
+                    }),
                     Row(
                       children: [
                         Expanded(
@@ -366,7 +439,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
                           child: Center(
                             child: Text(
                               'Cách làm',
-                              style: TextStyle(fontSize: 15),
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -381,7 +455,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: stepsSnapshot.map((step) {
                         var stepData = step.data();
-                        return ItemDetailRecipe(
+                        return ItemStep(
                           index: (stepData!['order'] as int).toString(),
                           title: stepData['title'],
                           child: Container(

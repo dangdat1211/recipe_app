@@ -3,6 +3,8 @@ import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/user_service.dart';
 
 class FollowService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Future<void> toggleFollow(String userId, String otherUserId) async {
 
     DocumentReference currentUserRef =
@@ -29,7 +31,7 @@ class FollowService {
         fromUser: userId,
         userId: otherUserId,
         recipeId: '',
-        screen: 'recipe'
+        screen: 'user'
       );
       Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(otherUserId);
       await NotificationService.sendNotification(currentUserInfo['FCM'], 'Theo dõi mới', '${currentUserInfo['fullname']} vừa theo dõi bạn ',
@@ -39,5 +41,7 @@ class FollowService {
 
     await currentUserRef.update({'followings': followings});
     await otherUser.update({'followers': followers});
+
+    
   }
 }

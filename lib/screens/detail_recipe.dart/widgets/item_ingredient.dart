@@ -1,18 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ItemDetailRecipe extends StatefulWidget {
-  const ItemDetailRecipe({super.key, required this.index, required this.title, this.child });
+class ItemIngredient extends StatefulWidget {
+  const ItemIngredient({super.key, required this.index, required this.title, this.child });
 
   final String index;
   final String title;
   final Widget? child;
 
   @override
-  State<ItemDetailRecipe> createState() => _ItemDetailRecipeState();
+  State<ItemIngredient> createState() => _ItemIngredientState();
 }
 
-class _ItemDetailRecipeState extends State<ItemDetailRecipe> {
+class _ItemIngredientState extends State<ItemIngredient> {
   @override
   Widget build(BuildContext context) {
     return Column(
