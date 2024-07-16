@@ -33,6 +33,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   User? currentUser = FirebaseAuth.instance.currentUser;
 
   bool _isLoading = false;
+  String _selectedDifficulty = 'Trung bình';
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         _servingsController.text = recipeData['ration'] ?? '';
         _timeController.text = recipeData['time'] ?? '';
         _youtubeController.text = recipeData['urlYoutube'] ?? '';
+        _selectedDifficulty = recipeData['level'] ?? 'Trung bình';
 
         List<dynamic> ingredientsList = recipeData['ingredients'] ?? [];
         for (String ingredient in ingredientsList) {
@@ -209,7 +211,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         'ingredients': ingredients,
         'steps': [],
         'image': mainImageUrl ?? '',
-        'level': 'Khó cvl',
+        'level': _selectedDifficulty,
         'likes': [],
         'rates': [],
         'comments': [],
@@ -363,8 +365,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                         ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
+                    maxLines: null,
+                    minLines: 1,
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: 'Tên món ăn',
@@ -374,8 +376,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
+                    maxLines: null,
+                    minLines: 1,
                     controller: _descriptionController,
                     decoration: InputDecoration(
                       labelText: 'Mô tả',
@@ -385,8 +387,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
+                    maxLines: null,
+                    minLines: 1,
                     controller: _servingsController,
                     decoration: InputDecoration(
                       labelText: 'Khẩu phần',
@@ -396,8 +398,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
+                    maxLines: null,
+                    minLines: 1,
                     controller: _timeController,
                     decoration: InputDecoration(
                       labelText: 'Thời gian nấu',
@@ -406,9 +408,29 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                     ),
                   ),
                   SizedBox(height: 10.0),
+                  DropdownButtonFormField<String>(
+                    value: _selectedDifficulty,
+                    decoration: InputDecoration(
+                      labelText: 'Độ khó',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: <String>['Dễ', 'Trung bình', 'Khó']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value, style: TextStyle(fontWeight: FontWeight.normal)),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedDifficulty = newValue!;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
+                    maxLines: null,
+                    minLines: 1,
                     controller: _youtubeController,
                     decoration: InputDecoration(
                       labelText: 'Video youtube hướng dẫn',
@@ -512,35 +534,38 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                                   SizedBox(height: 8.0),
                                   Wrap(
                                     children: _stepsImages[index]
-                                        .map((image) => Stack(
-                                              children: [
-                                                Image.file(
-                                                  image,
-                                                  width: 100,
-                                                  height: 100,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _stepsImages[index]
-                                                            .remove(image);
-                                                      });
-                                                    },
-                                                    child: Container(
-                                                      color: Colors.black54,
-                                                      child: Icon(
-                                                        Icons.delete,
-                                                        color: Colors.white,
+                                        .map((image) => Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Stack(
+                                                children: [
+                                                  Image.file(
+                                                    image,
+                                                    width: 100,
+                                                    height: 100,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                  Positioned(
+                                                    top: 0,
+                                                    right: 0,
+                                                    child: GestureDetector(
+                                                      onTap: () {
+                                                        setState(() {
+                                                          _stepsImages[index]
+                                                              .remove(image);
+                                                        });
+                                                      },
+                                                      child: Container(
+                                                        color: Colors.black54,
+                                                        child: Icon(
+                                                          Icons.delete,
+                                                          color: Colors.white,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            ))
+                                                ],
+                                              ),
+                                        ))
                                         .toList(),
                                   ),
                                   TextButton(

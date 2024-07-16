@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
+import 'package:recipe_app/service/rate_service.dart';
 
 class MyRecipe extends StatefulWidget {
   final String userId;
@@ -19,17 +20,21 @@ class _MyRecipeState extends State<MyRecipe> {
   Future<List<Map<String, dynamic>>> _getData() async {
     QuerySnapshot querySnapshot =
         await _collectionRef.where('userID', isEqualTo: widget.userId).get();
-    return querySnapshot.docs
-    .where((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return  data['status'] == 'Đã được phê duyệt';
-      })
-        .map((doc) {
+    return Future.wait(querySnapshot.docs
+        .where((doc) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id; 
-          return data;
+          return data['status'] == 'Đã được phê duyệt';
         })
-        .toList();
+        .where((doc) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          return data['hidden'] == false;
+        })
+        .map((doc) async {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          data['averageRating'] = await RateService.getAverageRating(doc.id);
+          return data;
+        }));
   }
 
   String _formatTimestamp(Timestamp timestamp) {
@@ -68,7 +73,7 @@ class _MyRecipeState extends State<MyRecipe> {
                 return ViewItem(
                   image: item['image'] ??
                       'https://static.vinwonders.com/production/mon-ngon-ha-dong-4.jpeg',
-                  rate: rateList.length.toString(),
+                  rate: item['averageRating'].toString(),
                   like: likedList.length.toString(),
                   date: item['createAt'] != null
                       ? _formatTimestamp(item['createAt'])

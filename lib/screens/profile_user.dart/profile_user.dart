@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/profile_user.dart/infomation_follow_screen.dart';
 import 'package:recipe_app/screens/profile_user.dart/my_favorite.dart';
 import 'package:recipe_app/screens/profile_user.dart/my_recipe.dart';
@@ -115,9 +116,21 @@ class _ProfileUserState extends State<ProfileUser> {
                           ),
                         ),
                         SizedBox(height: 5),
-                        Text(
-                          '@' + userProfile!['username'],
-                          style: TextStyle(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              '@' + userProfile!['username'] + ' ',
+                              style: TextStyle(),
+                            ),
+                            if (userProfile!['role'] =='Chuyên gia') 
+                              Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: mainColor,
+                              ),
+                          ],
                         ),
                         SizedBox(height: 5),
                         Row(
@@ -270,7 +283,7 @@ class _ProfileUserState extends State<ProfileUser> {
                         Text(userProfile!['bio']),
                         SizedBox(height: 10),
                         TabBar(
-                           dividerColor: Colors.transparent,
+                          dividerColor: Colors.transparent,
                           tabs: [
                             Tab(text: 'Công thức của bạn'),
                             Tab(text: 'Yêu thích'),

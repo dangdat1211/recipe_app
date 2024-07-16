@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class FollowingScreen extends StatefulWidget {
@@ -14,17 +15,17 @@ class FollowingScreen extends StatefulWidget {
 
 class _FollowingScreenState extends State<FollowingScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  List<Map<String, dynamic>> recipesWithUserData = [];
+  List<Map<String, dynamic>> allRecipesWithUserData = [];
   bool isLoading = false;
-  bool isInitialLoading = true;  // Thêm biến này
-  DocumentSnapshot? lastDocument;
-  bool hasMoreRecipes = true;
+  bool isInitialLoading = true;
   bool isFollowingAnyone = false;
+  int currentPage = 1;
+  int itemsPerPage = 10;
 
   @override
   void initState() {
     super.initState();
-    fetchRecipes();
+    fetchAllRecipes();
     if (currentUser == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showLoginDialog();
@@ -32,7 +33,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
     }
   }
 
-  Future<void> fetchRecipes() async {
+  Future<void> fetchAllRecipes() async {
     if (isLoading) return;
 
     setState(() {
@@ -46,56 +47,61 @@ class _FollowingScreenState extends State<FollowingScreen> {
     if (!isFollowingAnyone) {
       setState(() {
         isLoading = false;
-        isInitialLoading = false;  // Thêm dòng này
+        isInitialLoading = false;
       });
       return;
     }
 
-    Query query = FirebaseFirestore.instance
-        .collection('recipes')
-        .where('userID', whereIn: followingUserIds)
-        .orderBy('updateAt', descending: true)
-        .limit(10);
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+    .collection('recipes')
+    .where('userID', whereIn: followingUserIds)
+    .where('status', isEqualTo: 'Đã được phê duyệt')
+    .orderBy('updateAt', descending: true)
+    .get();
 
-    if (lastDocument != null) {
-      query = query.startAfterDocument(lastDocument!);
-    }
+    var filteredDocs = querySnapshot.docs.where((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return data['hidden'] == false;
+    }).toList();
 
-    QuerySnapshot querySnapshot = await query.get();
+    for (var recipeDoc in filteredDocs) {
+      var recipeData = recipeDoc.data() as Map<String, dynamic>;
+      var recipeId = recipeDoc.id;
 
-    if (querySnapshot.docs.isNotEmpty) {
-      lastDocument = querySnapshot.docs.last;
+      var userId = recipeData['userID'];
 
-      for (var recipeDoc in querySnapshot.docs) {
-        var recipeData = recipeDoc.data() as Map<String, dynamic>;
-        var recipeId = recipeDoc.id;
+      var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      var userData = userDoc.data();
 
-        var userId = recipeData['userID'];
+      if (userData != null ) {
+        recipeData['recipeId'] = recipeId;
 
-        var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-        var userData = userDoc.data();
+        bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
-        if (userData != null) {
-          recipeData['recipeId'] = recipeId;
-
-          bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
-
-          recipesWithUserData.add({
-            'recipe': recipeData,
-            'user': userData,
-            'isFavorite': isFavorite,
-          });
-        }
+        allRecipesWithUserData.add({
+          'recipe': recipeData,
+          'user': userData,
+          'isFavorite': isFavorite,
+        });
       }
-    } else {
-      hasMoreRecipes = false;
     }
 
     setState(() {
       isLoading = false;
-      isInitialLoading = false;  // Thêm dòng này
+      isInitialLoading = false;
     });
   }
+
+  List<Map<String, dynamic>> getCurrentPageRecipes() {
+    int startIndex = (currentPage - 1) * itemsPerPage;
+    int endIndex = startIndex + itemsPerPage;
+    if (endIndex > allRecipesWithUserData.length) {
+      endIndex = allRecipesWithUserData.length;
+    }
+    return allRecipesWithUserData.sublist(startIndex, endIndex);
+  }
+
+  int get totalPages => (allRecipesWithUserData.length / itemsPerPage).ceil();
 
   Future<List<String>> getFollowingUserIds() async {
     if (currentUser != null) {
@@ -109,7 +115,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
   }
 
   void _showLoginDialog() {
-    showDialog(
+     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -179,49 +185,76 @@ class _FollowingScreenState extends State<FollowingScreen> {
                             ),
                           )
                         else
-                          ListView.builder(
-                            physics: NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: recipesWithUserData.length + 1,
-                            itemBuilder: (context, index) {
-                              if (index == recipesWithUserData.length) {
-                                if (hasMoreRecipes) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    child: ElevatedButton(
-                                      onPressed: isLoading ? null : fetchRecipes,
-                                      child: isLoading ? CircularProgressIndicator() : Text('Xem thêm'),
+                          Column(
+                            children: [
+                              ListView.builder(
+                                physics: NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: getCurrentPageRecipes().length,
+                                itemBuilder: (context, index) {
+                                  final recipeWithUser = getCurrentPageRecipes()[index];
+                                  final recipe = recipeWithUser['recipe'];
+                                  final user = recipeWithUser['user'];
+                                  final isFavorite = recipeWithUser['isFavorite'];
+
+
+                                  return Container(
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 10),
+                                        child: FutureBuilder<double> (
+                                          future: RateService.getAverageRating(
+                                          recipe['recipeId']),
+                                          builder: (context, snapshot) {
+                                            double averageRating =
+                                            snapshot.data ?? 0.0;
+                                            return ItemRecipe(
+                                              ontap: () {},
+                                              name: recipe['namerecipe'] ?? '',
+                                              star: averageRating.toString(),
+                                              favorite: recipe['likes']?.length.toString() ?? '0',
+                                              avatar: user['avatar'] ?? '',
+                                              fullname: user['fullname'] ?? '',
+                                              image: recipe['image'] ?? '',
+                                              isFavorite: isFavorite,
+                                              onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeID'], recipe['userId']),
+                                            );
+                                          },
+                                          
+                                          
+                                        )
+                                      ),
                                     ),
                                   );
-                                } else {
-                                  return Container();
-                                }
-                              }
-
-                              final recipeWithUser = recipesWithUserData[index];
-                              final recipe = recipeWithUser['recipe'];
-                              final user = recipeWithUser['user'];
-                              final isFavorite = recipeWithUser['isFavorite'];
-
-                              return Container(
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ItemRecipe(
-                                      ontap: () {},
-                                      name: recipe['namerecipe'] ?? '',
-                                      star: recipe['rate']?.toString() ?? '0',
-                                      favorite: recipe['liked']?.length.toString() ?? '0',
-                                      avatar: user['avatar'] ?? '',
-                                      fullname: user['fullname'] ?? '',
-                                      image: recipe['image'] ?? '',
-                                      isFavorite: isFavorite,
-                                      onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeID'], recipe['userId']),
-                                    ),
+                                },
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.chevron_left),
+                                    onPressed: currentPage > 1
+                                        ? () {
+                                            setState(() {
+                                              currentPage--;
+                                            });
+                                          }
+                                        : null,
                                   ),
-                                ),
-                              );
-                            },
+                                  Text('Trang $currentPage / $totalPages'),
+                                  IconButton(
+                                    icon: Icon(Icons.chevron_right),
+                                    onPressed: currentPage < totalPages
+                                        ? () {
+                                            setState(() {
+                                              currentPage++;
+                                            });
+                                          }
+                                        : null,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                       ],
                     ),

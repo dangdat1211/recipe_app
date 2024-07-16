@@ -43,12 +43,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
       final snapshot = await FirebaseFirestore.instance
           .collection('recipes')
+          .where('status', isEqualTo: 'Đã được phê duyệt')
           .get();
-      print('Số lượng kết quả tìm kiếm: ${snapshot.docs.length}');
+
+      var filteredDocs = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return data['hidden'] == false;
+      }).toList();
 
       searchResultsWithUserData = [];
 
-      for (var recipeDoc in snapshot.docs) {
+      for (var recipeDoc in filteredDocs) {
         var recipeData = recipeDoc.data() as Map<String, dynamic>;
         var recipeId = recipeDoc.id;
 

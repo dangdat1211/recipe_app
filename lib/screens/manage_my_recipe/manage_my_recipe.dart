@@ -15,7 +15,10 @@ class ManageMyRecipe extends StatefulWidget {
 class _ManageMyRecipeState extends State<ManageMyRecipe>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String sortOption = 'Newest';
+  String sortOption = 'Mới nhất';
+  String _searchQuery = '';
+  int _currentPage = 1;
+  static const int _itemsPerPage = 10;
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -44,34 +47,33 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         break;
       case 'delete':
         bool? confirmDelete = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Xác nhận xóa'),
-            content: Text('Bạn có chắc chắn muốn xóa công thức này không?'),
-            actions: <Widget>[
-              TextButton(
-                child: Text('Hủy'),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                },
-              ),
-              TextButton(
-                child: Text('Xóa'),
-                onPressed: () {
-                  Navigator.of(context).pop(true);
-                },
-              ),
-            ],
-          );
-        },
-      );
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Xác nhận xóa'),
+              content: Text('Bạn có chắc chắn muốn xóa công thức này không?'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Hủy'),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                ),
+                TextButton(
+                  child: Text('Xóa'),
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              ],
+            );
+          },
+        );
 
-      // Nếu người dùng xác nhận xóa, thực hiện việc xóa
-      if (confirmDelete == true) {
-        await _deleteRecipe(recipeId);
-      }
-      break;
+        if (confirmDelete == true) {
+          await _deleteRecipe(recipeId);
+        }
+        break;
       case 'hide':
         await _hideRecipe(recipeId);
         break;
@@ -83,14 +85,11 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
 
   Future<void> _deleteRecipe(String recipeId) async {
     try {
-      // Bắt đầu một batch operation
       WriteBatch batch = FirebaseFirestore.instance.batch();
 
-      // Xóa công thức
       batch.delete(
           FirebaseFirestore.instance.collection('recipes').doc(recipeId));
 
-      // Xóa tất cả đánh giá liên quan
       QuerySnapshot rateSnapshots = await FirebaseFirestore.instance
           .collection('rates')
           .where('recipeId', isEqualTo: recipeId)
@@ -99,7 +98,6 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         batch.delete(doc.reference);
       }
 
-      // Xóa tất cả bình luận liên quan
       QuerySnapshot commentSnapshots = await FirebaseFirestore.instance
           .collection('comments')
           .where('recipeId', isEqualTo: recipeId)
@@ -108,7 +106,6 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         batch.delete(doc.reference);
       }
 
-      // Xóa tất cả yêu thích liên quan
       QuerySnapshot favoriteSnapshots = await FirebaseFirestore.instance
           .collection('favorites')
           .where('recipeId', isEqualTo: recipeId)
@@ -125,16 +122,11 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         batch.delete(doc.reference);
       }
 
-      // Thực hiện batch operation
       await batch.commit();
 
-      // Hiển thị thông báo xóa thành công
       SnackBarCustom.showbar(context, 'Xóa thành công');
 
-      // Cập nhật UI nếu cần
-      setState(() {
-        // Xóa công thức khỏi danh sách hiển thị (nếu có)
-      });
+      setState(() {});
     } catch (e) {
       print('Lỗi khi xóa công thức và dữ liệu liên quan: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,12 +145,8 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
           .update({
         'hidden': true,
       });
-      // Hiển thị thông báo ẩn thành công
       SnackBarCustom.showbar(context, 'Công thức đã được ẩn');
-      // Cập nhật UI nếu cần
-      setState(() {
-        // Ẩn công thức khỏi danh sách hiển thị (nếu có)
-      });
+      setState(() {});
     } catch (e) {
       print('Lỗi khi ẩn công thức: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -175,16 +163,12 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
           .update({
         'hidden': false,
       });
-      // Hiển thị thông báo ẩn thành công
       SnackBarCustom.showbar(context, 'Công thức đã được hiện');
-      // Cập nhật UI nếu cần
-      setState(() {
-        // Ẩn công thức khỏi danh sách hiển thị (nếu có)
-      });
+      setState(() {});
     } catch (e) {
-      print('Lỗi khi ẩn công thức: $e');
+      print('Lỗi khi hiện công thức: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi ẩn công thức')),
+        SnackBar(content: Text('Có lỗi xảy ra khi hiện công thức')),
       );
     }
   }
@@ -198,94 +182,159 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       recipesQuery = recipesQuery.where('status', isEqualTo: status);
     }
 
+    switch (sortOption) {
+      case 'Mới nhất':
+        recipesQuery = recipesQuery.orderBy('updateAt', descending: true);
+        break;
+      case 'Cũ nhất':
+        recipesQuery = recipesQuery.orderBy('updateAt', descending: false);
+        break;
+      case 'Được yêu thích nhiều nhất':
+        recipesQuery = recipesQuery.orderBy('favoriteCount', descending: true);
+        break;
+      case 'Được yêu thích ít nhất':
+        recipesQuery = recipesQuery.orderBy('favoriteCount', descending: false);
+        break;
+    }
+
     return StreamBuilder<QuerySnapshot>(
       stream: recipesQuery.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Text('Something went wrong');
+          return Text('Đã xảy ra lỗi');
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Text("Loading");
+          return Center(child: CircularProgressIndicator());
         }
 
-        return ListView.builder(
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            var recipe =
-                snapshot.data!.docs[index].data() as Map<String, dynamic>;
-            var recipeId = snapshot.data!.docs[index].id;
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailReCipe(
-                        recipeId: recipeId, userId: currentUser!.uid),
-                  ),
-                );
-              },
-              child: ListTile(
-                leading: Container(
-                  width: 80,
-                  height: 80,
-                  child: Image.network(
-                    recipe['image'],
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                title: Text(
-                  recipe['namerecipe'],
-                  overflow: TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
-                  maxLines: 1,
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      recipe['description'],
-                      overflow:
-                          TextOverflow.ellipsis, // Thêm dấu ... nếu quá dài
-                      maxLines: 1,
-                    ),
-                    Text(
-                      'Trạng thái: ${recipe['status']}',
-                      style: TextStyle(
-                        color: getStatusColor(recipe['status']),
+        var recipes = snapshot.data!.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .where((recipe) => recipe['namerecipe']
+                .toString()
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()))
+            .toList();
+
+        if (recipes.isEmpty) {
+          return Center(child: Text('Không có công thức nào'));
+        }
+
+        int totalPages = (recipes.length / _itemsPerPage).ceil();
+        int startIndex = (_currentPage - 1) * _itemsPerPage;
+        int endIndex = startIndex + _itemsPerPage;
+        if (endIndex > recipes.length) endIndex = recipes.length;
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: endIndex - startIndex,
+                itemBuilder: (context, index) {
+                  var recipe = recipes[startIndex + index];
+                  var recipeId = snapshot.data!.docs[startIndex + index].id;
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailReCipe(
+                              recipeId: recipeId, userId: currentUser!.uid),
+                        ),
+                      );
+                    },
+                    child: ListTile(
+                      leading: Container(
+                        width: 80,
+                        height: 80,
+                        child: Image.network(
+                          recipe['image'],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      title: Text(
+                        recipe['namerecipe'],
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            recipe['description'],
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          Text(
+                            'Trạng thái: ${recipe['status']}',
+                            style: TextStyle(
+                              color: getStatusColor(recipe['status']),
+                            ),
+                          ),
+                          Text(
+                            recipe['hidden'] ? 'Đang ẩn' : '',
+                            style: TextStyle(
+                              color: Colors.purple,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) =>
+                            _handlePopupMenuSelection(value, recipeId),
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Sửa'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Xóa'),
+                          ),
+                          PopupMenuItem<String>(
+                            value: recipe['hidden'] ? 'show' : 'hide',
+                            child: Text(recipe['hidden'] ? 'Hiện' : 'Ẩn'),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      recipe['hidden'] ? 'Đang ẩn' : '',
-                      style: TextStyle(
-                        color: Colors.purple,
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) =>
-                      _handlePopupMenuSelection(value, recipeId),
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Text('Sửa'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Xóa'),
-                    ),
-                    PopupMenuItem<String>(
-                      value: recipe['hidden'] ? 'show' : 'hide',
-                      child: Text(recipe['hidden'] ? 'Hiện' : 'Ẩn'),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.chevron_left),
+                    onPressed: _currentPage > 1
+                        ? () {
+                            setState(() {
+                              _currentPage--;
+                            });
+                          }
+                        : null,
+                  ),
+                  Text('Trang $_currentPage / $totalPages'),
+                  IconButton(
+                    icon: Icon(Icons.chevron_right),
+                    onPressed: _currentPage < totalPages
+                        ? () {
+                            setState(() {
+                              _currentPage++;
+                            });
+                          }
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
@@ -311,7 +360,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
         title: Text('Quản lý công thức'),
         centerTitle: true,
         bottom: TabBar(
-           dividerColor: Colors.transparent,
+          dividerColor: Colors.transparent,
           controller: _tabController,
           tabs: [
             Tab(text: 'Tất cả'),
@@ -328,51 +377,64 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
             child: Row(
               children: [
                 Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      // Navigate to search screen
-                    },
-                    child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8.0),
-                        border: Border.all(
-                          width: 1,
-                          color: Colors.grey,
+                  child: Container(
+                    height: 40,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Tìm kiếm...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search),
-                          SizedBox(width: 8.0),
-                          Text('Search...'),
-                        ],
-                      ),
+                      
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                          _currentPage = 1; // Reset to first page when searching
+                        });
+                      },
                     ),
                   ),
                 ),
                 SizedBox(width: 8.0),
-                DropdownButton<String>(
-                  value: sortOption,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      sortOption = newValue!;
-                    });
-                  },
-                  items: <String>[
-                    'Newest',
-                    'Oldest',
-                    'Most Popular',
-                    'Least Popular'
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
+                Container(
+                  height: 40,
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ButtonTheme(
+                    alignedDropdown: true,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isDense: true,
+                        value: sortOption,
+                        icon: Icon(Icons.arrow_drop_down, size: 20),
+                        style: TextStyle(color: Colors.black, fontSize: 15),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            sortOption = newValue!;
+                            _currentPage = 1; // Reset to first page when sorting
+                          });
+                        },
+                        items: <String>[
+                          'Mới nhất',
+                          'Cũ nhất',
+                          'Yêu thích nhiều',
+                          'Yêu thích ít'
+                        ].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                )
               ],
             ),
           ),

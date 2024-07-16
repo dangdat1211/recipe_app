@@ -31,7 +31,7 @@ class RecipeModel {
     required this.ingredients,
     required this.steps,
     required this.image,
-    this.level = 'Khó',
+    required this.level ,
     this.likes = const [],
     this.rates = const [],
     this.comments = const [],

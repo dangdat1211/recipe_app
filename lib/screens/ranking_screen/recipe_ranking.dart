@@ -30,7 +30,13 @@ class _RecipeRankingState extends State<RecipeRanking> {
     });
 
     final snapshot = await FirebaseFirestore.instance.collection('recipes').where('status', isEqualTo: 'Đã được phê duyệt').get();
-    final recipes = snapshot.docs;
+
+    var filteredDocs = snapshot.docs.where((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return data['hidden'] == false;
+    }).toList();
+
+    final recipes = filteredDocs;
 
     recipesWithUserData = [];
 
@@ -48,7 +54,6 @@ class _RecipeRankingState extends State<RecipeRanking> {
 
         bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
         
-        // Fetch average rating
         var ratingData = await RateService.fetchAverageRating(recipeId);
 
         recipesWithUserData.add({

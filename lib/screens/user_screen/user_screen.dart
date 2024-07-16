@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/admin_screen/recipe/admin_recipe.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/screens/user_screen/widgets/ui_container.dart';
@@ -43,6 +44,7 @@ class _UserScreenState extends State<UserScreen> {
         isLoading = false;
       });
     }
+    print(userProfile!['role']);
   }
 
   void printName() {
@@ -266,7 +268,7 @@ class _UserScreenState extends State<UserScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        if (userProfile!['role'] == true)
+                        if (userProfile!['role'] == 'Quản trị viên')
                           UIMenu(
                               ontap: () {
                                 Navigator.push(
@@ -277,9 +279,26 @@ class _UserScreenState extends State<UserScreen> {
                               },
                               icon: Icons.beach_access,
                               title: 'Chức năng quản trị'),
-                        SizedBox(
-                          height: 5,
-                        ),
+                        if (userProfile!['role'] == 'Quản trị viên')
+                          SizedBox(
+                            height: 10,
+                          ),
+                        if (userProfile!['role'] == 'Chuyên gia')
+                          
+                          UIMenu(
+                              ontap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => AdminRecipe()),
+                                );
+                              },
+                              icon: Icons.beach_access,
+                              title: 'Phê duyệt công thức'),
+                        if (userProfile!['role'] == 'Chuyên gia')
+                          SizedBox(
+                            height: 10,
+                          ),
                         UIMenu(
                           ontap: () {
                             showDialog(

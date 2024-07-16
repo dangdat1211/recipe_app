@@ -28,19 +28,27 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _youtubeController = TextEditingController();
 
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _descriptionFocus = FocusNode();
+  final FocusNode _servingsFocus = FocusNode();
+  final FocusNode _timeFocus = FocusNode();
+  final FocusNode _youtubeFocus = FocusNode();
+
   final List<TextEditingController> _stepsControllers = [];
   final List<List<File>> _stepsImages = [];
+  final List<FocusNode> _stepsFocusNodes = [];
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
   RecipeService _recipeService = RecipeService();
 
-  bool _isLoading = false; 
+  bool _isLoading = false;
 
   void _addStepField() {
     setState(() {
       _stepsControllers.add(TextEditingController());
       _stepsImages.add([]);
+      _stepsFocusNodes.add(FocusNode());
     });
   }
 
@@ -48,6 +56,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     setState(() {
       _stepsControllers.removeAt(index);
       _stepsImages.removeAt(index);
+      _stepsFocusNodes[index].dispose();
+      _stepsFocusNodes.removeAt(index);
     });
   }
 
@@ -61,15 +71,20 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   final List<TextEditingController> _ingredientsControllers = [];
+  final List<FocusNode> _ingredientsFocusNodes = [];
+
   void _addIngredientField() {
     setState(() {
       _ingredientsControllers.add(TextEditingController());
+      _ingredientsFocusNodes.add(FocusNode());
     });
   }
 
   void _removeIngredientField(int index) {
     setState(() {
       _ingredientsControllers.removeAt(index);
+      _ingredientsFocusNodes[index].dispose();
+      _ingredientsFocusNodes.removeAt(index);
     });
   }
 
@@ -93,65 +108,84 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         _image == null ||
         _ingredientsControllers.any((controller) => controller.text.isEmpty) ||
         _stepsControllers.any((controller) => controller.text.isEmpty)) {
-      SnackBarCustom.showbar(context, 'Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.');
+      SnackBarCustom.showbar(context,
+          'Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.');
       return;
     }
 
-  setState(() {
-    _isLoading = true;
-  });
+    setState(() {
+      _isLoading = true;
+    });
 
-  try {
-    String? mainImageUrl;
-    if (_image != null) {
-      mainImageUrl = await _uploadFile(_image!);
-    }
-
-    List<List<String>> stepImageUrls = [];
-    for (var stepImages in _stepsImages) {
-      List<String> urls = [];
-      for (var image in stepImages) {
-        String url = await _uploadFile(image);
-        urls.add(url);
+    try {
+      String? mainImageUrl;
+      if (_image != null) {
+        mainImageUrl = await _uploadFile(_image!);
       }
-      stepImageUrls.add(urls);
+
+      List<List<String>> stepImageUrls = [];
+      for (var stepImages in _stepsImages) {
+        List<String> urls = [];
+        for (var image in stepImages) {
+          String url = await _uploadFile(image);
+          urls.add(url);
+        }
+        stepImageUrls.add(urls);
+      }
+
+      final ingredients =
+          _ingredientsControllers.map((controller) => controller.text).toList();
+      final steps =
+          _stepsControllers.map((controller) => controller.text).toList();
+
+      final recipe = RecipeModel(
+          namerecipe: _nameController.text,
+          description: _descriptionController.text,
+          ration: _servingsController.text,
+          time: _timeController.text,
+          ingredients: ingredients,
+          steps: steps,
+          image: mainImageUrl ?? '',
+          userID: currentUser!.uid,
+          urlYoutube: _youtubeController.text,
+          level: _selectedDifficulty);
+
+      await _recipeService.uploadRecipe(recipe, mainImageUrl, stepImageUrls);
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã xảy ra lỗi: $e')),
+      );
     }
-
-    final ingredients = _ingredientsControllers.map((controller) => controller.text).toList();
-    final steps = _stepsControllers.map((controller) => controller.text).toList();
-
-    final recipe = RecipeModel(
-      namerecipe: _nameController.text,
-      description: _descriptionController.text,
-      ration: _servingsController.text,
-      time: _timeController.text,
-      ingredients: ingredients,
-      steps: steps,
-      image: mainImageUrl ?? '',
-      userID: currentUser!.uid,
-      urlYoutube: _youtubeController.text,
-    );
-
-    await _recipeService.uploadRecipe(recipe, mainImageUrl, stepImageUrls);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
-    );
-  } catch (e) {
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Đã xảy ra lỗi: $e')),
-    );
   }
-}
+
+  @override
+  void dispose() {
+    _nameFocus.dispose();
+    _descriptionFocus.dispose();
+    _servingsFocus.dispose();
+    _timeFocus.dispose();
+    _youtubeFocus.dispose();
+    for (var focus in _stepsFocusNodes) {
+      focus.dispose();
+    }
+    for (var focus in _ingredientsFocusNodes) {
+      focus.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +203,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           IconButton(onPressed: () {}, icon: Icon(Icons.more_vert))
         ],
       ),
-      body: _isLoading // Hiển thị vòng tròn xoay khi đang tải lên
+      body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: EdgeInsets.all(16.0),
@@ -228,10 +262,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                         ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    focusNode: _nameFocus,
                     controller: _nameController,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) =>
+                        FocusScope.of(context).requestFocus(_descriptionFocus),
                     decoration: InputDecoration(
                       labelText: 'Tên món ăn',
                       border: OutlineInputBorder(
@@ -240,10 +275,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
+                    focusNode: _descriptionFocus,
                     controller: _descriptionController,
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) =>
+                        FocusScope.of(context).requestFocus(_servingsFocus),
+                    maxLines: null,
+                    minLines: 1,
                     decoration: InputDecoration(
                       labelText: 'Mô tả',
                       border: OutlineInputBorder(
@@ -252,10 +290,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    focusNode: _servingsFocus,
                     controller: _servingsController,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) =>
+                        FocusScope.of(context).requestFocus(_timeFocus),
                     decoration: InputDecoration(
                       labelText: 'Khẩu phần',
                       border: OutlineInputBorder(
@@ -267,15 +306,19 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     value: _selectedDifficulty,
                     decoration: InputDecoration(
                       labelText: 'Độ khó',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     items: <String>['Dễ', 'Trung bình', 'Khó']
-                      .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          value,
+                          style: TextStyle(fontWeight: FontWeight.normal),
+                        ),
+                      );
+                    }).toList(),
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedDifficulty = newValue!;
@@ -284,22 +327,22 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    focusNode: _timeFocus,
                     controller: _timeController,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) =>
+                        FocusScope.of(context).requestFocus(_youtubeFocus),
                     decoration: InputDecoration(
-                      labelText: 'Thời gian nấu',
+                      labelText: 'Thời gian nấu (phút)',
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                   SizedBox(height: 10.0),
                   TextField(
-                    maxLines: null, // Không giới hạn số dòng
-                    minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                    
+                    focusNode: _youtubeFocus,
                     controller: _youtubeController,
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
                       labelText: 'Video youtube hướng dẫn',
                       border: OutlineInputBorder(
@@ -326,12 +369,21 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                     children: [
                                       Expanded(
                                         child: TextField(
-                                          maxLines:
-                                              null, // Không giới hạn số dòng
-                                          minLines:
-                                              1, // Chiều cao tối thiểu là 3 dòng
-                                          
+                                          focusNode:
+                                              _ingredientsFocusNodes[index],
                                           controller: controller,
+                                          textInputAction: TextInputAction.next,
+                                          onSubmitted: (_) {
+                                            if (index ==
+                                                _ingredientsControllers.length -
+                                                    1) {
+                                              _addIngredientField();
+                                            } else {
+                                              FocusScope.of(context).requestFocus(
+                                                  _ingredientsFocusNodes[
+                                                      index + 1]);
+                                            }
+                                          },
                                           decoration: InputDecoration(
                                             labelText:
                                                 'Nguyên liệu ${index + 1}',
@@ -380,10 +432,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                     children: [
                                       Expanded(
                                         child: TextField(
-                                          maxLines: null, // Không giới hạn số dòng
-                                          minLines: 1, // Chiều cao tối thiểu là 3 dòng
-                                          
+                                          focusNode: _stepsFocusNodes[index],
                                           controller: controller,
+                                          textInputAction: TextInputAction.next,
+                                          onSubmitted: (_) {
+                                            if (index == _stepsControllers.length - 1) {
+                                              _addStepField();
+                                            } else {
+                                              FocusScope.of(context).requestFocus(_stepsFocusNodes[index + 1]);
+                                            }
+                                          },
+                                          maxLines: null,
+                                          minLines: 1,
                                           decoration: InputDecoration(
                                             labelText: 'Bước ${index + 1}',
                                             border: OutlineInputBorder(
@@ -402,34 +462,38 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                   SizedBox(height: 8.0),
                                   Wrap(
                                     children: _stepsImages[index]
-                                        .map((image) => Stack(
-                                              children: [
-                                                Image.file(
-                                                  image,
-                                                  width: 100,
-                                                  height: 100,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _stepsImages[index]
-                                                            .remove(image);
-                                                      });
-                                                    },
-                                                    child: Container(
-                                                      color: Colors.black54,
-                                                      child: Icon(
-                                                        Icons.delete,
-                                                        color: Colors.white,
+                                        .map((image) => Padding(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Stack(
+                                                children: [
+                                                  Image.file(
+                                                    image,
+                                                    width: 100,
+                                                    height: 100,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                  Positioned(
+                                                    top: 0,
+                                                    right: 0,
+                                                    child: GestureDetector(
+                                                      onTap: () {
+                                                        setState(() {
+                                                          _stepsImages[index]
+                                                              .remove(image);
+                                                        });
+                                                      },
+                                                      child: Container(
+                                                        color: Colors.black54,
+                                                        child: Icon(
+                                                          Icons.delete,
+                                                          color: Colors.white,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ))
                                         .toList(),
                                   ),

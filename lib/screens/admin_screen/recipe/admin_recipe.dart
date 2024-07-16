@@ -17,6 +17,8 @@ class _AdminRecipeState extends State<AdminRecipe>
   String _searchQuery = '';
   String _sortBy = 'name';
   bool _sortAscending = true;
+  int _itemsPerPage = 10;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -81,65 +83,106 @@ class _AdminRecipeState extends State<AdminRecipe>
           return Center(child: Text('Không có công thức nào'));
         }
 
-        return ListView.builder(
-          itemCount: recipes.length,
-          itemBuilder: (context, index) {
-            var recipe = recipes[index];
-            var recipeId = snapshot.data!.docs[index].id;
-            return ListTile(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => AdminRecipeReview(
-                          recipeId: recipeId, userId: currentUser!.uid)),
-                );
-              },
-              leading: Container(
-                width: 60,
-                height: 60,
-                child: Image.network(
-                  recipe['image'],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.error);
-                  },
-                ),
-              ),
-              title: Text(
-                recipe['namerecipe'],
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(recipe['description'] ?? '',
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(
-                    'Trạng thái: ${recipe['status']}',
-                    style: TextStyle(
-                      color: getStatusColor(recipe['status']),
+        int totalPages = (recipes.length / _itemsPerPage).ceil();
+        int startIndex = (_currentPage - 1) * _itemsPerPage;
+        int endIndex = startIndex + _itemsPerPage;
+        if (endIndex > recipes.length) endIndex = recipes.length;
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: endIndex - startIndex,
+                itemBuilder: (context, index) {
+                  var recipe = recipes[startIndex + index];
+                  var recipeId = snapshot.data!.docs[startIndex + index].id;
+                  return ListTile(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => AdminRecipeReview(
+                                recipeId: recipeId, userId: currentUser!.uid)),
+                      );
+                    },
+                    leading: Container(
+                      width: 60,
+                      height: 60,
+                      child: Image.network(
+                        recipe['image'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.error);
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                    title: Text(
+                      recipe['namerecipe'],
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(recipe['description'] ?? '',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          'Trạng thái: ${recipe['status']}',
+                          style: TextStyle(
+                            color: getStatusColor(recipe['status']),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.check, color: Colors.green),
+                          onPressed: () => approveRecipe(recipeId),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.red),
+                          onPressed: () => rejectRecipe(recipeId),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.check, color: Colors.green),
-                    onPressed: () => approveRecipe(recipeId),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.red),
-                    onPressed: () => rejectRecipe(recipeId),
-                  ),
-                ],
-              ),
-            );
-          },
+            ),
+            buildPaginationControls(totalPages),
+          ],
         );
       },
+    );
+  }
+
+  Widget buildPaginationControls(int totalPages) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed: _currentPage > 1
+              ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+              : null,
+        ),
+        Text('Trang $_currentPage / $totalPages'),
+        IconButton(
+          icon: Icon(Icons.chevron_right),
+          onPressed: _currentPage < totalPages
+              ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+              : null,
+        ),
+      ],
     );
   }
 
@@ -179,6 +222,7 @@ class _AdminRecipeState extends State<AdminRecipe>
       appBar: AppBar(
         title: Text('Quản lý công thức'),
         bottom: TabBar(
+          dividerColor: Colors.transparent,
           controller: _tabController,
           tabs: [
             Tab(text: 'Tất cả'),
@@ -197,26 +241,21 @@ class _AdminRecipeState extends State<AdminRecipe>
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm theo tên...',
-                      prefixIcon:
-                          Icon(Icons.search, size: 20), // Giảm kích thước icon
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 10), // Giảm padding
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(20), // Bo tròn góc nhiều hơn
-                        borderSide: BorderSide(
-                            width: 1,
-                            color: Colors.grey), // Đường viền mỏng hơn
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(width: 1, color: Colors.grey),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(
-                            width: 1, color: Theme.of(context).primaryColor),
+                        borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
                       ),
                     ),
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;
+                        _currentPage = 1; // Reset to first page when searching
                       });
                     },
                   ),
@@ -231,10 +270,10 @@ class _AdminRecipeState extends State<AdminRecipe>
                         _sortBy = value;
                         _sortAscending = true;
                       }
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                   },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                     PopupMenuItem<String>(
                       value: 'name',
                       child: Text('Sắp xếp theo tên'),

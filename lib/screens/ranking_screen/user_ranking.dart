@@ -44,7 +44,9 @@ class _UserRankingState extends State<UserRanking> {
     });
     
     QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+        await FirebaseFirestore.instance.collection('users')
+        .where('status', isEqualTo: true)
+        .get();
     setState(() {
       users = snapshot.docs;
       sortUsers();

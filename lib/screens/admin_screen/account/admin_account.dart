@@ -71,6 +71,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 ),
               ),
               TabBar(
+                dividerColor: Colors.transparent,
                 controller: _tabController,
                 tabs: [
                   Tab(text: 'Đang hoạt động'),

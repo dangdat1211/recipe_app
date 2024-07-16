@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/profile_user.dart/widgets/view_item.dart';
+import 'package:recipe_app/service/rate_service.dart';
 
 class MyFavorite extends StatefulWidget {
   final String userId;
@@ -15,6 +16,27 @@ class MyFavorite extends StatefulWidget {
 class _MyFavoriteState extends State<MyFavorite> {
   final CollectionReference _collectionRef =
       FirebaseFirestore.instance.collection('favorites');
+  
+  int _currentPage = 1;
+  static const int _itemsPerPage = 6;
+  List<Map<String, dynamic>> _allData = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    _allData = await _getData();
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   Future<List<Map<String, dynamic>>> _getData() async {
     QuerySnapshot querySnapshot =
@@ -29,11 +51,12 @@ class _MyFavoriteState extends State<MyFavorite> {
           .collection('recipes')
           .doc(recipeId)
           .get();
-      if (doc.exists ) {
+      if (doc.exists) {
         Map<String, dynamic> recipeData = doc.data() as Map<String, dynamic>;
 
-        if ( recipeData['status'] == "Đã được phê duyệt") {
+        if (recipeData['status'] == "Đã được phê duyệt" && recipeData['hidden'] == false) {
           recipeData['id'] = doc.id; 
+          recipeData['averageRating'] = await RateService.getAverageRating(doc.id);
           recipes.add(recipeData);
         }
       }
@@ -49,20 +72,24 @@ class _MyFavoriteState extends State<MyFavorite> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    int startIndex = (_currentPage - 1) * _itemsPerPage;
+    int endIndex = startIndex + _itemsPerPage;
+    if (endIndex > _allData.length) endIndex = _allData.length;
+    
+    List<Map<String, dynamic>> currentPageData = _allData.sublist(startIndex, endIndex);
+    
+    int totalPages = (_allData.length / _itemsPerPage).ceil();
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16),
-        child: FutureBuilder(
-          future: _getData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Lỗi: ${snapshot.error}'));
-            }
-            List<Map<String, dynamic>> data = snapshot.data ?? [];
-            return GridView.builder(
+        child: Column(
+          children: [
+            GridView.builder(
               physics: NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -70,34 +97,59 @@ class _MyFavoriteState extends State<MyFavorite> {
                 crossAxisSpacing: 5,
                 mainAxisSpacing: 5,
               ),
-              itemCount: data.length,
+              itemCount: currentPageData.length,
               itemBuilder: (context, index) {
-                final item = data[index];
+                final item = currentPageData[index];
                 List<String> likedList = List<String>.from(item['likes'] ?? []);
-                List<String> ratelist = List<String>.from(item['rates'] ?? []);
                 return ViewItem(
                   image: item['image'] ??
                       'https://static.vinwonders.com/production/mon-ngon-ha-dong-4.jpeg',
-                  rate: ratelist.length.toString(),
+                  rate: item['averageRating'].toString(),
                   like: likedList.length.toString(),
                   date: _formatTimestamp(item['createAt']),
                   title: item['namerecipe'] ?? 'Com ngon',
                   onTap: () {
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailReCipe(
-                            recipeId: item['id'], 
-                            userId: item['userID'],
-                          ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailReCipe(
+                          recipeId: item['id'], 
+                          userId: item['userID'],
                         ),
-                      );
+                      ),
+                    );
                   },
                 );
               },
-            );
-          },
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.chevron_left),
+                  onPressed: _currentPage > 1
+                      ? () {
+                          setState(() {
+                            _currentPage--;
+                          });
+                        }
+                      : null,
+                ),
+                Text('Trang $_currentPage / $totalPages'),
+                IconButton(
+                  icon: Icon(Icons.chevron_right),
+                  onPressed: _currentPage < totalPages
+                      ? () {
+                          setState(() {
+                            _currentPage++;
+                          });
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

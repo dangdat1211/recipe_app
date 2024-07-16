@@ -62,8 +62,12 @@ class _ProposeScreenState extends State<ProposeScreen> {
     try {
       QuerySnapshot recipeSnapshot =
           await FirebaseFirestore.instance.collection('recipes').where('status', isEqualTo: 'Đã được phê duyệt').get();
+      var filteredDocs = recipeSnapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return data['hidden'] == false;
+      }).toList();
 
-      for (var doc in recipeSnapshot.docs) {
+      for (var doc in filteredDocs) {
         var recipeData = doc.data() as Map<String, dynamic>;
         var userId = recipeData['userID'];
 
@@ -167,7 +171,9 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     Query query = FirebaseFirestore.instance.collection('recipes');
 
-    query = query.where('status', isEqualTo: 'Đã được phê duyệt');
+    query = query
+      .where('status', isEqualTo: 'Đã được phê duyệt');
+      
 
     if (selectedValue == 'Mới cập nhật') {
       query = query.orderBy('updateAt', descending: true);
@@ -179,9 +185,13 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     final QuerySnapshot recipeSnapshot = await query.get();
 
-    List<DocumentSnapshot> recipeDocs = recipeSnapshot.docs;
+    var filteredDocs = recipeSnapshot.docs.where((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return data['hidden'] == false;
+    }).toList();
 
-    // Clear previous data
+    List<DocumentSnapshot> recipeDocs = filteredDocs;
+
     recipesWithUserData = [];
 
     for (var recipeDoc in recipeDocs) {
@@ -190,7 +200,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
       var userId = recipeData['userID'];
 
-      // Fetch user data
       var userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)

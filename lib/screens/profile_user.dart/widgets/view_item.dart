@@ -61,6 +61,13 @@ class _ViewItemState extends State<ViewItem> {
                       Icons.star,
                       color: Colors.yellow,
                       size: 18,
+                      shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
                     ),
                     SizedBox(width: 4),
                     Text(
@@ -89,6 +96,13 @@ class _ViewItemState extends State<ViewItem> {
                       Icons.favorite,
                       color: Colors.red,
                       size: 18,
+                      shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
                     ),
                     SizedBox(width: 4),
                     Text(

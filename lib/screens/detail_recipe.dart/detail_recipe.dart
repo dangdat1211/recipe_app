@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:intl/intl.dart';
 import 'package:recipe_app/screens/add_recipe/edit_recipe.dart';
 
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_ingredient.dart';
@@ -49,6 +50,15 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
   bool _isFollowing = false;
   bool _showAllIngredients = false;
+
+  String _formatDateTime(dynamic timestamp) {
+  if (timestamp == null) return '';
+  if (timestamp is Timestamp) {
+    DateTime dateTime = timestamp.toDate();
+    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+  }
+  return '';
+}
   Future<void> _checkFollowingStatus() async {
     final currentUserId = currentUser?.uid;
     final userId = widget.userId;
@@ -93,46 +103,46 @@ class _DetailReCipeState extends State<DetailReCipe> {
   }
 
   Future<void> _fetchRecipes() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('recipes')
-        .where('userID',
-            isEqualTo:
-                widget.userId) // Lọc công thức của chủ công thức hiện tại
-        .orderBy('createAt',
-            descending: true) // Sắp xếp theo thời gian giảm dần
-        .limit(4)
+  final snapshot = await FirebaseFirestore.instance
+      .collection('recipes')
+      .where('userID', isEqualTo: widget.userId)
+      .orderBy('createAt', descending: true)
+      .get();
+
+  final filteredRecipes = snapshot.docs.where((doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return data['status'] == 'Đã được phê duyệt' && data['hidden'] == false;
+  }).take(4);
+
+  recipesWithUserData = [];
+
+  for (var recipeDoc in filteredRecipes) {
+    var recipeData = recipeDoc.data() as Map<String, dynamic>;
+    var recipeId = recipeDoc.id;
+
+    var userId = recipeData['userID'];
+
+    var userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
         .get();
-    final recipes = snapshot.docs;
+    var userData = userDoc.data();
 
-    recipesWithUserData = [];
+    if (userData != null) {
+      recipeData['recipeId'] = recipeId;
 
-    for (var recipeDoc in recipes) {
-      var recipeData = recipeDoc.data() as Map<String, dynamic>;
-      var recipeId = recipeDoc.id;
+      bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
-      var userId = recipeData['userID'];
-
-      var userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      var userData = userDoc.data();
-
-      if (userData != null) {
-        recipeData['recipeId'] = recipeId;
-
-        bool test = await FavoriteService.isRecipeFavorite(recipeId);
-
-        recipesWithUserData.add({
-          'recipe': recipeData,
-          'user': userData,
-          'isFavorite': test,
-        });
-      }
+      recipesWithUserData.add({
+        'recipe': recipeData,
+        'user': userData,
+        'isFavorite': isFavorite,
+      });
     }
-
-    setState(() {});
   }
+
+  setState(() {});
+}
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>>
       _fetchUserRecipes() async {
@@ -718,7 +728,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                               Text('Được đăng tải bởi'),
                               Text(userData['fullname'] ?? ''),
                               Text(
-                                'Ngày tạo công thức: ${recipeData['createAt']?.toDate().toString() ?? ''}',
+                                'Ngày tạo công thức: ${_formatDateTime(recipeData['createAt'])}',
                               ),
                               StatefulBuilder(
                                 builder: (context, setState) {
@@ -769,7 +779,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                     },
                                     child: Container(
                                       height: 40,
-                                      width: 100,
+                                      width: 150,
+                                      // decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                                       color: Colors.amber,
                                       child: Center(
                                         child: Text(
@@ -842,7 +853,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                                     recipe['namerecipe'] ?? '',
                                                 star: averageRating
                                                     .toStringAsFixed(1),
-                                                favorite: recipe['liked']
+                                                favorite: recipe['likes']
                                                         ?.length
                                                         .toString() ??
                                                     '0',
