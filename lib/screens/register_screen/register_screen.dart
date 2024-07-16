@@ -43,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_usernameFocusNode.hasFocus) {
         setState(() {
           _usernameError = _usernameController.text.isEmpty
-              ? 'username cannot be empty'
+              ? 'Tên người dùng không được để trống'
               : null;
         });
       }
@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_fullnameFocusNode.hasFocus) {
         setState(() {
           _fullnameError = _fullnameController.text.isEmpty
-              ? 'fullname cannot be empty'
+              ? 'Tên đầy đủ không được để trống'
               : null;
         });
       }
@@ -63,7 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_emailFocusNode.hasFocus) {
         setState(() {
           _emailError =
-              _emailController.text.isEmpty ? 'Email cannot be empty' : null;
+              _emailController.text.isEmpty ? 'Email không được để trống' : null;
         });
       }
     });
@@ -72,7 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_passwordFocusNode.hasFocus) {
         setState(() {
           _passwordError = _passwordController.text.isEmpty
-              ? 'Password cannot be empty'
+              ? 'Mật khẩu không thể để trống'
               : null;
         });
       }
@@ -82,11 +82,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_confirmPasswordFocusNode.hasFocus) {
         setState(() {
           _confirmPasswordError = _confirmPasswordController.text.isEmpty
-              ? 'confirmPassword cannot be empty'
+              ? 'Xác nhận mật khẩu không được để trống'
               : null;
           if (_passwordController.value != null) {
             if (_passwordController.value != _confirmPasswordController.value) {
-              _confirmPasswordError = "ccc";
+              _confirmPasswordError = "Mật khẩu nhập lại không trùng khớp";
             } else {
               _confirmPasswordError = null;
             }
@@ -103,7 +103,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _fullnameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+        _confirmPasswordController.text.isEmpty || 
+        _confirmPasswordController.text != _passwordController.text) {
       return;
     }
 
@@ -145,6 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Đăng ký'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -168,6 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 focusNode: _usernameFocusNode,
                 errorText: _usernameError,
                 label: 'Tên tài khoản',
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(_emailFocusNode),
               ),
               const SizedBox(height: 10),
               InputForm(
@@ -175,6 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 focusNode: _emailFocusNode,
                 errorText: _emailError,
                 label: 'Email',
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(_fullnameFocusNode),
               ),
               const SizedBox(height: 10),
               InputForm(
@@ -182,6 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 focusNode: _fullnameFocusNode,
                 errorText: _fullnameError,
                 label: 'Tên đầy đủ',
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
               ),
               const SizedBox(height: 10),
               InputForm(
@@ -190,6 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 errorText: _passwordError,
                 label: 'Mật khẩu',
                 isPassword: true,
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(_confirmPasswordFocusNode),
               ),
               const SizedBox(height: 10),
               InputForm(
@@ -198,6 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 errorText: _confirmPasswordError,
                 label: 'Nhập lại mật khẩu',
                 isPassword: true,
+                onSubmitted: (_) => _register(),
               ),
               const SizedBox(height: 10),
               GestureDetector(

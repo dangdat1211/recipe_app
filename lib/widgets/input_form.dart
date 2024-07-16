@@ -6,6 +6,7 @@ class InputForm extends StatefulWidget {
       required this.controller,
       required this.focusNode,
       required this.errorText,
+      this.onSubmitted,
       this.isPassword = false, required this.label});
 
   final TextEditingController controller;
@@ -13,6 +14,7 @@ class InputForm extends StatefulWidget {
   final String? errorText;
   final bool isPassword;
   final String label;
+  final Function(String)? onSubmitted;
 
   @override
   State<InputForm> createState() => _InputFormState();
@@ -23,6 +25,7 @@ class _InputFormState extends State<InputForm> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onSubmitted: widget.onSubmitted,
       controller: widget.controller,
       focusNode: widget.focusNode,
       decoration: InputDecoration(

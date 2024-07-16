@@ -133,7 +133,9 @@ class _AdminRecipeState extends State<AdminRecipe>
                         ),
                       ],
                     ),
-                    trailing: Row(
+                    
+                    trailing: recipe['status'] != 'Đã được phê duyệt'
+                    ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
@@ -145,7 +147,8 @@ class _AdminRecipeState extends State<AdminRecipe>
                           onPressed: () => rejectRecipe(recipeId),
                         ),
                       ],
-                    ),
+                    )
+                    : null
                   );
                 },
               ),
@@ -220,7 +223,8 @@ class _AdminRecipeState extends State<AdminRecipe>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Quản lý công thức'),
+        title: Text('Kiểm duyệt công thức'),
+        centerTitle: true,
         bottom: TabBar(
           dividerColor: Colors.transparent,
           controller: _tabController,

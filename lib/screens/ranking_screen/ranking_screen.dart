@@ -35,6 +35,7 @@ class _RankingScreenState extends State<RankingScreen>
       appBar: AppBar(
         title: Text('Khám phá'),
         centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [

@@ -14,6 +14,9 @@ class _AdminIngredientsState extends State<AdminIngredients> {
   String _searchQuery = '';
   String _sortBy = 'name';
   bool _sortAscending = true;
+  int _currentPage = 1;
+  int _itemsPerPage = 10;
+  int _totalItems = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -32,30 +35,26 @@ class _AdminIngredientsState extends State<AdminIngredients> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Container(
-              height: 40, // Giảm chiều cao
+              height: 40,
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm kiếm nguyên liệu...',
-                  prefixIcon:
-                      Icon(Icons.search, size: 20), // Giảm kích thước icon
-                  contentPadding: EdgeInsets.symmetric(
-                      vertical: 0, horizontal: 10), // Giảm padding
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(20), // Bo tròn góc nhiều hơn
-                    borderSide: BorderSide(
-                        width: 1, color: Colors.grey), // Đường viền mỏng hơn
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(width: 1, color: Colors.grey),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(
-                        width: 1, color: Theme.of(context).primaryColor),
+                    borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
                   ),
                 ),
-                style: TextStyle(fontSize: 14), // Giảm kích thước chữ
+                style: TextStyle(fontSize: 14),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
+                    _currentPage = 1; // Reset to first page when searching
                   });
                 },
               ),
@@ -65,6 +64,7 @@ class _AdminIngredientsState extends State<AdminIngredients> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('ingredients')
+                  .orderBy(_sortBy, descending: !_sortAscending)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -72,65 +72,63 @@ class _AdminIngredientsState extends State<AdminIngredients> {
                 }
 
                 var ingredients = snapshot.data!.docs
-                    .map((doc) =>
-                        {...doc.data() as Map<String, dynamic>, 'id': doc.id})
+                    .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
                     .where((ingredient) =>
-                        ingredient['name']
-                            .toString()
-                            .toLowerCase()
-                            .contains(_searchQuery.toLowerCase()) ||
-                        ingredient['keysearch']
-                            .toString()
-                            .toLowerCase()
-                            .contains(_searchQuery.toLowerCase()))
+                        ingredient['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                        ingredient['keysearch'].toString().toLowerCase().contains(_searchQuery.toLowerCase()))
                     .toList();
 
-                ingredients.sort((a, b) {
-                  if (_sortAscending) {
-                    return a[_sortBy]
-                        .toString()
-                        .compareTo(b[_sortBy].toString());
-                  } else {
-                    return b[_sortBy]
-                        .toString()
-                        .compareTo(a[_sortBy].toString());
-                  }
-                });
+                _totalItems = ingredients.length;
+                int totalPages = (_totalItems / _itemsPerPage).ceil();
 
-                return ListView.builder(
-                  itemCount: ingredients.length,
-                  itemBuilder: (context, index) {
-                    var data = ingredients[index];
+                int startIndex = (_currentPage - 1) * _itemsPerPage;
+                int endIndex = startIndex + _itemsPerPage;
+                if (endIndex > _totalItems) endIndex = _totalItems;
 
-                    return ListTile(
-                      leading: Image.network(data['image'],
-                          width: 50, height: 50, fit: BoxFit.cover),
-                      title: Text(data['name']),
-                      subtitle: Text(data['keysearch']),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      EditIngredient(ingredientId: data['id']),
+                var paginatedIngredients = ingredients.sublist(startIndex, endIndex);
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: paginatedIngredients.length,
+                        itemBuilder: (context, index) {
+                          var data = paginatedIngredients[index];
+
+                          return ListTile(
+                            leading: Image.network(data['image'],
+                                width: 50, height: 50, fit: BoxFit.cover),
+                            title: Text(data['name']),
+                            subtitle: Text(data['keysearch']),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            EditIngredient(ingredientId: data['id']),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _showDeleteConfirmationDialog(
-                                data['id'], data['name']),
-                          ),
-                        ],
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () => _showDeleteConfirmationDialog(
+                                      data['id'], data['name']),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                    _buildPaginationControls(totalPages),
+                    SizedBox(height: 80),
+                  ],
                 );
               },
             ),
@@ -152,6 +150,35 @@ class _AdminIngredientsState extends State<AdminIngredients> {
     );
   }
 
+  Widget _buildPaginationControls(int totalPages) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed: _currentPage > 1
+              ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+              : null,
+        ),
+        Text('Trang $_currentPage / $totalPages'),
+        IconButton(
+          icon: Icon(Icons.chevron_right),
+          onPressed: _currentPage < totalPages
+              ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
   void _showSortDialog() {
     showDialog(
       context: context,
@@ -170,6 +197,7 @@ class _AdminIngredientsState extends State<AdminIngredients> {
                     setState(() {
                       _sortBy = value!;
                       _sortAscending = true;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -184,6 +212,7 @@ class _AdminIngredientsState extends State<AdminIngredients> {
                     setState(() {
                       _sortBy = value!;
                       _sortAscending = false;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -196,16 +225,13 @@ class _AdminIngredientsState extends State<AdminIngredients> {
     );
   }
 
-  // Thêm phương thức này vào lớp _AdminIngredientsState
-  void _showDeleteConfirmationDialog(
-      String ingredientId, String ingredientName) {
+  void _showDeleteConfirmationDialog(String ingredientId, String ingredientName) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Xác nhận xóa'),
-          content:
-              Text('Bạn có chắc chắn muốn xóa nguyên liệu "$ingredientName"?'),
+          content: Text('Bạn có chắc chắn muốn xóa nguyên liệu "$ingredientName"?'),
           actions: <Widget>[
             TextButton(
               child: Text('Hủy'),
@@ -226,7 +252,6 @@ class _AdminIngredientsState extends State<AdminIngredients> {
     );
   }
 
-// Thêm phương thức này để xóa nguyên liệu
   void _deleteIngredient(String ingredientId) {
     FirebaseFirestore.instance
         .collection('ingredients')

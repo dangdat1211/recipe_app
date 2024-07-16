@@ -20,7 +20,6 @@ class ProposeScreen extends StatefulWidget {
 }
 
 class _ProposeScreenState extends State<ProposeScreen> {
-  List<String> recipes = ["Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4"];
   String selectedIngredient = '';
 
   List<Map<String, dynamic>> cookingMethods = [];
@@ -69,7 +68,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
       for (var doc in filteredDocs) {
         var recipeData = doc.data() as Map<String, dynamic>;
-        var userId = recipeData['userID'];
+        var recipeId = doc.id;
 
         bool ingredientMatch = false;
 
@@ -83,6 +82,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
         }
 
         if (ingredientMatch) {
+          var userId = recipeData['userID'];
           var userDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(userId)
@@ -90,8 +90,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
           var userData = userDoc.data();
 
           if (userData != null) {
-            recipeData['recipeId'] = doc.id;
-            bool isFavorite = await FavoriteService.isRecipeFavorite(doc.id);
+            recipeData['recipeId'] = recipeId;
+            bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
             recipeResults.add({
               'recipe': recipeData,
@@ -103,7 +103,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
       }
     } catch (e) {
       print('Error fetching recipe data: $e');
-      // You might want to handle the error more gracefully here
     }
 
     return recipeResults;
@@ -112,12 +111,15 @@ class _ProposeScreenState extends State<ProposeScreen> {
   String selectedValue = 'Mới cập nhật';
 
   User? currentUser = FirebaseAuth.instance.currentUser;
-  List<Map<String, dynamic>> recipesWithUserData = [];
+  List<Map<String, dynamic>> allRecipesWithUserData = [];
   bool isLoading = true;
 
   bool test = false;
 
   bool loadingRecipe = true;
+
+  int currentPage = 1;
+  int itemsPerPage = 10;
 
   @override
   void initState() {
@@ -126,6 +128,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
     _fetchRecipes();
     fetchCookingMethods();
   }
+
+  
 
   // Get all user with id
   Future<List<Map<String, dynamic>>> fetchAllUsersWithId() async {
@@ -171,17 +175,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     Query query = FirebaseFirestore.instance.collection('recipes');
 
-    query = query
-      .where('status', isEqualTo: 'Đã được phê duyệt');
-      
-
-    if (selectedValue == 'Mới cập nhật') {
-      query = query.orderBy('updateAt', descending: true);
-    } else if (selectedValue == 'Nhiều tim nhất') {
-      query = query.orderBy('likes', descending: true);
-    } else if (selectedValue == 'Điểm cao nhất') {
-      query = query.orderBy('star', descending: true);
-    }
+    query = query.where('status', isEqualTo: 'Đã được phê duyệt');
 
     final QuerySnapshot recipeSnapshot = await query.get();
 
@@ -190,11 +184,9 @@ class _ProposeScreenState extends State<ProposeScreen> {
       return data['hidden'] == false;
     }).toList();
 
-    List<DocumentSnapshot> recipeDocs = filteredDocs;
+    allRecipesWithUserData = [];
 
-    recipesWithUserData = [];
-
-    for (var recipeDoc in recipeDocs) {
+    for (var recipeDoc in filteredDocs) {
       var recipeData = recipeDoc.data() as Map<String, dynamic>;
       var recipeId = recipeDoc.id;
 
@@ -207,22 +199,39 @@ class _ProposeScreenState extends State<ProposeScreen> {
       var userData = userDoc.data();
 
       if (userData != null) {
-        // Thêm recipeId vào dữ liệu recipe
         recipeData['recipeId'] = recipeId;
 
         bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+        
+        var ratingData = await RateService.fetchAverageRating(recipeId);
 
-        recipesWithUserData.add({
+        allRecipesWithUserData.add({
           'recipe': recipeData,
           'user': userData,
           'isFavorite': isFavorite,
+          'avgRating': ratingData['avgRating'],
+          'ratingCount': ratingData['ratingCount'],
         });
       }
-
-      print(recipesWithUserData);
     }
+
+    // Sắp xếp dữ liệu
+    if (selectedValue == 'Mới cập nhật') {
+      allRecipesWithUserData.sort((a, b) => 
+        (b['recipe']['updateAt'] as Timestamp).compareTo(a['recipe']['updateAt'] as Timestamp));
+    } else if (selectedValue == 'Nhiều tim nhất') {
+      allRecipesWithUserData.sort((a, b) {
+        return (b['recipe']['likes']?.length ?? 0).compareTo(a['recipe']['likes']?.length ?? 0);
+      });
+    } else if (selectedValue == 'Điểm cao nhất') {
+      allRecipesWithUserData.sort((a, b) {
+        return b['avgRating'].compareTo(a['avgRating']);
+      });
+    }
+
     setState(() {
       test = false;
+      currentPage = 1;
     });
   }
 
@@ -240,7 +249,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
   }
 
   // Cooking method
-
   bool loadingMedthod = false;
 
   Future<void> fetchCookingMethods() async {
@@ -269,6 +277,17 @@ class _ProposeScreenState extends State<ProposeScreen> {
       });
     }
   }
+
+  List<Map<String, dynamic>> getCurrentPageRecipes() {
+    int startIndex = (currentPage - 1) * itemsPerPage;
+    int endIndex = startIndex + itemsPerPage;
+    if (endIndex > allRecipesWithUserData.length) {
+      endIndex = allRecipesWithUserData.length;
+    }
+    return allRecipesWithUserData.sublist(startIndex, endIndex);
+  }
+
+  int get totalPages => (allRecipesWithUserData.length / itemsPerPage).ceil();
 
   @override
   Widget build(BuildContext context) {
@@ -451,8 +470,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                     },
                   ),
                 ),
-    ],
-  ),
+              ],
+            ),
                     if (selectedIngredient.isEmpty)
                       Container(
                         height: 300,
@@ -710,118 +729,74 @@ class _ProposeScreenState extends State<ProposeScreen> {
                             selectedValue = newValue!;
                             test = true;
                           });
-                          Query query =
-                              FirebaseFirestore.instance.collection('recipes');
-
-                          query =
-                              query.where('status', isEqualTo: 'Đã được phê duyệt');
-
-                          if (selectedValue == 'Mới cập nhật') {
-                            query = query.orderBy('updateAt', descending: true);
-                          } else if (selectedValue == 'Nhiều tim nhất') {
-                            query = query.orderBy('likes', descending: true);
-                          } else if (selectedValue == 'Điểm cao nhất') {
-                            query = query.orderBy('star', descending: true);
-                          }
-
-                          final QuerySnapshot recipeSnapshot =
-                              await query.get();
-
-                          List<DocumentSnapshot> recipeDocs =
-                              recipeSnapshot.docs;
-
-                          // Clear previous data
-                          recipesWithUserData = [];
-
-                          for (var recipeDoc in recipeDocs) {
-                            var recipeData =
-                                recipeDoc.data() as Map<String, dynamic>;
-                            var recipeId = recipeDoc.id;
-
-                            var userId = recipeData['userID'];
-
-                            // Fetch user data
-                            var userDoc = await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(userId)
-                                .get();
-                            var userData = userDoc.data();
-
-                            if (userData != null) {
-                              // Thêm recipeId vào dữ liệu recipe
-                              recipeData['recipeId'] = recipeId;
-
-                              bool isFavorite =
-                                  await FavoriteService.isRecipeFavorite(
-                                      recipeId);
-
-                              recipesWithUserData.add({
-                                'recipe': recipeData,
-                                'user': userData,
-                                'isFavorite': isFavorite,
-                              });
-                            }
-
-                            print(recipesWithUserData);
-                          }
-                          setState(() {
-                            test = false;
-                          });
+                          await _fetchRecipes();
                         },
                       ),
                     ],
                   ),
                   test
                       ? Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: recipesWithUserData.length,
-                          itemBuilder: (context, index) {
-                            final recipeWithUser = recipesWithUserData[index];
-                            final recipe = recipeWithUser['recipe'];
-                            final user = recipeWithUser['user'];
-                            bool test = false;
-                            test = recipeWithUser['isFavorite'];
+                      : Column(
+                          children: [
+                            ListView.builder(
+                              physics: NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: getCurrentPageRecipes().length,
+                              itemBuilder: (context, index) {
+                                final recipeWithUser = getCurrentPageRecipes()[index];
+                                final recipe = recipeWithUser['recipe'];
+                                final user = recipeWithUser['user'];
+                                bool isFavorite = recipeWithUser['isFavorite'];
 
-                            return Container(
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: FutureBuilder<double>(
-                                      future: RateService.getAverageRating(
-                                          recipe['recipeId']),
-                                      builder: (context, snapshot) {
-                                        double averageRating =
-                                            snapshot.data ?? 0.0;
-                                        return ItemRecipe(
-                                          ontap: () {
-                                            _navigateToRecipeDetail(
-                                                recipe['recipeId'],
-                                                recipe['userID']);
-                                          },
-                                          name: recipe['namerecipe'] ??
-                                              'Không có tiêu đề',
-                                          star:
-                                              averageRating.toStringAsFixed(1),
-                                          favorite:
-                                              recipe['likes'].length.toString(),
-                                          avatar: user['avatar'] ??
-                                              'assets/food_intro.jpg',
-                                          fullname: user['fullname'] ??
-                                              'Không rõ tên',
-                                          image: recipe['image'] ??
-                                              'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
-                                          isFavorite: test,
-                                          onFavoritePressed: () =>
-                                              FavoriteService.toggleFavorite(
-                                                  context, recipe['recipeId'], recipe['userID']),
-                                        );
-                                      }),
+                                return Container(
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: ItemRecipe(
+                                        ontap: () {
+                                          _navigateToRecipeDetail(recipe['recipeId'], recipe['userID']);
+                                        },
+                                        name: recipe['namerecipe'] ?? 'Không có tiêu đề',
+                                        star: recipeWithUser['avgRating'].toStringAsFixed(1),
+                                        favorite: (recipe['likes']?.length ?? 0).toString(),
+                                        avatar: user['avatar'] ?? 'assets/food_intro.jpg',
+                                        fullname: user['fullname'] ?? 'Không rõ tên',
+                                        image: recipe['image'] ?? 'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
+                                        isFavorite: isFavorite,
+                                        onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.chevron_left),
+                                  onPressed: currentPage > 1
+                                      ? () {
+                                          setState(() {
+                                            currentPage--;
+                                          });
+                                        }
+                                      : null,
                                 ),
-                              ),
-                            );
-                          },
+                                Text('Trang $currentPage / $totalPages'),
+                                IconButton(
+                                  icon: Icon(Icons.chevron_right),
+                                  onPressed: currentPage < totalPages
+                                      ? () {
+                                          setState(() {
+                                            currentPage++;
+                                          });
+                                        }
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                 ],
               ),

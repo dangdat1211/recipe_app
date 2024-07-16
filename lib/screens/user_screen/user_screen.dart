@@ -116,7 +116,7 @@ class _UserScreenState extends State<UserScreen> {
                                       children: [
                                         Text('Đăng nhập vào tài khoản'),
                                         Text(
-                                            'Lưu và tạo công thức, gửi cooksnap và hơn thế nữa jhsagd asdyg ahsgd')
+                                            'Lưu và tạo công thức, gửi cooksnap và hơn thế nữa')
                                       ],
                                     ),
                                   )
@@ -128,12 +128,37 @@ class _UserScreenState extends State<UserScreen> {
                             height: 30,
                           ),
                           Container(
-                            height: 150,
-                            child: Image.asset('assets/logo_noback.png'),
-                          ),
-                          Text('Đăng nhập để có một trải nghiệm tốt nhất'),
-                          SizedBox(
-                            height: 30,
+
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  height: 150,
+                                  child: Image.asset('assets/logo_noback.png'),
+                                ),
+                                Text(
+                                  'Tham gia ngay cùng cộng đồng lớn',
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                                SizedBox(height: 30),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const SignInScreen()),
+                                    );
+                                  },
+                                  child: Text(
+                                    'Đăng nhập ngay',
+                                    style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

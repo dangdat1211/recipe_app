@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/home_screen/following_screen.dart';
-import 'package:recipe_app/screens/screens.dart';
-import 'package:recipe_app/service/notification_service.dart';
+import 'package:recipe_app/screens/home_screen/propose_screen.dart';
+
 import 'package:badges/badges.dart' as badges;
+import 'package:recipe_app/screens/notify_screen/notify_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

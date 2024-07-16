@@ -1,7 +1,7 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/helpers/local_storage_helper.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/auth_service.dart';
 
@@ -19,6 +19,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _loginButtonFocusNode = FocusNode();
   String? _emailError;
   String? _passwordError;
 
@@ -28,6 +29,9 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void initState() {
     super.initState();
+    rememberMe();
+
+    remember = (LocalStorageHelper.getValue('rememberMe') as bool?)!;
 
     _emailFocusNode.addListener(() {
       if (!_emailFocusNode.hasFocus) {
@@ -55,6 +59,7 @@ class _SignInScreenState extends State<SignInScreen> {
     _passwordController.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _loginButtonFocusNode.dispose();
     super.dispose();
   }
 
@@ -76,6 +81,8 @@ class _SignInScreenState extends State<SignInScreen> {
             await AuthService().signInWithEmailAndPassword(email, password);
 
         if (user != null) {
+          LocalStorageHelper.setValue('email', _emailController.text);
+          LocalStorageHelper.setValue('pass', _passwordController.text);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => NavigateScreen()),
@@ -121,11 +128,25 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  void rememberMe()  {
+    final rememberMe = LocalStorageHelper.getValue('rememberMe') as bool?;
+    final a = LocalStorageHelper.getValue('email') as String?;
+    final b = LocalStorageHelper.getValue('pass') as String?; 
+
+    if (rememberMe != null && rememberMe) {
+      _emailController.text = a!;
+      _passwordController.text = b!;
+    } else {
+
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: Text('Đăng nhập'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -146,14 +167,16 @@ class _SignInScreenState extends State<SignInScreen> {
                 focusNode: _emailFocusNode,
                 errorText: _emailError,
                 label: 'Email',
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
               ),
               SizedBox(height: 20),
               InputForm(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
                 errorText: _passwordError,
-                label: 'Password',
+                label: 'Mật khẩu',
                 isPassword: true,
+                onSubmitted: (_) => _signIn(),
               ),
               SizedBox(height: 10),
               Row(
@@ -166,6 +189,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         onChanged: (value) {
                           setState(() {
                             remember = !remember;
+                            LocalStorageHelper.setValue('rememberMe', remember);
+                            
                           });
                         },
                         visualDensity:
@@ -194,20 +219,17 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 10),
               GestureDetector(
-                onTap: _isLoading
-                    ? null
-                    : _signIn, // Vô hiệu hóa nút khi đang loading
+                onTap: _isLoading ? null : _signIn,
                 child: Container(
                   height: 50,
                   width: MediaQuery.of(context).size.width * 0.9,
                   decoration: BoxDecoration(
-                    color:  Color(0xFFFF7622), // Đổi màu khi loading
+                    color: Color(0xFFFF7622),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
                     child: _isLoading
-                        ? CircularProgressIndicator(
-                            color: Colors.white) // Hiển thị loading indicator
+                        ? CircularProgressIndicator(color: Colors.white)
                         : Text(
                             'Đăng nhập',
                             style: TextStyle(color: Colors.white),

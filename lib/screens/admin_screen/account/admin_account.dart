@@ -12,8 +12,11 @@ class AdminAccount extends StatefulWidget {
 class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  String _sortBy = 'fullname'; // Mặc định sắp xếp theo tên
+  String _sortBy = 'fullname';
   bool _isAscending = true;
+  int _currentPage = 1;
+  int _itemsPerPage = 10;
+  int _totalItems = 0;
 
   @override
   void initState() {
@@ -47,25 +50,21 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Tìm kiếm...',
-                    prefixIcon:
-                      Icon(Icons.search, size: 20), // Giảm kích thước icon
-                  contentPadding: EdgeInsets.symmetric(
-                      vertical: 0, horizontal: 10), // Giảm padding
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(20), // Bo tròn góc nhiều hơn
-                    borderSide: BorderSide(
-                        width: 1, color: Colors.grey), // Đường viền mỏng hơn
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(
-                        width: 1, color: Theme.of(context).primaryColor),
-                  ),
+                    prefixIcon: Icon(Icons.search, size: 20),
+                    contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(width: 1, color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                    ),
                   ),
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
+                      _currentPage = 1; // Reset to first page when searching
                     });
                   },
                 ),
@@ -123,28 +122,73 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
           return Center(child: Text('Không tìm thấy kết quả'));
         }
 
-        return ListView(
-          children: filteredDocs.map((DocumentSnapshot document) {
-            Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: NetworkImage(data['avatar'] ?? ''),
+        _totalItems = filteredDocs.length;
+        int totalPages = (_totalItems / _itemsPerPage).ceil();
+
+        int startIndex = (_currentPage - 1) * _itemsPerPage;
+        int endIndex = startIndex + _itemsPerPage;
+        if (endIndex > _totalItems) endIndex = _totalItems;
+
+        var paginatedDocs = filteredDocs.sublist(startIndex, endIndex);
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: paginatedDocs.map((DocumentSnapshot document) {
+                  Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: NetworkImage(data['avatar'] ?? ''),
+                    ),
+                    title: Text(data['fullname'] ?? ''),
+                    subtitle: Text(data['email'] ?? ''),
+                    trailing: Switch(
+                      value: data['status'],
+                      onChanged: (bool value) {
+                        _showConfirmationDialog(document.id, value);
+                      },
+                    ),
+                    onTap: () {
+                      _navigateToUserDetail(document.id);
+                    },
+                  );
+                }).toList(),
               ),
-              title: Text(data['fullname'] ?? ''),
-              subtitle: Text(data['email'] ?? ''),
-              trailing: Switch(
-                value: data['status'],
-                onChanged: (bool value) {
-                  _showConfirmationDialog(document.id, value);
-                },
-              ),
-              onTap: () {
-                _navigateToUserDetail(document.id);
-              },
-            );
-          }).toList(),
+            ),
+            _buildPaginationControls(totalPages),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildPaginationControls(int totalPages) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed: _currentPage > 1
+              ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+              : null,
+        ),
+        Text('Trang $_currentPage / $totalPages'),
+        IconButton(
+          icon: Icon(Icons.chevron_right),
+          onPressed: _currentPage < totalPages
+              ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+              : null,
+        ),
+      ],
     );
   }
 
@@ -165,6 +209,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
+                      _currentPage = 1; // Reset to first page when sorting
                       Navigator.pop(context);
                     });
                   },
@@ -178,6 +223,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
+                      _currentPage = 1; // Reset to first page when sorting
                       Navigator.pop(context);
                     });
                   },
@@ -191,6 +237,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
               onPressed: () {
                 setState(() {
                   _isAscending = !_isAscending;
+                  _currentPage = 1; // Reset to first page when changing sort order
                   Navigator.pop(context);
                 });
               },
