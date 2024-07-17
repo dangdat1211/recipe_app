@@ -3,7 +3,7 @@ import 'package:recipe_app/screens/admin_screen/account/admin_account.dart';
 import 'package:recipe_app/screens/admin_screen/category/admin_category.dart';
 import 'package:recipe_app/screens/admin_screen/ingredient/admin_ingredient.dart';
 import 'package:recipe_app/screens/admin_screen/method/admin_method.dart';
-import 'package:recipe_app/screens/admin_screen/recipe/admin_recipe.dart';
+import 'package:recipe_app/screens/admin_screen/recipe/admin_view_recipe.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -26,7 +26,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _buildAdminTile('Quản lý công thức', Icons.restaurant_menu, () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AdminRecipe()),
+              MaterialPageRoute(builder: (context) => const AdminViewRecipe()),
             );
           }),
           _buildAdminTile('Quản lý nguyên liệu', Icons.inventory, () {
