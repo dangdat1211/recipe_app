@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/screens/admin_screen/recipe/admin_recipe.dart';
 import 'package:recipe_app/screens/comment_screen/comment_screen.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
@@ -259,6 +260,11 @@ class _NotifyScreenState extends State<NotifyScreen> {
           builder: (context) => ProfileUser(
             userId: notification['fromUser'],
           ),
+        ));
+        break;
+      case 'approve':
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => AdminRecipe()
         ));
         break;
       default:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -58,22 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         });
       } else {
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-        ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Liên kết đặt lại mật khẩu đã được gửi',
-            style: TextStyle(color: Colors.black),
-          ),
-          backgroundColor: mainColorBackground,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          duration:
-              Duration(seconds: 2), // Giảm thời gian hiển thị xuống 2 giây
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+        SnackBarCustom.showbar(context, 'Liên kết đặt lại mật khẩu đã được gửi');
       }
     } catch (e) {
       setState(() {

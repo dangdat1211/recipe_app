@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
@@ -137,16 +138,11 @@ class _EditProfileState extends State<EditProfile> {
         bio: bio,
         imageUrl: imageUrl,
       );
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Cập nhật hồ sơ thành công'),
-      ));
+      SnackBarCustom.showbar(context, 'Cập nhật hồ sơ thành công');
 
       Navigator.of(context).pop(true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Lỗi khi cập nhật hồ sơ: $e'),
-      ));
+      SnackBarCustom.showbar(context, 'Lỗi khi cập nhật hồ sơ: $e');
     }
   }
 

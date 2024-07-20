@@ -87,10 +87,8 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
       SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
       setState(() {});
     } catch (e) {
-      print('Lỗi khi phê duyệt công thức: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi phê duyệt công thức')),
-      );
+
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức $e');
     }
   }
 
@@ -105,10 +103,9 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
       SnackBarCustom.showbar(context, 'Công thức đã bị từ chối');
       setState(() {});
     } catch (e) {
-      print('Lỗi khi từ chối công thức: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi từ chối công thức')),
-      );
+      print('Lỗi khi từ chối công thức: ');
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức : $e');
+
     }
   }
 
@@ -158,11 +155,7 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
       setState(() {});
     } catch (e) {
       print('Lỗi khi xóa công thức và dữ liệu liên quan: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('Có lỗi xảy ra khi xóa công thức và dữ liệu liên quan')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa công thức và dữ liệu liên qua $e');
     }
   }
 

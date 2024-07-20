@@ -64,4 +64,26 @@ class UserService {
     rethrow;
   }
 }
+ Future<List<String>> getAdminUserIds() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'admin')
+        .get();
+
+    return querySnapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getAdminFCMTokens() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'Chuyên gia')
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      return {
+        'userId': doc.id,
+        'fcmToken': doc['FCM'] ?? '',
+      };
+    }).toList();
+  }
 }

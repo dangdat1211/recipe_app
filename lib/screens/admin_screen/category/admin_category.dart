@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/admin_screen/category/add_category.dart';
 import 'package:recipe_app/screens/admin_screen/category/edit_category.dart';
 
@@ -296,13 +297,10 @@ class _AdminCategoryState extends State<AdminCategory> {
         .doc(categoryId)
         .delete()
         .then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xóa danh mục thành công')),
-      );
+          SnackBarCustom.showbar(context, 'Đã xóa danh mục thành công');
     }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi xóa danh mục')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa danh mục');
+      
     });
   }
 

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/service/admin_service/ingredient_service.dart';
 
 class AddIngredient extends StatefulWidget {
@@ -156,15 +157,11 @@ class _AddIngredientState extends State<AddIngredient> {
 
       _ingredientService.addIngredient(_nameController.text, _keySearchController.text, imageUrl).then((_) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Thêm nguyên liệu thành công')),
-        );
+        SnackBarCustom.showbar(context, 'Thêm nguyên liệu thành công');
         Navigator.pop(context);
       }).catchError((error) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $error'), backgroundColor: Colors.red),
-        );
+        SnackBarCustom.showbar(context, 'Lỗi: $error');
       });
     }
   }

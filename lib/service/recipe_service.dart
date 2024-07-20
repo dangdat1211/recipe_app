@@ -5,7 +5,7 @@ import 'package:recipe_app/models/recipe_model.dart';
 class RecipeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> uploadRecipe(RecipeModel recipe, String? mainImageUrl, List<List<String>> stepImageUrls) async {
+  Future<String> uploadRecipe(RecipeModel recipe, String? mainImageUrl, List<List<String>> stepImageUrls) async {
     try {
       // Add the recipe document and get its ID
       DocumentReference recipeDoc = await _firestore.collection('recipes').add(recipe.toMap());
@@ -43,6 +43,8 @@ class RecipeService {
         'recipes': FieldValue.arrayUnion([recipeId]),
         'updateAt': FieldValue.serverTimestamp(),
       });
+
+      return recipeDoc.id ;
 
     } catch (e) {
       print('Error uploading recipe: $e');

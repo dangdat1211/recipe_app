@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:recipe_app/helpers/local_storage_helper.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/auth_service.dart';
 
@@ -97,29 +98,17 @@ class _SignInScreenState extends State<SignInScreen> {
           } else if (e.code == 'invalid-credential') {
             _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
           } else if (e.code == 'user-disabled') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Tài khoản này đã bị vô hiệu hóa.'),
-              ),
-            );
+            SnackBarCustom.showbar(context, 'Tài khoản này đã bị vô hiệu hóa.');
           } else if (e.code == 'email-not-verified') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'Vui lòng xác minh email của bạn trước khi đăng nhập.'),
-              ),
-            );
+            SnackBarCustom.showbar(context, 'Vui lòng xác minh email của bạn trước khi đăng nhập.');
           } else {
             _emailError = e.message ?? e.code;
           }
         });
       } catch (e) {
         print(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã xảy ra lỗi không xác định.'),
-          ),
-        );
+        SnackBarCustom.showbar(context, 'Đã xảy ra lỗi không xác định.');
+
       } finally {
         setState(() {
           _isLoading = false; // Kết thúc loading

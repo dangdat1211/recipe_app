@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/admin_screen/ingredient/edit_ingredient.dart';
 import 'package:recipe_app/screens/admin_screen/ingredient/add_ingredient.dart';
 import 'package:recipe_app/service/admin_service/ingredient_service.dart';
@@ -247,14 +248,11 @@ class _AdminIngredientsState extends State<AdminIngredients> {
               child: Text('Xóa'),
               onPressed: () {
                 _ingredientService.deleteIngredient(ingredientId).then((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Đã xóa nguyên liệu thành công')),
-                  );
+                  SnackBarCustom.showbar(context, 'Đã xóa nguyên liệu thành công');
+
                   Navigator.of(context).pop();
                 }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Có lỗi xảy ra khi xóa nguyên liệu')),
-                  );
+                  SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa nguyên liệu');
                   Navigator.of(context).pop();
                 });
               },

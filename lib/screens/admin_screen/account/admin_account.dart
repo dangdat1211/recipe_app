@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
 
 class AdminAccount extends StatefulWidget {
@@ -279,13 +280,11 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
     FirebaseFirestore.instance.collection('users').doc(documentId).update({
       'status': isActive,
     }).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật trạng thái tài khoản thành công')),
-      );
+      SnackBarCustom.showbar(context, 'Cập nhật trạng thái tài khoản thành công');
+      
     }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi khi cập nhật trạng thái tài khoản: $error')),
-      );
+      SnackBarCustom.showbar(context, 'Lỗi khi cập nhật trạng thái tài khoản: $error');
+      
     });
   }
 

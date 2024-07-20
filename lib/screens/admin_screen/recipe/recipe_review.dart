@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_ingredient.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_step.dart';
@@ -71,9 +72,7 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
         .collection('recipes')
         .doc(widget.recipeId)
         .update({'status': 'Đã được phê duyệt'});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Công thức đã được phê duyệt')),
-    );
+        SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
     Navigator.pop(context);
   }
 
@@ -82,9 +81,8 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
         .collection('recipes')
         .doc(widget.recipeId)
         .update({'status': 'Bị từ chối'});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Công thức đã bị từ chối')),
-    );
+        SnackBarCustom.showbar(context, 'Công thức đã bị từ chối');
+
     Navigator.pop(context);
   }
 

@@ -3,6 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/service/auth_service.dart';
 import 'package:recipe_app/widgets/input_form.dart';
 
@@ -120,10 +121,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text('Email xác minh đã được gửi đến ${_emailController.text}'),
-      ));
+      SnackBarCustom.showbar(context, 'Email xác minh đã được gửi đến ${_emailController.text}');
+
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       setState(() {

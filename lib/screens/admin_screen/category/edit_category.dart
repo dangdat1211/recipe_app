@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 
 class EditCategory extends StatefulWidget {
   final String categoryId;
@@ -43,11 +44,7 @@ class _EditCategoryState extends State<EditCategory> {
         _currentImageUrl = data['image'];
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Lỗi khi tải dữ liệu: $e'),
-            backgroundColor: Colors.red),
-      );
+      SnackBarCustom.showbar(context, 'Lỗi khi tải dữ liệu: $e');
     }
     setState(() => _isLoading = false);
   }
@@ -201,15 +198,11 @@ class _EditCategoryState extends State<EditCategory> {
         'updateAt': FieldValue.serverTimestamp(),
       }).then((_) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cập nhật danh mục thành công')),
-        );
+        SnackBarCustom.showbar(context, 'Cập nhật danh mục thành công');
         Navigator.pop(context);
       }).catchError((error) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $error'), backgroundColor: Colors.red),
-        );
+        SnackBarCustom.showbar(context, 'Lỗi: $error');
       });
     }
   }

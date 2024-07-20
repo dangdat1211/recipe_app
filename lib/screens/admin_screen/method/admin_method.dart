@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/admin_screen/method/add_method.dart';
 import 'package:recipe_app/screens/admin_screen/method/edit_method.dart';
 
@@ -296,13 +297,9 @@ class _AdminMethodState extends State<AdminMethod> {
         .doc(methodId)
         .delete()
         .then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xóa phương pháp nấu thành công')),
-      );
+          SnackBarCustom.showbar(context, 'Đã xóa phương pháp nấu thành công');
     }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi xóa phương pháp nấu')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa phương pháp nấu');
     });
   }
 

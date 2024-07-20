@@ -129,11 +129,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       setState(() {});
     } catch (e) {
       print('Lỗi khi xóa công thức và dữ liệu liên quan: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('Có lỗi xảy ra khi xóa công thức và dữ liệu liên quan')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa công thức và dữ liệu liên quan');
     }
   }
 
@@ -149,9 +145,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       setState(() {});
     } catch (e) {
       print('Lỗi khi ẩn công thức: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi ẩn công thức')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi ẩn công thức');
     }
   }
 
@@ -167,9 +161,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       setState(() {});
     } catch (e) {
       print('Lỗi khi hiện công thức: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi hiện công thức')),
-      );
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi hiện công thức');
     }
   }
 

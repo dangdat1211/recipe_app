@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/admin_screen/recipe/recipe_review.dart';
+import 'package:recipe_app/service/notification_service.dart';
 
 class AdminRecipe extends StatefulWidget {
   const AdminRecipe({super.key});
@@ -189,36 +191,107 @@ class _AdminRecipeState extends State<AdminRecipe>
     );
   }
 
-  void approveRecipe(String recipeId) {
-    FirebaseFirestore.instance
-        .collection('recipes')
-        .doc(recipeId)
-        .update({'status': 'Đã được phê duyệt'}).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Công thức đã được phê duyệt')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi phê duyệt công thức')),
-      );
-    });
-  }
+  void approveRecipe(String recipeId) async {
+  try {
+    DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
+    String recipeOwnerId = recipeDoc.get('userID');
+    String recipeName = recipeDoc.get('namerecipe');
+    
 
-  void rejectRecipe(String recipeId) {
-    FirebaseFirestore.instance
-        .collection('recipes')
-        .doc(recipeId)
-        .update({'status': 'Bị từ chối'}).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Công thức đã bị từ chối')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi từ chối công thức')),
-      );
-    });
-  }
+    await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Đã được phê duyệt'});
 
+    // Gửi thông báo cho chủ công thức
+    await NotificationService().createNotification(
+      content: 'Công thức "$recipeName" của bạn đã được phê duyệt',
+      fromUser: currentUser!.uid,
+      userId: recipeOwnerId,
+      recipeId: recipeId,
+      screen: 'recipe'
+    );
+
+    DocumentSnapshot ownerDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
+    String? ownerFcmToken = ownerDoc.get('FCM');
+    String? recipeOwnerName = ownerDoc.get('fullname');
+    
+    if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
+      await NotificationService.sendNotification(
+        ownerFcmToken,
+        'Công thức được phê duyệt',
+        'Công thức "$recipeName" của bạn đã được phê duyệt',
+        data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
+      );
+    }
+
+    // Gửi thông báo cho những người đang follow chủ công thức
+    QuerySnapshot usersDocs = await FirebaseFirestore.instance
+        .collection('users')
+        .where('following', arrayContains: recipeOwnerId)
+        .get();
+
+    for (var userDoc in usersDocs.docs) {
+      String followerId = userDoc.id;
+      
+      await NotificationService().createNotification(
+        content: 'vừa đăng một công thức mới: "$recipeName"',
+        fromUser: recipeOwnerId,
+        userId: followerId,
+        recipeId: recipeId,
+        screen: 'recipe'
+      );
+
+      String? followerFcmToken = userDoc.get('FCM');
+      
+      if (followerFcmToken != null && followerFcmToken.isNotEmpty) {
+        await NotificationService.sendNotification(
+          followerFcmToken,
+          'Công thức mới',
+          '$recipeOwnerName vừa đăng một công thức mới: "$recipeName"',
+          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': recipeOwnerId}
+        );
+      }
+    }
+    SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
+
+  } catch (error) {
+    SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức');
+  }
+}
+
+  void rejectRecipe(String recipeId) async {
+    try {
+      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
+      String recipeOwnerId = recipeDoc.get('userID');
+      String recipeName = recipeDoc.get('namerecipe');
+
+      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Bị từ chối'});
+
+      // Gửi thông báo cho chủ công thức
+      await NotificationService().createNotification(
+        content: 'Công thức "$recipeName" của bạn đã bị từ chối',
+        fromUser: currentUser!.uid,
+        userId: recipeOwnerId,
+        recipeId: recipeId,
+        screen: 'recipe'
+      );
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
+      String? ownerFcmToken = userDoc.get('FCM');
+      
+      if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
+        await NotificationService.sendNotification(
+          ownerFcmToken,
+          'Công thức bị từ chối',
+          'Công thức "$recipeName" của bạn đã bị từ chối',
+          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
+        );
+      }
+      SnackBarCustom.showbar(context, 'Công thức đã bị từ chối');
+
+    } catch (error) {
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức');
+
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -43,22 +43,8 @@ class FavoriteService {
     if (favoriteSnapshot.docs.isNotEmpty) {
       // Xóa khỏi danh sách yêu thích
       await favoriteRef.doc(favoriteSnapshot.docs.first.id).delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Bạn đã bỏ yêu thích công thức công thức',
-            style: TextStyle(color: Colors.black),
-          ),
-          backgroundColor: mainColorBackground,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          duration:
-              Duration(seconds: 2), // Giảm thời gian hiển thị xuống 2 giây
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      SnackBarCustom.showbar(context, 'Bạn đã bỏ yêu thích công thức công thức');
+      
 
       final recipeData = await recipeRef.get();
       final likes = List<String>.from(recipeData['likes'] ?? []);

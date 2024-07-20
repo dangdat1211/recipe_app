@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:googleapis/servicecontrol/v1.dart' as servicecontrol;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:recipe_app/main.dart';
+import 'package:recipe_app/screens/admin_screen/recipe/admin_recipe.dart';
 import 'package:recipe_app/screens/comment_screen/comment_screen.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/notify_screen/notify_screen.dart';
@@ -132,6 +133,12 @@ class NotificationService {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
               builder: (context) => ProfileUser(userId: userId)),
+        );
+      }
+      else if (screen == 'approve') {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+              builder: (context) => AdminRecipe()),
         );
       }
     } else {

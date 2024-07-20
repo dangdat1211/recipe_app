@@ -60,8 +60,10 @@ class _ProposeScreenState extends State<ProposeScreen> {
     List<Map<String, dynamic>> recipeResults = [];
 
     try {
-      QuerySnapshot recipeSnapshot =
-          await FirebaseFirestore.instance.collection('recipes').where('status', isEqualTo: 'Đã được phê duyệt').get();
+      QuerySnapshot recipeSnapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('status', isEqualTo: 'Đã được phê duyệt')
+          .get();
       var filteredDocs = recipeSnapshot.docs.where((doc) {
         var data = doc.data() as Map<String, dynamic>;
         return data['hidden'] == false;
@@ -131,8 +133,6 @@ class _ProposeScreenState extends State<ProposeScreen> {
     fetchCategory();
   }
 
-  
-
   // Get all user with id
   Future<List<Map<String, dynamic>>> fetchAllUsersWithId() async {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -168,7 +168,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     print(followedUsers);
     return List<String>.from(followedUsers);
   }
-  
+
   // Danh sách công thức
   Future<void> _fetchRecipes() async {
     setState(() {
@@ -204,7 +204,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
         recipeData['recipeId'] = recipeId;
 
         bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
-        
+
         var ratingData = await RateService.fetchAverageRating(recipeId);
 
         allRecipesWithUserData.add({
@@ -219,11 +219,13 @@ class _ProposeScreenState extends State<ProposeScreen> {
 
     // Sắp xếp dữ liệu
     if (selectedValue == 'Mới cập nhật') {
-      allRecipesWithUserData.sort((a, b) => 
-        (b['recipe']['updateAt'] as Timestamp).compareTo(a['recipe']['updateAt'] as Timestamp));
+      allRecipesWithUserData.sort((a, b) =>
+          (b['recipe']['updateAt'] as Timestamp)
+              .compareTo(a['recipe']['updateAt'] as Timestamp));
     } else if (selectedValue == 'Nhiều tim nhất') {
       allRecipesWithUserData.sort((a, b) {
-        return (b['recipe']['likes']?.length ?? 0).compareTo(a['recipe']['likes']?.length ?? 0);
+        return (b['recipe']['likes']?.length ?? 0)
+            .compareTo(a['recipe']['likes']?.length ?? 0);
       });
     } else if (selectedValue == 'Điểm cao nhất') {
       allRecipesWithUserData.sort((a, b) {
@@ -280,7 +282,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     }
   }
 
-   Future<void> fetchCategory() async {
+  Future<void> fetchCategory() async {
     setState(() {
       loadingMedthod = true;
     });
@@ -412,95 +414,119 @@ class _ProposeScreenState extends State<ProposeScreen> {
                               ),
                             );
                           }).toList(),
-                          
                         ),
                       ),
                     ),
                     SizedBox(height: 20),
                     if (selectedIngredient.isNotEmpty)
-  Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('Danh sách món'),
-      SizedBox(height: 10),
-      loadingRecipe
-          ? Center(child: CircularProgressIndicator())
-          : search.isEmpty
-              ? Text('Không tìm thấy công thức nào.')
-              : Container(
-                  height: 142,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: search.length + 1, // Tăng itemCount lên 1
-                    itemBuilder: (context, index) {
-                      if (index < search.length) {
-                        final recipeWithUser = search[index];
-                        final recipe = recipeWithUser['recipe'];
-                        final user = recipeWithUser['user'];
-                        final isFavorite = recipeWithUser['isFavorite'];
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Danh sách món'),
+                          SizedBox(height: 10),
+                          loadingRecipe
+                              ? Center(child: CircularProgressIndicator())
+                              : search.isEmpty
+                                  ? Text('Không tìm thấy công thức nào.')
+                                  : Container(
+                                      height: 142,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: search.length +
+                                            1, // Tăng itemCount lên 1
+                                        itemBuilder: (context, index) {
+                                          if (index < search.length) {
+                                            final recipeWithUser =
+                                                search[index];
+                                            final recipe =
+                                                recipeWithUser['recipe'];
+                                            final user = recipeWithUser['user'];
+                                            final isFavorite =
+                                                recipeWithUser['isFavorite'];
 
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: ItemRecipe(
-                            ontap: () {
-                              _navigateToRecipeDetail(
-                                  recipe['recipeId'], recipe['userID']);
-                            },
-                            name: recipe['namerecipe'] ?? 'Không có tiêu đề',
-                            star: (recipe['star'] ?? 0).toString(),
-                            favorite:
-                                (recipe['likes'] ?? []).length.toString(),
-                            avatar: user['avatar'] ?? '',
-                            fullname: user['fullname'] ?? 'Không rõ tên',
-                            image: recipe['image'] ?? '',
-                            isFavorite: isFavorite,
-                            onFavoritePressed: () {
-                              FavoriteService.toggleFavorite(context,
-                                  recipe['recipeId'], recipe['userID']);
-                            },
-                          ),
-                        );
-                      } else {
-                        // Mũi tên cuối cùng
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SearchScreen(
-                                    initialSearchTerm: selectedIngredient,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text('Xem thêm'),
-                                    Icon(Icons.arrow_forward,
-                                        color: Colors.black),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 10),
+                                              child: ItemRecipe(
+                                                ontap: () {
+                                                  _navigateToRecipeDetail(
+                                                      recipe['recipeId'],
+                                                      recipe['userID']);
+                                                },
+                                                name: recipe['namerecipe'] ??
+                                                    'Không có tiêu đề',
+                                                star: (recipe['star'] ?? 0)
+                                                    .toString(),
+                                                favorite:
+                                                    (recipe['likes'] ?? [])
+                                                        .length
+                                                        .toString(),
+                                                avatar: user['avatar'] ?? '',
+                                                fullname: user['fullname'] ??
+                                                    'Không rõ tên',
+                                                image: recipe['image'] ?? '',
+                                                isFavorite: isFavorite,
+                                                onFavoritePressed: () {
+                                                  FavoriteService
+                                                      .toggleFavorite(
+                                                          context,
+                                                          recipe['recipeId'],
+                                                          recipe['userID']);
+                                                },
+                                              ),
+                                            );
+                                          } else {
+                                            // Mũi tên cuối cùng
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 10),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          SearchScreen(
+                                                        initialSearchTerm:
+                                                            selectedIngredient,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Container(
+                                                  width: 100,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[300],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                  child: Center(
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Text('Xem thêm'),
+                                                        Icon(
+                                                            Icons.arrow_forward,
+                                                            color:
+                                                                Colors.black),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                        ],
+                      ),
                     if (selectedIngredient.isEmpty)
                       Container(
                         height: 300,
@@ -542,146 +568,173 @@ class _ProposeScreenState extends State<ProposeScreen> {
             height: 10,
           ),
           Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text('Phương pháp nấu'),
-                SizedBox(height: 5,),
-                Container(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: cookingMethods.length,
-                    itemBuilder: (context, index) {
-                      final cookingMethod = cookingMethods[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SearchScreen(initialSearchTerm: cookingMethod['keysearch']),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          color: cardBack,
-                          child: Container(
-                            width: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                ClipOval(
-                                  child: Image.network(
-                                    cookingMethod['image'] ?? '',
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(Icons.error);
-                                    },
+            width: MediaQuery.of(context).size.width * 0.9,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Phương pháp nấu',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Container(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: cookingMethods.length,
+                      itemBuilder: (context, index) {
+                        final cookingMethod = cookingMethods[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SearchScreen(
+                                    initialSearchTerm:
+                                        cookingMethod['keysearch']),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            color: cardBack,
+                            child: Container(
+                              width: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ClipOval(
+                                    child: Image.network(
+                                      cookingMethod['image'] ?? '',
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Icon(Icons.error);
+                                      },
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 5,),
-                                Text(
-                                  cookingMethod['name'] ?? 'No name',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                )
-                              ],
+                                  SizedBox(
+                                    height: 5,
+                                  ),
+                                  Text(
+                                    cookingMethod['name'] ?? 'No name',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  )
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-
-
-        Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+          SizedBox(
+            height: 10,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text('Những món đặc biệt'),
-                SizedBox(height: 5,),
-                Container(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: category.length,
-                    itemBuilder: (context, index) {
-                      final cate = category[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryRecipeScreen(categoryId: cate['id']),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          color: cardBack,
-                          child: Container(
-                            width: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                ClipOval(
-                                  child: Image.network(
-                                    cate['image'] ?? '',
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(Icons.error);
-                                    },
+          Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Những món đặc biệt',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Container(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: category.length,
+                      itemBuilder: (context, index) {
+                        final cate = category[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoryRecipeScreen(
+                                    categoryId: cate['id']),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            color: cardBack,
+                            child: Container(
+                              width: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ClipOval(
+                                    child: Image.network(
+                                      cate['image'] ?? '',
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Icon(Icons.error);
+                                      },
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 5,),
-                                Text(
-                                  cate['name'] ?? 'No name',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                )
-                              ],
+                                  SizedBox(
+                                    height: 5,
+                                  ),
+                                  Text(
+                                    cate['name'] ?? 'No name',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  )
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        
           SizedBox(
             height: 10,
           ),
@@ -717,7 +770,14 @@ class _ProposeScreenState extends State<ProposeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          Text('Người dùng nổi bật'),
+                          Text(
+                            'Người dùng nổi bật',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
                           Container(
                             height: 200,
                             child: ListView.builder(
@@ -752,7 +812,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                   follow: isFollowing,
                                   clickFollow: () async {
                                     if (currentUser != null) {
-                                      await FollowService().toggleFollow(currentUser!.uid, user['id']  );
+                                      await FollowService().toggleFollow(
+                                          currentUser!.uid, user['id']);
                                     } else {
                                       showDialog(
                                         context: context,
@@ -816,7 +877,17 @@ class _ProposeScreenState extends State<ProposeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Danh sách công thức'),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          'Danh sách công thức',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ),
                       DropdownButton<String>(
                         value: selectedValue,
                         items: <String>[
@@ -848,7 +919,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
                               shrinkWrap: true,
                               itemCount: getCurrentPageRecipes().length,
                               itemBuilder: (context, index) {
-                                final recipeWithUser = getCurrentPageRecipes()[index];
+                                final recipeWithUser =
+                                    getCurrentPageRecipes()[index];
                                 final recipe = recipeWithUser['recipe'];
                                 final user = recipeWithUser['user'];
                                 bool isFavorite = recipeWithUser['isFavorite'];
@@ -856,19 +928,32 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                 return Container(
                                   child: Center(
                                     child: Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
                                       child: ItemRecipe(
                                         ontap: () {
-                                          _navigateToRecipeDetail(recipe['recipeId'], recipe['userID']);
+                                          _navigateToRecipeDetail(
+                                              recipe['recipeId'],
+                                              recipe['userID']);
                                         },
-                                        name: recipe['namerecipe'] ?? 'Không có tiêu đề',
-                                        star: recipeWithUser['avgRating'].toStringAsFixed(1),
-                                        favorite: (recipe['likes']?.length ?? 0).toString(),
-                                        avatar: user['avatar'] ?? 'assets/food_intro.jpg',
-                                        fullname: user['fullname'] ?? 'Không rõ tên',
-                                        image: recipe['image'] ?? 'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
+                                        name: recipe['namerecipe'] ??
+                                            'Không có tiêu đề',
+                                        star: recipeWithUser['avgRating']
+                                            .toStringAsFixed(1),
+                                        favorite: (recipe['likes']?.length ?? 0)
+                                            .toString(),
+                                        avatar: user['avatar'] ??
+                                            'assets/food_intro.jpg',
+                                        fullname:
+                                            user['fullname'] ?? 'Không rõ tên',
+                                        image: recipe['image'] ??
+                                            'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
                                         isFavorite: isFavorite,
-                                        onFavoritePressed: () => FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']),
+                                        onFavoritePressed: () =>
+                                            FavoriteService.toggleFavorite(
+                                                context,
+                                                recipe['recipeId'],
+                                                recipe['userID']),
                                       ),
                                     ),
                                   ),

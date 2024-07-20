@@ -7,7 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/notification_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 
 class EditRecipeScreen extends StatefulWidget {
   final String recipeId;
@@ -283,6 +286,30 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
       await recipeDoc.update({'steps': stepIds});
 
+      UserService userService = UserService();
+      List<Map<String, dynamic>> adminInfo =
+          await userService.getAdminFCMTokens();
+
+      for (var admin in adminInfo) {
+        // Gửi thông báo trong ứng dụng
+        await NotificationService().createNotification(
+            content: 'Có công thức mới cần phê duyệt',
+            fromUser: currentUser!.uid,
+            userId: admin['userId']!,
+            recipeId: widget.recipeId,
+            screen: 'approve');
+
+        // Gửi FCM notification
+        if (admin['fcmToken'] != null && admin['fcmToken']!.isNotEmpty) {
+          await NotificationService.sendNotification(admin['fcmToken']!,
+              'Khẩn cấp', 'Có công thức mới cần bạn phê duyệt', data: {
+            'screen': 'approve',
+            'recipeId': widget.recipeId,
+            'userId': currentUser!.uid
+          });
+        }
+      }
+
       setState(() {
         _isLoading = false;
       });
@@ -292,21 +319,16 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         MaterialPageRoute(builder: (context) => const ManageMyRecipe()),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Công thức đã được cập nhật thành công'),
-        ),
-      );
+      SnackBarCustom.showbar(context, 'Công thức đã được cập nhật thành công');
+
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã xảy ra lỗi: $e'),
-        ),
-      );
+      SnackBarCustom.showbar(context, 'Đã xảy ra lỗi: $e');
+
+      
     }
   }
 

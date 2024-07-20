@@ -5,10 +5,13 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
+import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/helpers/snack_bar_custom.dart';
 import 'package:recipe_app/models/recipe_model.dart';
 import 'package:recipe_app/screens/screens.dart';
+import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/recipe_service.dart';
+import 'package:recipe_app/service/user_service.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   const AddRecipeScreen({super.key});
@@ -63,12 +66,15 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final categoriesSnapshot = await FirebaseFirestore.instance.collection('categories').get();
+    final categoriesSnapshot =
+        await FirebaseFirestore.instance.collection('categories').get();
     setState(() {
-      _allCategories = categoriesSnapshot.docs.map((doc) => {
-        'id': doc.id,
-        'name': doc['name'],
-      }).toList();
+      _allCategories = categoriesSnapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                'name': doc['name'],
+              })
+          .toList();
     });
   }
 
@@ -170,9 +176,33 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           urlYoutube: _youtubeController.text,
           categories: _selectedCategories,
           level: _selectedDifficulty);
-          
 
-      await _recipeService.uploadRecipe(recipe, mainImageUrl, stepImageUrls);
+      String recipeId = await _recipeService.uploadRecipe(
+          recipe, mainImageUrl, stepImageUrls);
+
+      UserService userService = UserService();
+      List<Map<String, dynamic>> adminInfo =
+          await userService.getAdminFCMTokens();
+
+      for (var admin in adminInfo) {
+        // Gửi thông báo trong ứng dụng
+        await NotificationService().createNotification(
+            content: 'Có công thức mới cần phê duyệt',
+            fromUser: currentUser!.uid,
+            userId: admin['userId']!,
+            recipeId: recipeId,
+            screen: 'approve');
+
+        // Gửi FCM notification
+        if (admin['fcmToken'] != null && admin['fcmToken']!.isNotEmpty) {
+          await NotificationService.sendNotification(admin['fcmToken']!,
+              'Khẩn cấp', 'Có công thức mới cần bạn phê duyệt', data: {
+            'screen': 'approve',
+            'recipeId': recipeId,
+            'userId': currentUser!.uid
+          });
+        }
+      }
 
       setState(() {
         _isLoading = false;
@@ -187,9 +217,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xảy ra lỗi: $e')),
-      );
+      SnackBarCustom.showbar(context,
+          'Đã xảy ra lỗi: $e');
+      
     }
   }
 
@@ -206,7 +236,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              border: Border.all(width: 1, color: Colors.grey),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -214,9 +244,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               children: [
                 Text(
                   'Chọn danh mục',
-                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16.0, ),
                 ),
-                Icon(_showCategories ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                Icon(_showCategories
+                    ? Icons.arrow_drop_up
+                    : Icons.arrow_drop_down),
               ],
             ),
           ),
@@ -235,7 +267,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               itemBuilder: (context, index) {
                 final category = _allCategories[index];
                 return CheckboxListTile(
-                  title: Text(category['name']),
+                  title: Text(category['name'], ),
                   value: _selectedCategories.contains(category['id']),
                   onChanged: (bool? value) {
                     setState(() {
@@ -257,9 +289,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           Wrap(
             spacing: 8,
             children: _selectedCategories.map((categoryId) {
-              final category = _allCategories.firstWhere((cat) => cat['id'] == categoryId);
+              final category =
+                  _allCategories.firstWhere((cat) => cat['id'] == categoryId);
               return Chip(
-                label: Text(category['name']),
+                label: Text(category['name'], style: TextStyle(color: mainColor),),
                 onDeleted: () {
                   setState(() {
                     _selectedCategories.remove(categoryId);
@@ -271,7 +304,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       ],
     );
   }
-
 
   @override
   void dispose() {
@@ -483,9 +515,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                                     1) {
                                               _addIngredientField();
                                             } else {
-                                              FocusScope.of(context).requestFocus(
-                                                  _ingredientsFocusNodes[
-                                                      index + 1]);
+                                              FocusScope.of(context)
+                                                  .requestFocus(
+                                                      _ingredientsFocusNodes[
+                                                          index + 1]);
                                             }
                                           },
                                           decoration: InputDecoration(
@@ -540,10 +573,14 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                           controller: controller,
                                           textInputAction: TextInputAction.next,
                                           onSubmitted: (_) {
-                                            if (index == _stepsControllers.length - 1) {
+                                            if (index ==
+                                                _stepsControllers.length - 1) {
                                               _addStepField();
                                             } else {
-                                              FocusScope.of(context).requestFocus(_stepsFocusNodes[index + 1]);
+                                              FocusScope.of(context)
+                                                  .requestFocus(
+                                                      _stepsFocusNodes[
+                                                          index + 1]);
                                             }
                                           },
                                           maxLines: null,
