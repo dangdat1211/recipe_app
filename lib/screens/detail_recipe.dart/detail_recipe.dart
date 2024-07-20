@@ -51,14 +51,18 @@ class _DetailReCipeState extends State<DetailReCipe> {
   bool _isFollowing = false;
   bool _showAllIngredients = false;
 
+  String? currentUserAvatar;
+  String recipeName = '';
+
   String _formatDateTime(dynamic timestamp) {
-  if (timestamp == null) return '';
-  if (timestamp is Timestamp) {
-    DateTime dateTime = timestamp.toDate();
-    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+    if (timestamp == null) return '';
+    if (timestamp is Timestamp) {
+      DateTime dateTime = timestamp.toDate();
+      return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+    }
+    return '';
   }
-  return '';
-}
+
   Future<void> _checkFollowingStatus() async {
     final currentUserId = currentUser?.uid;
     final userId = widget.userId;
@@ -72,6 +76,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
       _isFollowing = followings.contains(userId);
     });
   }
+
+  late Future<Map<String, dynamic>> _commentDataFuture;
 
   @override
   void initState() {
@@ -100,49 +106,121 @@ class _DetailReCipeState extends State<DetailReCipe> {
 
     _fetchRecipes();
     _checkFollowingStatus();
+    _commentDataFuture = getCommentData();
+    _loadCurrentUserInfo();
+    _loadRecipeName();
   }
 
-  Future<void> _fetchRecipes() async {
-  final snapshot = await FirebaseFirestore.instance
+  Future<void> _loadRecipeName() async {
+  final recipeDoc = await FirebaseFirestore.instance
       .collection('recipes')
-      .where('userID', isEqualTo: widget.userId)
-      .orderBy('createAt', descending: true)
+      .doc(widget.recipeId)
       .get();
 
-  final filteredRecipes = snapshot.docs.where((doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return data['status'] == 'Đã được phê duyệt' && data['hidden'] == false;
-  }).take(4);
+  if (recipeDoc.exists) {
+    setState(() {
+      recipeName = recipeDoc.data()?['namerecipe'] ?? '';
+    });
+  }
+}
 
-  recipesWithUserData = [];
-
-  for (var recipeDoc in filteredRecipes) {
-    var recipeData = recipeDoc.data() as Map<String, dynamic>;
-    var recipeId = recipeDoc.id;
-
-    var userId = recipeData['userID'];
-
-    var userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
-    var userData = userDoc.data();
-
-    if (userData != null) {
-      recipeData['recipeId'] = recipeId;
-
-      bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
-
-      recipesWithUserData.add({
-        'recipe': recipeData,
-        'user': userData,
-        'isFavorite': isFavorite,
-      });
+  Future<void> _loadCurrentUserInfo() async {
+    currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          currentUserAvatar = userDoc.data()?['avatar'];
+        });
+      }
     }
   }
 
-  setState(() {});
-}
+  Future<Map<String, dynamic>> getCommentData() async {
+    final commentsSnapshot = await FirebaseFirestore.instance
+        .collection('comments')
+        .where('recipeID', isEqualTo: widget.recipeId)
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .get();
+
+    final commentCount = await FirebaseFirestore.instance
+        .collection('comments')
+        .where('recipeID', isEqualTo: widget.recipeId)
+        .count()
+        .get();
+
+    if (commentsSnapshot.docs.isNotEmpty) {
+      final latestComment = commentsSnapshot.docs.first.data();
+
+      // Lấy thông tin user
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(latestComment['userId'])
+          .get();
+
+      final userData = userDoc.data();
+
+      return {
+        'count': commentCount.count,
+        'latestComment': {
+          ...latestComment,
+          'fullname': userData?['fullname'] ?? '',
+          'avatar': userData?['avatar'] ?? '',
+        },
+      };
+    } else {
+      return {
+        'count': 0,
+        'latestComment': null,
+      };
+    }
+  }
+
+  Future<void> _fetchRecipes() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('recipes')
+        .where('userID', isEqualTo: widget.userId)
+        .orderBy('createAt', descending: true)
+        .get();
+
+    final filteredRecipes = snapshot.docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['status'] == 'Đã được phê duyệt' && data['hidden'] == false;
+    }).take(4);
+
+    recipesWithUserData = [];
+
+    for (var recipeDoc in filteredRecipes) {
+      var recipeData = recipeDoc.data() as Map<String, dynamic>;
+      var recipeId = recipeDoc.id;
+
+      var userId = recipeData['userID'];
+
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      var userData = userDoc.data();
+
+      if (userData != null) {
+        recipeData['recipeId'] = recipeId;
+
+        bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+
+        recipesWithUserData.add({
+          'recipe': recipeData,
+          'user': userData,
+          'isFavorite': isFavorite,
+        });
+      }
+    }
+
+    setState(() {});
+  }
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>>
       _fetchUserRecipes() async {
@@ -223,6 +301,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(recipeName),
         actions: [
           currentUser != null
               ? currentUser!.uid == widget.userId
@@ -242,7 +321,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
           StatefulBuilder(builder: (context, setState) {
             return IconButton(
               onPressed: () async {
-                await FavoriteService.toggleFavorite(context, widget.recipeId, widget.userId);
+                await FavoriteService.toggleFavorite(
+                    context, widget.recipeId, widget.userId);
                 // if (_isFavorite == false) {
                 //   await NotificationService().createNotification(
                 //       content: 'vừa mới thích công thức của bạn',
@@ -354,33 +434,40 @@ class _DetailReCipeState extends State<DetailReCipe> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10,),
+                    SizedBox(
+                      height: 10,
+                    ),
                     Row(
                       children: [
                         Expanded(
-                          flex: 3,
-                          child: Column(children: [
-                            Text('Khẩu phần'),
-                            Text(recipeData['ration'])
-                          ],)
-                        ),
+                            flex: 3,
+                            child: Column(
+                              children: [
+                                Text('Khẩu phần'),
+                                Text(recipeData['ration'])
+                              ],
+                            )),
                         Expanded(
-                          flex: 3,
-                          child: Column(children: [
-                            Text('Thời gian'),
-                            Text(recipeData['time'])
-                          ],)
-                        ),
+                            flex: 3,
+                            child: Column(
+                              children: [
+                                Text('Thời gian'),
+                                Text(recipeData['time'])
+                              ],
+                            )),
                         Expanded(
-                          flex: 3,
-                          child: Column(children: [
-                            Text('Độ khó'),
-                            Text(recipeData['level'])
-                          ],)
-                        ),
+                            flex: 3,
+                            child: Column(
+                              children: [
+                                Text('Độ khó'),
+                                Text(recipeData['level'])
+                              ],
+                            )),
                       ],
                     ),
-                    SizedBox(height: 10,),
+                    SizedBox(
+                      height: 10,
+                    ),
                     Row(
                       children: [
                         Expanded(
@@ -405,38 +492,58 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     ),
                     StatefulBuilder(builder: (context, setState) {
                       return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...(recipeData['ingredients'] as List<dynamic>).take(3).map((ingredient) {
-                          return ItemIngredient(
-                            index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
-                            title: ingredient.toString(),
-                          );
-                        }).toList(),
-                        if ((recipeData['ingredients'] as List<dynamic>).length > 3)
-                          AnimatedCrossFade(
-                            duration: Duration(milliseconds: 300),
-                            firstChild: Container(),
-                            secondChild: Column(
-                              children: (recipeData['ingredients'] as List<dynamic>).skip(3).map((ingredient) {
-                                return ItemIngredient(
-                                  index: ((recipeData['ingredients'] as List<dynamic>).indexOf(ingredient).toInt() + 1).toString(),
-                                  title: ingredient.toString(),
-                                );
-                              }).toList(),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ...(recipeData['ingredients'] as List<dynamic>)
+                              .take(3)
+                              .map((ingredient) {
+                            return ItemIngredient(
+                              index:
+                                  ((recipeData['ingredients'] as List<dynamic>)
+                                              .indexOf(ingredient)
+                                              .toInt() +
+                                          1)
+                                      .toString(),
+                              title: ingredient.toString(),
+                            );
+                          }).toList(),
+                          if ((recipeData['ingredients'] as List<dynamic>)
+                                  .length >
+                              3)
+                            AnimatedCrossFade(
+                              duration: Duration(milliseconds: 300),
+                              firstChild: Container(),
+                              secondChild: Column(
+                                children:
+                                    (recipeData['ingredients'] as List<dynamic>)
+                                        .skip(3)
+                                        .map((ingredient) {
+                                  return ItemIngredient(
+                                    index: ((recipeData['ingredients']
+                                                    as List<dynamic>)
+                                                .indexOf(ingredient)
+                                                .toInt() +
+                                            1)
+                                        .toString(),
+                                    title: ingredient.toString(),
+                                  );
+                                }).toList(),
+                              ),
+                              crossFadeState: _showAllIngredients
+                                  ? CrossFadeState.showSecond
+                                  : CrossFadeState.showFirst,
                             ),
-                            crossFadeState: _showAllIngredients ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _showAllIngredients = !_showAllIngredients;
+                              });
+                            },
+                            child: Text(
+                                _showAllIngredients ? 'Ẩn bớt' : 'Hiện tất cả'),
                           ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _showAllIngredients = !_showAllIngredients;
-                            });
-                          },
-                          child: Text(_showAllIngredients ? 'Ẩn bớt' : 'Hiện tất cả'),
-                        ),
-                      ],
-                    );
+                        ],
+                      );
                     }),
                     Row(
                       children: [
@@ -602,95 +709,126 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     ),
                     Divider(),
                     SizedBox(height: 5),
-                    Center(
-                      child: Container(
-                        height: 180,
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                    FutureBuilder<Map<String, dynamic>>(
+                      future: _commentDataFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        final commentData = snapshot.data!;
+                        final commentCount = commentData['count'];
+                        final latestComment = commentData['latestComment'];
+
+                        return Center(
+                          child: Container(
+                            height: 180,
+                            width: MediaQuery.of(context).size.width * 0.9,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.comment),
-                                  SizedBox(width: 10),
-                                  Text('Bình luận'),
-                                  SizedBox(width: 10),
-                                  Text('4'),
-                                ],
-                              ),
-                              SizedBox(height: 5),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CommentScreen(
-                                        recipeId: widget.recipeId,
-                                        userId: widget.userId,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Text('Xem tất cả bình luận'),
-                              ),
-                              SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
+                                  Row(
+                                    children: [
+                                      Icon(Icons.comment),
+                                      SizedBox(width: 10),
+                                      Text('Bình luận'),
+                                      SizedBox(width: 10),
+                                      Text(commentCount.toString()),
+                                    ],
                                   ),
-                                  SizedBox(width: 10),
-                                  Text('Phạm Duy Đạt'),
-                                  SizedBox(width: 10),
-                                  Text('Ngon quá'),
-                                ],
-                              ),
-                              SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  CircleAvatar(radius: 20),
-                                  SizedBox(width: 10),
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => CommentScreen(
-                                              recipeId: widget.recipeId,
-                                              userId: widget.userId,
-                                              autoFocus: true,
-                                            ),
+                                  SizedBox(height: 5),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => CommentScreen(
+                                            recipeId: widget.recipeId,
+                                            userId: widget.userId,
                                           ),
-                                        );
-                                      },
-                                      child: Container(
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          color: Colors.white,
                                         ),
-                                        alignment: Alignment.centerLeft,
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 16),
-                                        child: Text('Bình luận ngay'),
-                                      ),
+                                      );
+                                    },
+                                    child: Text('Xem tất cả bình luận'),
+                                  ),
+                                  SizedBox(height: 5),
+                                  if (latestComment != null)
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundImage: NetworkImage(
+                                              latestComment['avatar'] ?? ''),
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(latestComment['fullname'] ?? ''),
+                                        SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            latestComment['content'] ?? '',
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundImage: currentUserAvatar !=
+                                                null
+                                            ? NetworkImage(currentUserAvatar!)
+                                            : null,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CommentScreen(
+                                                  recipeId: widget.recipeId,
+                                                  userId: widget.userId,
+                                                  autoFocus: true,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              color: Colors.white,
+                                            ),
+                                            alignment: Alignment.centerLeft,
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 16),
+                                            child: Text('Bình luận ngay'),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                     SizedBox(height: 5),
                     Divider(),
@@ -864,9 +1002,10 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                                 isFavorite: isFavorite,
                                                 onFavoritePressed: () async {
                                                   FavoriteService
-                                                      .toggleFavorite(context,
-                                                          recipe['recipeId'], recipe['userID']);
-                                                  
+                                                      .toggleFavorite(
+                                                          context,
+                                                          recipe['recipeId'],
+                                                          recipe['userID']);
                                                 });
                                           }),
                                     ),

@@ -38,7 +38,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _buildAdminTile('Quản lý loại món ăn', Icons.category, () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AdminCateGory()),
+              MaterialPageRoute(builder: (context) => const AdminCategory()),
             );
           }),
           _buildAdminTile('Quản lý phương pháp nấu', Icons.book, () {

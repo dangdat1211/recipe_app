@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_app/screens/admin_screen/ingredient/edit_ingredient.dart';
 import 'package:recipe_app/screens/admin_screen/ingredient/add_ingredient.dart';
+import 'package:recipe_app/service/admin_service/ingredient_service.dart';
+
 
 class AdminIngredients extends StatefulWidget {
   const AdminIngredients({Key? key}) : super(key: key);
@@ -17,6 +19,8 @@ class _AdminIngredientsState extends State<AdminIngredients> {
   int _currentPage = 1;
   int _itemsPerPage = 10;
   int _totalItems = 0;
+
+  final IngredientService _ingredientService = IngredientService();
 
   @override
   Widget build(BuildContext context) {
@@ -62,10 +66,10 @@ class _AdminIngredientsState extends State<AdminIngredients> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('ingredients')
-                  .orderBy(_sortBy, descending: !_sortAscending)
-                  .snapshots(),
+              stream: _ingredientService.fetchIngredients(
+                sortBy: _sortBy,
+                sortAscending: _sortAscending,
+              ),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
@@ -242,29 +246,22 @@ class _AdminIngredientsState extends State<AdminIngredients> {
             TextButton(
               child: Text('Xóa'),
               onPressed: () {
-                _deleteIngredient(ingredientId);
-                Navigator.of(context).pop();
+                _ingredientService.deleteIngredient(ingredientId).then((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Đã xóa nguyên liệu thành công')),
+                  );
+                  Navigator.of(context).pop();
+                }).catchError((error) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Có lỗi xảy ra khi xóa nguyên liệu')),
+                  );
+                  Navigator.of(context).pop();
+                });
               },
             ),
           ],
         );
       },
     );
-  }
-
-  void _deleteIngredient(String ingredientId) {
-    FirebaseFirestore.instance
-        .collection('ingredients')
-        .doc(ingredientId)
-        .delete()
-        .then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xóa nguyên liệu thành công')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi xóa nguyên liệu')),
-      );
-    });
   }
 }

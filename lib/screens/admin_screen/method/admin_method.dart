@@ -13,8 +13,11 @@ class AdminMethod extends StatefulWidget {
 class _AdminMethodState extends State<AdminMethod> {
   String _searchQuery = '';
   String _sortBy = 'name';
-  String _sortOrder = 'asc';
-  
+  bool _sortAscending = true;
+  int _currentPage = 1;
+  int _itemsPerPage = 10;
+  int _totalItems = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,132 +33,159 @@ class _AdminMethodState extends State<AdminMethod> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm phương pháp...',
-                prefixIcon:
-                    Icon(Icons.search, size: 20), // Giảm kích thước icon
-                contentPadding: EdgeInsets.symmetric(
-                    vertical: 0, horizontal: 10), // Giảm padding
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(20), // Bo tròn góc nhiều hơn
-                  borderSide: BorderSide(
-                      width: 1, color: Colors.grey), // Đường viền mỏng hơn
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Container(
+              height: 40,
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm phương pháp...',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(width: 1, color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                      width: 1, color: Theme.of(context).primaryColor),
-                ),
+                style: TextStyle(fontSize: 14),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _currentPage = 1; // Reset to first page when searching
+                  });
+                },
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
             ),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('cookingmethods')
+                  .orderBy(_sortBy, descending: !_sortAscending)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
 
+                if (snapshot.hasError) {
+                  return Center(child: Text('Đã xảy ra lỗi: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text('Không có phương pháp nấu nào.'));
+                }
+
                 var methods = snapshot.data!.docs
-                    .map((doc) =>
-                        {...doc.data() as Map<String, dynamic>, 'id': doc.id})
+                    .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
                     .where((method) =>
-                        method['name']
-                            .toString()
-                            .toLowerCase()
-                            .contains(_searchQuery.toLowerCase()) ||
-                        method['keysearch']
-                            .toString()
-                            .toLowerCase()
-                            .contains(_searchQuery.toLowerCase()))
+                        method['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                        method['keysearch'].toString().toLowerCase().contains(_searchQuery.toLowerCase()))
                     .toList();
 
-                methods.sort((a, b) {
-                  if (_sortBy == 'name') {
-                    return _sortOrder == 'asc'
-                        ? a['name'].toString().compareTo(b['name'].toString())
-                        : b['name'].toString().compareTo(a['name'].toString());
-                  } else if (_sortBy == 'createAt') {
-                    var aDate = a['createAt'] as Timestamp;
-                    var bDate = b['createAt'] as Timestamp;
-                    return _sortOrder == 'asc'
-                        ? aDate.compareTo(bDate)
-                        : bDate.compareTo(aDate);
-                  }
-                  return 0;
-                });
+                _totalItems = methods.length;
+                int totalPages = (_totalItems / _itemsPerPage).ceil();
 
-                return ListView.builder(
-                  itemCount: methods.length,
-                  itemBuilder: (context, index) {
-                    var data = methods[index];
-                    return ListTile(
-                      leading: Image.network(data['image'],
-                          width: 50, height: 50, fit: BoxFit.cover),
-                      title: Text(data['name']),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Key search: ${data['keysearch']}'),
-                          Text('Ngày tạo: ${_formatDateTime((data['createAt'] as Timestamp).toDate())}'),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      EditMethod(methodId: data['id']),
+                int startIndex = (_currentPage - 1) * _itemsPerPage;
+                int endIndex = startIndex + _itemsPerPage;
+                if (endIndex > _totalItems) endIndex = _totalItems;
+
+                var paginatedMethods = methods.sublist(startIndex, endIndex);
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: paginatedMethods.length,
+                        itemBuilder: (context, index) {
+                          var data = paginatedMethods[index];
+                          return ListTile(
+                            leading: Image.network(data['image'],
+                                width: 50, height: 50, fit: BoxFit.cover),
+                            title: Text(data['name']),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Key search: ${data['keysearch']}'),
+                                Text('Ngày tạo: ${_formatDateTime(data['createAt'])}'),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditMethod(methodId: data['id']),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _showDeleteConfirmationDialog(
-                                data['id'], data['name']),
-                          ),
-                        ],
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () => _showDeleteConfirmationDialog(data['id'], data['name']),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                    _buildPaginationControls(totalPages),
+                  ],
                 );
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AddMethod()),
           );
         },
-        child: Icon(Icons.add),
+        icon: Icon(Icons.add),
+        label: Text('Thêm phương pháp'),
       ),
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-  return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute}';
-}
+  Widget _buildPaginationControls(int totalPages) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed: _currentPage > 1
+              ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+              : null,
+        ),
+        Text('Trang $_currentPage / $totalPages'),
+        IconButton(
+          icon: Icon(Icons.chevron_right),
+          onPressed: _currentPage < totalPages
+              ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+              : null,
+        ),
+      ],
+    );
+  }
 
   void _showSortDialog() {
     showDialog(
@@ -170,11 +200,12 @@ class _AdminMethodState extends State<AdminMethod> {
                 title: Text('Tên (A-Z)'),
                 leading: Radio<String>(
                   value: 'name_asc',
-                  groupValue: '${_sortBy}_${_sortOrder}',
+                  groupValue: '${_sortBy}_${_sortAscending ? 'asc' : 'desc'}',
                   onChanged: (String? value) {
                     setState(() {
                       _sortBy = 'name';
-                      _sortOrder = 'asc';
+                      _sortAscending = true;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -184,11 +215,12 @@ class _AdminMethodState extends State<AdminMethod> {
                 title: Text('Tên (Z-A)'),
                 leading: Radio<String>(
                   value: 'name_desc',
-                  groupValue: '${_sortBy}_${_sortOrder}',
+                  groupValue: '${_sortBy}_${_sortAscending ? 'asc' : 'desc'}',
                   onChanged: (String? value) {
                     setState(() {
                       _sortBy = 'name';
-                      _sortOrder = 'desc';
+                      _sortAscending = false;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -198,11 +230,12 @@ class _AdminMethodState extends State<AdminMethod> {
                 title: Text('Mới nhất'),
                 leading: Radio<String>(
                   value: 'createAt_desc',
-                  groupValue: '${_sortBy}_${_sortOrder}',
+                  groupValue: '${_sortBy}_${_sortAscending ? 'asc' : 'desc'}',
                   onChanged: (String? value) {
                     setState(() {
                       _sortBy = 'createAt';
-                      _sortOrder = 'desc';
+                      _sortAscending = false;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -212,11 +245,12 @@ class _AdminMethodState extends State<AdminMethod> {
                 title: Text('Cũ nhất'),
                 leading: Radio<String>(
                   value: 'createAt_asc',
-                  groupValue: '${_sortBy}_${_sortOrder}',
+                  groupValue: '${_sortBy}_${_sortAscending ? 'asc' : 'desc'}',
                   onChanged: (String? value) {
                     setState(() {
                       _sortBy = 'createAt';
-                      _sortOrder = 'asc';
+                      _sortAscending = true;
+                      _currentPage = 1; // Reset to first page when sorting
                     });
                     Navigator.pop(context);
                   },
@@ -270,5 +304,19 @@ class _AdminMethodState extends State<AdminMethod> {
         SnackBar(content: Text('Có lỗi xảy ra khi xóa phương pháp nấu')),
       );
     });
+  }
+
+  String _formatDateTime(dynamic dateTime) {
+    if (dateTime == null) {
+      return 'Không có thông tin';
+    }
+    if (dateTime is Timestamp) {
+      DateTime dt = dateTime.toDate();
+      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute}';
+    }
+    if (dateTime is DateTime) {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute}';
+    }
+    return 'Định dạng không hợp lệ';
   }
 }

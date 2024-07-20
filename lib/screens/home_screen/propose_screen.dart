@@ -3,13 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_app/constants/colors.dart';
+import 'package:recipe_app/screens/category_recipe_screen/category_recipe_screen.dart';
 import 'package:recipe_app/screens/home_screen/widgets/item_user.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/service/follow_service.dart';
-import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
-import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class ProposeScreen extends StatefulWidget {
@@ -23,6 +22,8 @@ class _ProposeScreenState extends State<ProposeScreen> {
   String selectedIngredient = '';
 
   List<Map<String, dynamic>> cookingMethods = [];
+
+  List<Map<String, dynamic>> category = [];
 
   List<Map<String, dynamic>> ingredients = [];
   Future<void> fetchIngredients() async {
@@ -127,6 +128,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
     fetchIngredients();
     _fetchRecipes();
     fetchCookingMethods();
+    fetchCategory();
   }
 
   
@@ -272,6 +274,33 @@ class _ProposeScreenState extends State<ProposeScreen> {
       });
     } catch (e) {
       print('Error fetching cooking methods: $e');
+      setState(() {
+        loadingMedthod = false;
+      });
+    }
+  }
+
+   Future<void> fetchCategory() async {
+    setState(() {
+      loadingMedthod = true;
+    });
+
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('categories')
+          .orderBy('createAt', descending: true)
+          .get();
+
+      setState(() {
+        category = querySnapshot.docs.map((doc) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id; // Add id to map
+          return data;
+        }).toList();
+        loadingMedthod = false;
+      });
+    } catch (e) {
+      print('Error fetching categories: $e');
       setState(() {
         loadingMedthod = false;
       });
@@ -564,7 +593,11 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                   ),
                                 ),
                                 SizedBox(height: 5,),
-                                Text(cookingMethod['name'] ?? 'No name')
+                                Text(
+                                  cookingMethod['name'] ?? 'No name',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                )
                               ],
                             ),
                           ),
@@ -577,6 +610,78 @@ class _ProposeScreenState extends State<ProposeScreen> {
             ),
           ),
         ),
+
+
+        Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text('Những món đặc biệt'),
+                SizedBox(height: 5,),
+                Container(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: category.length,
+                    itemBuilder: (context, index) {
+                      final cate = category[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CategoryRecipeScreen(categoryId: cate['id']),
+                            ),
+                          );
+                        },
+                        child: Card(
+                          color: cardBack,
+                          child: Container(
+                            width: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ClipOval(
+                                  child: Image.network(
+                                    cate['image'] ?? '',
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(Icons.error);
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 5,),
+                                Text(
+                                  cate['name'] ?? 'No name',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
           SizedBox(
             height: 10,
           ),

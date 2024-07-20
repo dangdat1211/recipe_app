@@ -21,6 +21,7 @@ class RecipeModel {
   final Timestamp? updateAt;
   final bool hidden;
   final bool official;
+  final List<String> categories;
 
   RecipeModel({
     this.id,
@@ -42,6 +43,7 @@ class RecipeModel {
     this.updateAt,
     this.hidden = false,
     this.official = true,
+    this.categories = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -64,6 +66,7 @@ class RecipeModel {
       'updateAt': updateAt ?? FieldValue.serverTimestamp(),
       'hidden': hidden,
       'official': official,
+      'categories': categories,
     };
   }
 
@@ -88,6 +91,7 @@ class RecipeModel {
       updateAt: map['updateAt']?.toDate(),
       hidden: map['hidden'] ?? false,
       official: map['official'] ?? true,
+      categories: List<String>.from(map['categories'] ?? []),
     );
   }
 }

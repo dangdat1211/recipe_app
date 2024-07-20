@@ -3,30 +3,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:recipe_app/service/admin_service/ingredient_service.dart';
 
-class AddIngredient extends StatefulWidget {
-  const AddIngredient({Key? key}) : super(key: key);
+class AddCategory extends StatefulWidget {
+  const AddCategory({Key? key}) : super(key: key);
 
   @override
-  State<AddIngredient> createState() => _AddIngredientState();
+  State<AddCategory> createState() => _AddCategoryState();
 }
 
-class _AddIngredientState extends State<AddIngredient> {
+class _AddCategoryState extends State<AddCategory> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _keySearchController;
+  late TextEditingController _descriptionController;
   File? _image;
   final picker = ImagePicker();
   bool _isLoading = false;
-
-  final IngredientService _ingredientService = IngredientService();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _keySearchController = TextEditingController();
+    _descriptionController = TextEditingController();
   }
 
   Future getImage() async {
@@ -45,7 +42,7 @@ class _AddIngredientState extends State<AddIngredient> {
     final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     final Reference storageRef = FirebaseStorage.instance
         .ref()
-        .child('ingredient_images')
+        .child('category_images')
         .child('$fileName.jpg');
 
     await storageRef.putFile(_image!);
@@ -56,7 +53,7 @@ class _AddIngredientState extends State<AddIngredient> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Thêm nguyên liệu mới'),
+        title: Text('Thêm danh mục mới'),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -102,38 +99,33 @@ class _AddIngredientState extends State<AddIngredient> {
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Tên',
+                          labelText: 'Tên danh mục',
                           border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.food_bank),
+                          prefixIcon: Icon(Icons.category),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập tên';
+                            return 'Vui lòng nhập tên danh mục';
                           }
                           return null;
                         },
                       ),
                       SizedBox(height: 16),
                       TextFormField(
-                        controller: _keySearchController,
+                        controller: _descriptionController,
                         decoration: InputDecoration(
-                          labelText: 'Từ khóa tìm kiếm',
+                          labelText: 'Mô tả',
                           border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: Icon(Icons.description),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập từ khóa tìm kiếm';
-                          }
-                          return null;
-                        },
+                        maxLines: 3,
                       ),
                       SizedBox(height: 24),
                       ElevatedButton(
-                        onPressed: _addIngredient,
+                        onPressed: _addCategory,
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Text('Thêm nguyên liệu', style: TextStyle(fontSize: 18)),
+                          child: Text('Thêm danh mục', style: TextStyle(fontSize: 18)),
                         ),
                         style: ElevatedButton.styleFrom(
                           shape: RoundedRectangleBorder(
@@ -149,15 +141,23 @@ class _AddIngredientState extends State<AddIngredient> {
     );
   }
 
-  void _addIngredient() async {
+  void _addCategory() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       String imageUrl = await uploadImage();
 
-      _ingredientService.addIngredient(_nameController.text, _keySearchController.text, imageUrl).then((_) {
+      FirebaseFirestore.instance
+          .collection('categories')
+          .add({
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'image': imageUrl,
+        'createAt': FieldValue.serverTimestamp(),
+
+      }).then((_) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Thêm nguyên liệu thành công')),
+          SnackBar(content: Text('Thêm danh mục thành công')),
         );
         Navigator.pop(context);
       }).catchError((error) {
@@ -172,7 +172,7 @@ class _AddIngredientState extends State<AddIngredient> {
   @override
   void dispose() {
     _nameController.dispose();
-    _keySearchController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 }

@@ -22,6 +22,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final ImagePicker _picker = ImagePicker();
   String _selectedDifficulty = 'Trung bình';
 
+  List<String> _selectedCategories = [];
+  List<Map<String, dynamic>> _allCategories = [];
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _servingsController = TextEditingController();
@@ -43,12 +46,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   RecipeService _recipeService = RecipeService();
 
   bool _isLoading = false;
+  bool _showCategories = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
   void _addStepField() {
     setState(() {
       _stepsControllers.add(TextEditingController());
       _stepsImages.add([]);
       _stepsFocusNodes.add(FocusNode());
+    });
+  }
+
+  Future<void> _loadCategories() async {
+    final categoriesSnapshot = await FirebaseFirestore.instance.collection('categories').get();
+    setState(() {
+      _allCategories = categoriesSnapshot.docs.map((doc) => {
+        'id': doc.id,
+        'name': doc['name'],
+      }).toList();
     });
   }
 
@@ -148,7 +168,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           image: mainImageUrl ?? '',
           userID: currentUser!.uid,
           urlYoutube: _youtubeController.text,
+          categories: _selectedCategories,
           level: _selectedDifficulty);
+          
 
       await _recipeService.uploadRecipe(recipe, mainImageUrl, stepImageUrls);
 
@@ -170,6 +192,86 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       );
     }
   }
+
+  Widget _buildCategoriesSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _showCategories = !_showCategories;
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Chọn danh mục',
+                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                ),
+                Icon(_showCategories ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+        ),
+        if (_showCategories) ...[
+          SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _allCategories.length,
+              itemBuilder: (context, index) {
+                final category = _allCategories[index];
+                return CheckboxListTile(
+                  title: Text(category['name']),
+                  value: _selectedCategories.contains(category['id']),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedCategories.add(category['id']);
+                      } else {
+                        _selectedCategories.remove(category['id']);
+                      }
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              },
+            ),
+          ),
+        ],
+        SizedBox(height: 8),
+        if (_selectedCategories.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: _selectedCategories.map((categoryId) {
+              final category = _allCategories.firstWhere((cat) => cat['id'] == categoryId);
+              return Chip(
+                label: Text(category['name']),
+                onDeleted: () {
+                  setState(() {
+                    _selectedCategories.remove(categoryId);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
 
   @override
   void dispose() {
@@ -325,6 +427,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                       });
                     },
                   ),
+                  SizedBox(height: 10.0),
+                  _buildCategoriesSelector(),
                   SizedBox(height: 10.0),
                   TextField(
                     focusNode: _timeFocus,

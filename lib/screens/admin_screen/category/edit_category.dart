@@ -3,30 +3,53 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:recipe_app/service/admin_service/ingredient_service.dart';
 
-class AddIngredient extends StatefulWidget {
-  const AddIngredient({Key? key}) : super(key: key);
+class EditCategory extends StatefulWidget {
+  final String categoryId;
+  const EditCategory({Key? key, required this.categoryId}) : super(key: key);
 
   @override
-  State<AddIngredient> createState() => _AddIngredientState();
+  State<EditCategory> createState() => _EditCategoryState();
 }
 
-class _AddIngredientState extends State<AddIngredient> {
+class _EditCategoryState extends State<EditCategory> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _keySearchController;
+  late TextEditingController _descriptionController;
   File? _image;
+  String? _currentImageUrl;
   final picker = ImagePicker();
   bool _isLoading = false;
-
-  final IngredientService _ingredientService = IngredientService();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _keySearchController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _loadCategoryData();
+  }
+
+  Future<void> _loadCategoryData() async {
+    setState(() => _isLoading = true);
+    try {
+      var doc = await FirebaseFirestore.instance
+          .collection('categories')
+          .doc(widget.categoryId)
+          .get();
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        _nameController.text = data['name'];
+        _descriptionController.text = data['description'];
+        _currentImageUrl = data['image'];
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Lỗi khi tải dữ liệu: $e'),
+            backgroundColor: Colors.red),
+      );
+    }
+    setState(() => _isLoading = false);
   }
 
   Future getImage() async {
@@ -40,12 +63,12 @@ class _AddIngredientState extends State<AddIngredient> {
   }
 
   Future<String> uploadImage() async {
-    if (_image == null) return '';
+    if (_image == null) return _currentImageUrl ?? '';
 
     final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     final Reference storageRef = FirebaseStorage.instance
         .ref()
-        .child('ingredient_images')
+        .child('category_images')
         .child('$fileName.jpg');
 
     await storageRef.putFile(_image!);
@@ -56,7 +79,7 @@ class _AddIngredientState extends State<AddIngredient> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Thêm nguyên liệu mới'),
+        title: Text('Chỉnh sửa danh mục'),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -77,22 +100,40 @@ class _AddIngredientState extends State<AddIngredient> {
                               _image != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(_image!, height: 200, width: double.infinity, fit: BoxFit.cover),
+                                      child: Image.file(_image!,
+                                          height: 200,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover),
                                     )
-                                  : Container(
-                                      height: 200,
-                                      width: 600,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[300],
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(Icons.image, size: 50, color: Colors.grey[600], ),
-                                    ),
+                                  : _currentImageUrl != null
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.network(
+                                              _currentImageUrl!,
+                                              height: 200,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover),
+                                        )
+                                      : Container(
+                                          height: 200,
+                                          width: 600,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[300],
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.image,
+                                            size: 50,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
                               SizedBox(height: 16),
                               ElevatedButton.icon(
                                 onPressed: getImage,
                                 icon: Icon(Icons.photo_library),
-                                label: Text('Chọn ảnh'),
+                                label: Text('Chọn ảnh mới'),
                               ),
                             ],
                           ),
@@ -102,38 +143,34 @@ class _AddIngredientState extends State<AddIngredient> {
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Tên',
+                          labelText: 'Tên danh mục',
                           border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.food_bank),
+                          prefixIcon: Icon(Icons.category),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập tên';
+                            return 'Vui lòng nhập tên danh mục';
                           }
                           return null;
                         },
                       ),
                       SizedBox(height: 16),
                       TextFormField(
-                        controller: _keySearchController,
+                        controller: _descriptionController,
                         decoration: InputDecoration(
-                          labelText: 'Từ khóa tìm kiếm',
+                          labelText: 'Mô tả',
                           border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: Icon(Icons.description),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập từ khóa tìm kiếm';
-                          }
-                          return null;
-                        },
+                        maxLines: 3,
                       ),
                       SizedBox(height: 24),
                       ElevatedButton(
-                        onPressed: _addIngredient,
+                        onPressed: _updateCategory,
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Text('Thêm nguyên liệu', style: TextStyle(fontSize: 18)),
+                          child: Text('Cập nhật danh mục',
+                              style: TextStyle(fontSize: 18)),
                         ),
                         style: ElevatedButton.styleFrom(
                           shape: RoundedRectangleBorder(
@@ -149,15 +186,23 @@ class _AddIngredientState extends State<AddIngredient> {
     );
   }
 
-  void _addIngredient() async {
+  void _updateCategory() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       String imageUrl = await uploadImage();
 
-      _ingredientService.addIngredient(_nameController.text, _keySearchController.text, imageUrl).then((_) {
+      FirebaseFirestore.instance
+          .collection('categories')
+          .doc(widget.categoryId)
+          .update({
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'image': imageUrl,
+        'updateAt': FieldValue.serverTimestamp(),
+      }).then((_) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Thêm nguyên liệu thành công')),
+          SnackBar(content: Text('Cập nhật danh mục thành công')),
         );
         Navigator.pop(context);
       }).catchError((error) {
@@ -172,7 +217,7 @@ class _AddIngredientState extends State<AddIngredient> {
   @override
   void dispose() {
     _nameController.dispose();
-    _keySearchController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 }
