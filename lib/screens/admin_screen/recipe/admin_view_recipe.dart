@@ -28,12 +28,22 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) {
+      setState(() {
+        _currentPage = 1;
+      });
+    }
   }
 
   void _handlePopupMenuSelection(String value, String recipeId) async {
@@ -87,7 +97,6 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
       SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
       setState(() {});
     } catch (e) {
-
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức $e');
     }
   }
@@ -105,7 +114,6 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
     } catch (e) {
       print('Lỗi khi từ chối công thức: ');
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức : $e');
-
     }
   }
 
@@ -430,7 +438,8 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
                       }).toList(),
                     ),
                     SizedBox(height: 20),
-                    Text('Độ khó:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Độ khó:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                     ..._buildCheckboxes('difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
                     SizedBox(height: 10),
                     Text('Mốc thời gian:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -448,7 +457,6 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
                     Navigator.of(context).pop();
                   },
                 ),
-                
                 TextButton(
                   child: Text('Áp dụng'),
                   onPressed: () {

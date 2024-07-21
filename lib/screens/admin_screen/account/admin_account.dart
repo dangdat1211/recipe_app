@@ -15,7 +15,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
   String _searchQuery = '';
   String _sortBy = 'fullname';
   bool _isAscending = true;
-  int _currentPage = 1;
+  int _currentPageActive = 1;
+  int _currentPageInactive = 1;
   int _itemsPerPage = 10;
   int _totalItems = 0;
 
@@ -65,7 +66,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
-                      _currentPage = 1; // Reset to first page when searching
+                      _currentPageActive = 1;
+                      _currentPageInactive = 1;
                     });
                   },
                 ),
@@ -85,14 +87,14 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAccountList(true),
-          _buildAccountList(false),
+          _buildAccountList(true, _currentPageActive),
+          _buildAccountList(false, _currentPageInactive),
         ],
       ),
     );
   }
 
-  Widget _buildAccountList(bool isActive) {
+  Widget _buildAccountList(bool isActive, int currentPage) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -126,7 +128,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
         _totalItems = filteredDocs.length;
         int totalPages = (_totalItems / _itemsPerPage).ceil();
 
-        int startIndex = (_currentPage - 1) * _itemsPerPage;
+        int startIndex = (currentPage - 1) * _itemsPerPage;
         int endIndex = startIndex + _itemsPerPage;
         if (endIndex > _totalItems) endIndex = _totalItems;
 
@@ -157,34 +159,44 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 }).toList(),
               ),
             ),
-            _buildPaginationControls(totalPages),
+            _buildPaginationControls(totalPages, isActive),
           ],
         );
       },
     );
   }
 
-  Widget _buildPaginationControls(int totalPages) {
+  Widget _buildPaginationControls(int totalPages, bool isActive) {
+    int currentPage = isActive ? _currentPageActive : _currentPageInactive;
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
           icon: Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1
+          onPressed: currentPage > 1
               ? () {
                   setState(() {
-                    _currentPage--;
+                    if (isActive) {
+                      _currentPageActive--;
+                    } else {
+                      _currentPageInactive--;
+                    }
                   });
                 }
               : null,
         ),
-        Text('Trang $_currentPage / $totalPages'),
+        Text('Trang $currentPage / $totalPages'),
         IconButton(
           icon: Icon(Icons.chevron_right),
-          onPressed: _currentPage < totalPages
+          onPressed: currentPage < totalPages
               ? () {
                   setState(() {
-                    _currentPage++;
+                    if (isActive) {
+                      _currentPageActive++;
+                    } else {
+                      _currentPageInactive++;
+                    }
                   });
                 }
               : null,
@@ -210,7 +222,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPageActive = 1;
+                      _currentPageInactive = 1;
                       Navigator.pop(context);
                     });
                   },
@@ -224,7 +237,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPageActive = 1;
+                      _currentPageInactive = 1;
                       Navigator.pop(context);
                     });
                   },
@@ -238,7 +252,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
               onPressed: () {
                 setState(() {
                   _isAscending = !_isAscending;
-                  _currentPage = 1; // Reset to first page when changing sort order
+                  _currentPageActive = 1;
+                  _currentPageInactive = 1;
                   Navigator.pop(context);
                 });
               },
@@ -281,10 +296,8 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
       'status': isActive,
     }).then((_) {
       SnackBarCustom.showbar(context, 'Cập nhật trạng thái tài khoản thành công');
-      
     }).catchError((error) {
       SnackBarCustom.showbar(context, 'Lỗi khi cập nhật trạng thái tài khoản: $error');
-      
     });
   }
 

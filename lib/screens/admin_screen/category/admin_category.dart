@@ -98,6 +98,7 @@ class _AdminCategoryState extends State<AdminCategory> {
 
                 return Column(
                   children: [
+                    _buildPaginationControls(totalPages),
                     Expanded(
                       child: ListView.builder(
                         itemCount: paginatedCategories.length,
@@ -138,7 +139,7 @@ class _AdminCategoryState extends State<AdminCategory> {
                         },
                       ),
                     ),
-                    _buildPaginationControls(totalPages),
+                    
                   ],
                 );
               },

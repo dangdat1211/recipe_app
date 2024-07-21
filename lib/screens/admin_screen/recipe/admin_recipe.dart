@@ -20,7 +20,7 @@ class _AdminRecipeState extends State<AdminRecipe>
   String _sortBy = 'name';
   bool _sortAscending = true;
   int _itemsPerPage = 10;
-  int _currentPage = 1;
+  List<int> _currentPages = [1, 1, 1]; // Một trang hiện tại cho mỗi tab
 
   @override
   void initState() {
@@ -47,7 +47,7 @@ class _AdminRecipeState extends State<AdminRecipe>
     }
   }
 
-  Widget buildRecipeList(String status) {
+  Widget buildRecipeList(String status, int tabIndex) {
     Query recipesQuery = FirebaseFirestore.instance.collection('recipes');
 
     if (status.isNotEmpty) {
@@ -86,7 +86,7 @@ class _AdminRecipeState extends State<AdminRecipe>
         }
 
         int totalPages = (recipes.length / _itemsPerPage).ceil();
-        int startIndex = (_currentPage - 1) * _itemsPerPage;
+        int startIndex = (_currentPages[tabIndex] - 1) * _itemsPerPage;
         int endIndex = startIndex + _itemsPerPage;
         if (endIndex > recipes.length) endIndex = recipes.length;
 
@@ -135,54 +135,53 @@ class _AdminRecipeState extends State<AdminRecipe>
                         ),
                       ],
                     ),
-                    
                     trailing: recipe['status'] != 'Đã được phê duyệt'
-                    ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.check, color: Colors.green),
-                          onPressed: () => approveRecipe(recipeId),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close, color: Colors.red),
-                          onPressed: () => rejectRecipe(recipeId),
-                        ),
-                      ],
-                    )
-                    : null
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.check, color: Colors.green),
+                                onPressed: () => approveRecipe(recipeId),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close, color: Colors.red),
+                                onPressed: () => rejectRecipe(recipeId),
+                              ),
+                            ],
+                          )
+                        : null
                   );
                 },
               ),
             ),
-            buildPaginationControls(totalPages),
+            buildPaginationControls(totalPages, tabIndex),
           ],
         );
       },
     );
   }
 
-  Widget buildPaginationControls(int totalPages) {
+  Widget buildPaginationControls(int totalPages, int tabIndex) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
           icon: Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1
+          onPressed: _currentPages[tabIndex] > 1
               ? () {
                   setState(() {
-                    _currentPage--;
+                    _currentPages[tabIndex]--;
                   });
                 }
               : null,
         ),
-        Text('Trang $_currentPage / $totalPages'),
+        Text('Trang ${_currentPages[tabIndex]} / $totalPages'),
         IconButton(
           icon: Icon(Icons.chevron_right),
-          onPressed: _currentPage < totalPages
+          onPressed: _currentPages[tabIndex] < totalPages
               ? () {
                   setState(() {
-                    _currentPage++;
+                    _currentPages[tabIndex]++;
                   });
                 }
               : null,
@@ -192,70 +191,70 @@ class _AdminRecipeState extends State<AdminRecipe>
   }
 
   void approveRecipe(String recipeId) async {
-  try {
-    DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
-    String recipeOwnerId = recipeDoc.get('userID');
-    String recipeName = recipeDoc.get('namerecipe');
-    
-
-    await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Đã được phê duyệt'});
-
-    // Gửi thông báo cho chủ công thức
-    await NotificationService().createNotification(
-      content: 'Công thức "$recipeName" của bạn đã được phê duyệt',
-      fromUser: currentUser!.uid,
-      userId: recipeOwnerId,
-      recipeId: recipeId,
-      screen: 'recipe'
-    );
-
-    DocumentSnapshot ownerDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
-    String? ownerFcmToken = ownerDoc.get('FCM');
-    String? recipeOwnerName = ownerDoc.get('fullname');
-    
-    if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
-      await NotificationService.sendNotification(
-        ownerFcmToken,
-        'Công thức được phê duyệt',
-        'Công thức "$recipeName" của bạn đã được phê duyệt',
-        data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
-      );
-    }
-
-    // Gửi thông báo cho những người đang follow chủ công thức
-    QuerySnapshot usersDocs = await FirebaseFirestore.instance
-        .collection('users')
-        .where('following', arrayContains: recipeOwnerId)
-        .get();
-
-    for (var userDoc in usersDocs.docs) {
-      String followerId = userDoc.id;
+    try {
+      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
+      String recipeOwnerId = recipeDoc.get('userID');
+      String recipeName = recipeDoc.get('namerecipe');
       
+
+      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Đã được phê duyệt'});
+
+      // Gửi thông báo cho chủ công thức
       await NotificationService().createNotification(
-        content: 'vừa đăng một công thức mới: "$recipeName"',
-        fromUser: recipeOwnerId,
-        userId: followerId,
+        content: 'Công thức "$recipeName" của bạn đã được phê duyệt',
+        fromUser: currentUser!.uid,
+        userId: recipeOwnerId,
         recipeId: recipeId,
         screen: 'recipe'
       );
 
-      String? followerFcmToken = userDoc.get('FCM');
+      DocumentSnapshot ownerDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
+      String? ownerFcmToken = ownerDoc.get('FCM');
+      String? recipeOwnerName = ownerDoc.get('fullname');
       
-      if (followerFcmToken != null && followerFcmToken.isNotEmpty) {
+      if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
         await NotificationService.sendNotification(
-          followerFcmToken,
-          'Công thức mới',
-          '$recipeOwnerName vừa đăng một công thức mới: "$recipeName"',
-          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': recipeOwnerId}
+          ownerFcmToken,
+          'Công thức được phê duyệt',
+          'Công thức "$recipeName" của bạn đã được phê duyệt',
+          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
         );
       }
-    }
-    SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
 
-  } catch (error) {
-    SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức');
+      // Gửi thông báo cho những người đang follow chủ công thức
+      QuerySnapshot usersDocs = await FirebaseFirestore.instance
+          .collection('users')
+          .where('following', arrayContains: recipeOwnerId)
+          .get();
+
+      for (var userDoc in usersDocs.docs) {
+        String followerId = userDoc.id;
+        
+        await NotificationService().createNotification(
+          content: 'vừa đăng một công thức mới: "$recipeName"',
+          fromUser: recipeOwnerId,
+          userId: followerId,
+          recipeId: recipeId,
+          screen: 'recipe'
+        );
+
+        String? followerFcmToken = userDoc.get('FCM');
+        
+        if (followerFcmToken != null && followerFcmToken.isNotEmpty) {
+          await NotificationService.sendNotification(
+            followerFcmToken,
+            'Công thức mới',
+            '$recipeOwnerName vừa đăng một công thức mới: "$recipeName"',
+            data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': recipeOwnerId}
+          );
+        }
+      }
+      SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
+
+    } catch (error) {
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức');
+    }
   }
-}
 
   void rejectRecipe(String recipeId) async {
     try {
@@ -289,9 +288,9 @@ class _AdminRecipeState extends State<AdminRecipe>
 
     } catch (error) {
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức');
-
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -332,7 +331,7 @@ class _AdminRecipeState extends State<AdminRecipe>
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;
-                        _currentPage = 1; // Reset to first page when searching
+                        _currentPages = [1, 1, 1]; // Reset all pages when searching
                       });
                     },
                   ),
@@ -347,7 +346,7 @@ class _AdminRecipeState extends State<AdminRecipe>
                         _sortBy = value;
                         _sortAscending = true;
                       }
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPages = [1, 1, 1]; // Reset all pages when sorting
                     });
                   },
                   itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -368,9 +367,9 @@ class _AdminRecipeState extends State<AdminRecipe>
             child: TabBarView(
               controller: _tabController,
               children: [
-                buildRecipeList(''),
-                buildRecipeList('Đợi phê duyệt'),
-                buildRecipeList('Đã được phê duyệt'),
+                buildRecipeList('', 0),
+                buildRecipeList('Đợi phê duyệt', 1),
+                buildRecipeList('Đã được phê duyệt', 2),
               ],
             ),
           ),

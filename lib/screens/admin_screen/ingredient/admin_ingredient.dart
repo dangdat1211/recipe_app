@@ -94,6 +94,7 @@ class _AdminIngredientsState extends State<AdminIngredients> {
 
                 return Column(
                   children: [
+                    _buildPaginationControls(totalPages),
                     Expanded(
                       child: ListView.builder(
                         itemCount: paginatedIngredients.length,
@@ -131,8 +132,6 @@ class _AdminIngredientsState extends State<AdminIngredients> {
                         },
                       ),
                     ),
-                    _buildPaginationControls(totalPages),
-                    SizedBox(height: 80),
                   ],
                 );
               },

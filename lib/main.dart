@@ -15,6 +15,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
+  
 }
 
 void handleNotificationOpen(RemoteMessage message, BuildContext context) {
@@ -63,6 +64,12 @@ class _MainAppState extends State<MainApp> {
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         handleNotificationOpen(message, context);
+      }
+      else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const NotifyScreen()),
+        );
       }
     });
   }

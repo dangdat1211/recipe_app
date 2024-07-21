@@ -31,8 +31,8 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
     rememberMe();
-
-    remember = (LocalStorageHelper.getValue('rememberMe') as bool?)!;
+    final rememberMeValue = LocalStorageHelper.getValue('rememberMe') as bool?;
+    remember = rememberMeValue ?? false;
 
     _emailFocusNode.addListener(() {
       if (!_emailFocusNode.hasFocus) {
@@ -253,81 +253,81 @@ class _SignInScreenState extends State<SignInScreen> {
               const SizedBox(
                 height: 10,
               ),
-              const Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Center(
-                      child: Text('Hoặc'),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  padding: EdgeInsets.only(left: 20),
-                  height: 40,
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 219, 219, 219),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.facebook),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        'Đăng nhập với Facebook',
-                        style: TextStyle(color: Colors.blue),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  padding: EdgeInsets.only(left: 20),
-                  height: 40,
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 219, 219, 219),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.login),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      Text('Đăng nhập với Google')
-                    ],
-                  ),
-                ),
-              )
+              // const Row(
+              //   children: [
+              //     Expanded(
+              //       flex: 3,
+              //       child: Divider(
+              //         color: Colors.black,
+              //         thickness: 1,
+              //       ),
+              //     ),
+              //     Expanded(
+              //       flex: 1,
+              //       child: Center(
+              //         child: Text('Hoặc'),
+              //       ),
+              //     ),
+              //     Expanded(
+              //       flex: 3,
+              //       child: Divider(
+              //         color: Colors.black,
+              //         thickness: 1,
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(
+              //   height: 10,
+              // ),
+              // GestureDetector(
+              //   onTap: () {},
+              //   child: Container(
+              //     padding: EdgeInsets.only(left: 20),
+              //     height: 40,
+              //     width: MediaQuery.of(context).size.width * 0.9,
+              //     decoration: BoxDecoration(
+              //       color: Color.fromARGB(255, 219, 219, 219),
+              //       borderRadius: BorderRadius.circular(20),
+              //     ),
+              //     child: Row(
+              //       children: [
+              //         Icon(Icons.facebook),
+              //         SizedBox(
+              //           width: 10,
+              //         ),
+              //         Text(
+              //           'Đăng nhập với Facebook',
+              //           style: TextStyle(color: Colors.blue),
+              //         )
+              //       ],
+              //     ),
+              //   ),
+              // ),
+              // SizedBox(
+              //   height: 10,
+              // ),
+              // GestureDetector(
+              //   onTap: () {},
+              //   child: Container(
+              //     padding: EdgeInsets.only(left: 20),
+              //     height: 40,
+              //     width: MediaQuery.of(context).size.width * 0.9,
+              //     decoration: BoxDecoration(
+              //       color: Color.fromARGB(255, 219, 219, 219),
+              //       borderRadius: BorderRadius.circular(20),
+              //     ),
+              //     child: Row(
+              //       children: [
+              //         Icon(Icons.login),
+              //         SizedBox(
+              //           width: 10,
+              //         ),
+              //         Text('Đăng nhập với Google')
+              //       ],
+              //     ),
+              //   ),
+              // )
             ],
           ),
         ),

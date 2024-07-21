@@ -98,6 +98,7 @@ class _AdminMethodState extends State<AdminMethod> {
 
                 return Column(
                   children: [
+                    _buildPaginationControls(totalPages),
                     Expanded(
                       child: ListView.builder(
                         itemCount: paginatedMethods.length,
@@ -138,7 +139,7 @@ class _AdminMethodState extends State<AdminMethod> {
                         },
                       ),
                     ),
-                    _buildPaginationControls(totalPages),
+                    
                   ],
                 );
               },
