@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
@@ -17,6 +18,8 @@ class _RecipeRankingState extends State<RecipeRanking> {
   String dropdownValue = 'Lượt thích cao nhất';
   List<Map<String, dynamic>> recipesWithUserData = [];
   bool isLoading = false;
+
+  User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -150,8 +153,45 @@ class _RecipeRankingState extends State<RecipeRanking> {
                                       fullname: user['fullname'],
                                       image: recipe['image'],
                                       isFavorite: isFavorite,
-                                      onFavoritePressed: () =>
-                                          FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']),
+                                      onFavoritePressed: () {
+                                        if (currentUser != null) {
+                                          FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']);
+                                        }
+                                        else {
+                                          showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text('Bạn chưa đăng nhập'),
+                                            content: Text(
+                                                'Vui lòng đăng nhập để tiếp tục.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const SignInScreen()),
+                                                  );
+                                                },
+                                                child: Text('Đăng nhập'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Hủy'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                        }
+                                      }
+                                          
                                     ),
                                   ),
                                 ),

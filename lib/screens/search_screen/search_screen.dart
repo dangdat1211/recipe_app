@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/search_screen/search_user_screen.dart';
+import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
+import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -19,6 +21,8 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
   String currentSortOption = 'Mới nhất';
+
+  User? currentUser = FirebaseAuth.instance.currentUser;
 
   Map<String, List<String>> selectedFilters = {
     'difficulty': [],
@@ -67,6 +71,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         if (userData != null) {
           bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
+          var ratingData = await RateService.fetchAverageRating(recipeId);
 
           bool nameMatch = recipeData['namerecipe']
               .toString()
@@ -119,6 +124,8 @@ class _SearchScreenState extends State<SearchScreen> {
               'user': userData,
               'isFavorite': isFavorite,
               'recipeId': recipeId,
+              'avgRating': ratingData['avgRating'],
+              
             });
           }
         }
@@ -128,7 +135,9 @@ class _SearchScreenState extends State<SearchScreen> {
       searchResultsWithUserData.sort((a, b) {
         switch (currentSortOption) {
           case 'Đánh giá cao nhất':
-            return (b['recipe']['rates'] as List).length.compareTo((a['recipe']['rates'] as List).length);
+            final ratingA = a['avgRating'] as num? ?? 0;
+            final ratingB = b['avgRating'] as num? ?? 0;
+            return ratingB.compareTo(ratingA);
           case 'Yêu thích nhiều nhất':
             return (b['recipe']['likes'] as List).length.compareTo((a['recipe']['likes'] as List).length);
           case 'Mới nhất':
@@ -151,85 +160,108 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: Text('Lọc và Sắp xếp kết quả'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    DropdownButton<String>(
-                      value: currentSortOption,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          currentSortOption = newValue!;
-                        });
-                      },
-                      items: <String>['Mới nhất', 'Đánh giá cao nhất', 'Yêu thích nhiều nhất']
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 20),
-                    Text('Độ khó:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
-                    SizedBox(height: 10),
-                    Text('Mốc thời gian:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('time', ['< 30 phút', '30-60 phút', '> 60 phút'], setState),
-                    SizedBox(height: 10),
-                    Text('Phương pháp chế biến:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('method', ['Rán', 'Xào', 'Nướng', 'Hấp'], setState),
-                  ],
-                ),
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text('Lọc và Sắp xếp', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _buildSortingSection(setState),
+                  
+                  _buildFilterSection('Độ khó', 'difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
+                  _buildFilterSection('Thời gian', 'time', ['< 30 phút', '30-60 phút', '> 60 phút'], setState),
+                  _buildFilterSection('Phương pháp', 'method', ['Rán', 'Xào', 'Nướng', 'Hấp'], setState),
+                ],
               ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('Hủy'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: Text('Áp dụng'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _applyFiltersAndSort();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildCheckboxes(String filterType, List<String> options, StateSetter setState) {
-    return options.map((option) {
-      return CheckboxListTile(
-        title: Text(option),
-        value: selectedFilters[filterType]!.contains(option),
-        onChanged: (bool? value) {
-          setState(() {
-            if (value == true) {
-              selectedFilters[filterType]!.add(option);
-            } else {
-              selectedFilters[filterType]!.remove(option);
-            }
-          });
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Hủy', style: TextStyle(color: Colors.grey)),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              ElevatedButton(
+                child: Text('Áp dụng'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _applyFiltersAndSort();
+                },
+              ),
+            ],
+          );
         },
       );
-    }).toList();
-  }
+    },
+  );
+}
+
+Widget _buildSortingSection(StateSetter setState) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold)),
+      SizedBox(height: 8),
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey),
+        ),
+        child: DropdownButton<String>(
+          value: currentSortOption,
+          onChanged: (String? newValue) {
+            setState(() => currentSortOption = newValue!);
+          },
+          items: ['Mới nhất', 'Đánh giá cao nhất', 'Yêu thích nhiều nhất']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(value: value, child: Text(value));
+          }).toList(),
+          isExpanded: true,
+          underline: SizedBox(),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildFilterSection(String title, String filterType, List<String> options, StateSetter setState) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+      SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        children: options.map((option) {
+          bool isSelected = selectedFilters[filterType]!.contains(option);
+          return FilterChip(
+            showCheckmark: false,
+            label: Text(option),
+            selected: isSelected,
+            onSelected: (bool selected) {
+              setState(() {
+                if (selected) {
+                  selectedFilters[filterType]!.add(option);
+                } else {
+                  selectedFilters[filterType]!.remove(option);
+                }
+              });
+            },
+            backgroundColor: Colors.grey[200],
+            selectedColor: Theme.of(context).primaryColor.withOpacity(0.3),
+          );
+        }).toList(),
+      ),
+      SizedBox(height: 12),
+    ],
+  );
+}
 
   void _applyFiltersAndSort() {
     _onSearchSubmitted(_searchController.text);
@@ -285,12 +317,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               final user = recipeWithUser['user'];
                               final isFavorite = recipeWithUser['isFavorite'];
                               final recipeId = recipeWithUser['recipeId'];
+                              final avgRating = recipeWithUser['avgRating'];
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: ItemRecipe(
                                   name: recipe['namerecipe'],
-                                  star: recipe['rates'].length.toString(),
+                                  star: avgRating.toStringAsFixed(1),
                                   favorite: recipe['likes'].length.toString(),
                                   avatar: user['avatar'],
                                   fullname: user['fullname'],
@@ -305,8 +338,43 @@ class _SearchScreenState extends State<SearchScreen> {
                                   },
                                   isFavorite: isFavorite,
                                   onFavoritePressed: () {
-                                    FavoriteService.toggleFavorite(context, recipeId, recipe['userID']);
-                                    _onSearchSubmitted(_searchController.text);
+                                    if (currentUser != null) {
+                                      FavoriteService.toggleFavorite(context, recipeId, recipe['userID']);
+                                    }
+                                    else {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text('Bạn chưa đăng nhập'),
+                                            content: Text(
+                                                'Vui lòng đăng nhập để tiếp tục.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const SignInScreen()),
+                                                  );
+                                                },
+                                                child: Text('Đăng nhập'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Hủy'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    }
+                                    
                                   },
                                 ),
                               );

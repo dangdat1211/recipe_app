@@ -949,11 +949,48 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                         image: recipe['image'] ??
                                             'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
                                         isFavorite: isFavorite,
-                                        onFavoritePressed: () =>
+                                        onFavoritePressed: () {
+                                          if (currentUser != null) {
                                             FavoriteService.toggleFavorite(
                                                 context,
                                                 recipe['recipeId'],
-                                                recipe['userID']),
+                                                recipe['userID']);
+                                          }
+                                          else {
+                                            showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text('Bạn chưa đăng nhập'),
+                                            content: Text(
+                                                'Vui lòng đăng nhập để tiếp tục.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const SignInScreen()),
+                                                  );
+                                                },
+                                                child: Text('Đăng nhập'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Hủy'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                          }
+                                        }
+                                            
                                       ),
                                     ),
                                   ),

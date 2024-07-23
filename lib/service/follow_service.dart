@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/user_service.dart';
 
@@ -6,6 +7,12 @@ class FollowService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> toggleFollow(String userId, String otherUserId) async {
+
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      return;
+    }
 
     DocumentReference currentUserRef =
         FirebaseFirestore.instance.collection('users').doc(userId);
@@ -41,7 +48,6 @@ class FollowService {
 
     await currentUserRef.update({'followings': followings});
     await otherUser.update({'followers': followers});
-
     
   }
 }

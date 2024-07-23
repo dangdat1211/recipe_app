@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/screens/profile_user.dart/profile_user.dart';
+import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/service/follow_service.dart';
 import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/user_service.dart';
@@ -19,6 +20,8 @@ class _UserRankingState extends State<UserRanking> {
   List<DocumentSnapshot> users = [];
   String? currentUserId;
   bool _isLoading = true;
+
+  User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -219,7 +222,42 @@ class _UserRankingState extends State<UserRanking> {
             height: 32,
             child: ElevatedButton(
               onPressed: () {
-                FollowService().toggleFollow(currentUserId!, userId);
+                if (currentUser != null) {
+                  FollowService().toggleFollow(currentUserId!, userId);
+                }
+                else {
+                  showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text('Bạn chưa đăng nhập'),
+                                            content: Text(
+                                                'Vui lòng đăng nhập để tiếp tục.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const SignInScreen()),
+                                                  );
+                                                },
+                                                child: Text('Đăng nhập'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Hủy'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                }
               },
               child: Text(
                 isFollowing ? 'Đang theo dõi' : 'Theo dõi',

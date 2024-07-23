@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -35,6 +36,8 @@ class ItemRecipe extends StatefulWidget {
 class _ItemRecipeState extends State<ItemRecipe> {
   late bool _isFavorite;
 
+  User? currentUser = FirebaseAuth.instance.currentUser;
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +45,13 @@ class _ItemRecipeState extends State<ItemRecipe> {
   }
 
   void _toggleFavorite() {
-    setState(() {
+    if (currentUser != null) {
+      setState(() {
       _isFavorite = !_isFavorite;
     });
+    }
     widget.onFavoritePressed();
+    
   }
 
   @override
