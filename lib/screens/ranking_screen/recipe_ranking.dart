@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/detail_recipe.dart/detail_recipe.dart';
 import 'package:recipe_app/screens/sign_in_screen/sign_in_screen.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
@@ -145,7 +146,12 @@ class _RecipeRankingState extends State<RecipeRanking> {
                                   child: Padding(
                                     padding: const EdgeInsets.only(bottom: 10),
                                     child: ItemRecipe(
-                                      ontap: () {},
+                                      ontap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => DetailReCipe(recipeId: recipe['recipeId'], userId: recipe['userID'])),
+                                        );
+                                      },
                                       name: recipe['namerecipe'],
                                       star: recipeWithUser['avgRating'].toStringAsFixed(1),
                                       favorite: (recipe['likes']?.length ?? 0).toString(),

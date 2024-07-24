@@ -86,6 +86,7 @@ class SimpleItemRecipe extends StatelessWidget {
                   image: DecorationImage(
                     image: NetworkImage(image),
                     fit: BoxFit.cover,
+                    
                   ),
                 ),
               ),

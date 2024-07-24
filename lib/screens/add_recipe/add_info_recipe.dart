@@ -223,7 +223,7 @@ class _AddInfoRecipeState extends State<AddInfoRecipe> {
                                         star: recipe['rates'].length.toString(),
                                         favorite:
                                             recipe['likes'].length.toString(),
-                                        image: recipe['image'] ?? '',
+                                        image: recipe['image'] != '' ? recipe['image'] : 'https://st4.depositphotos.com/14953852/24787/v/380/depositphotos_247872612-stock-illustration-no-image-available-icon-vector.jpg',
                                       ),
                                     ),
                                   ),

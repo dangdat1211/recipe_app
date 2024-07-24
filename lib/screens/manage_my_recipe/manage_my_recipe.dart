@@ -80,36 +80,82 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
     paginatedResults = searchResults.sublist(startIndex, endIndex);
   }
 
-  void _applyFiltersAndSort() {
-    searchResults = searchResults.where((recipe) {
-      bool difficultyMatch = selectedFilters['difficulty']!.isEmpty ||
-          selectedFilters['difficulty']!.contains(recipe['level']);
+  Future<void> _fetchFilteredData() async {
+    setState(() {
+      isLoading = true;
+    });
 
-      bool methodMatch = selectedFilters['method']!.isEmpty ||
-          selectedFilters['method']!.any((method) =>
-              recipe['namerecipe']
-                  .toString()
-                  .toLowerCase()
-                  .contains(method.toLowerCase()));
+    Query query = FirebaseFirestore.instance
+        .collection('recipes')
+        .where('userID', isEqualTo: currentUser!.uid);
 
-      bool timeMatch = selectedFilters['time']!.isEmpty ||
-          selectedFilters['time']!.any((timeFilter) {
-            int recipeCookingTime = int.tryParse(
-                    recipe['time'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0;
-            if (timeFilter == '< 30 phút') {
-              return recipeCookingTime < 30;
-            } else if (timeFilter == '30-60 phút') {
-              return recipeCookingTime >= 30 && recipeCookingTime <= 60;
-            } else if (timeFilter == '> 60 phút') {
-              return recipeCookingTime > 60;
-            }
-            return false;
-          });
+    // Áp dụng các bộ lọc
+    if (selectedFilters['difficulty']!.isNotEmpty) {
+      query = query.where('level', whereIn: selectedFilters['difficulty']);
+    }
 
-      return difficultyMatch && methodMatch && timeMatch;
+    if (selectedFilters['time']!.isNotEmpty) {
+      // Xử lý lọc thời gian (cần thêm logic phức tạp hơn)
+    }
+
+    // Lấy dữ liệu
+    final snapshot = await query.get();
+
+    searchResults = snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
+      return data;
     }).toList();
 
+    searchResults = searchResults.where((recipe) {
+    bool timeMatch = selectedFilters['time']!.isEmpty ||
+        selectedFilters['time']!.any((timeFilter) {
+          int recipeCookingTime = int.tryParse(
+                  recipe['time'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
+              0;
+          if (timeFilter == '< 30 phút') {
+            return recipeCookingTime < 30;
+          } else if (timeFilter == '30-60 phút') {
+            return recipeCookingTime >= 30 && recipeCookingTime <= 60;
+          } else if (timeFilter == '> 60 phút') {
+            return recipeCookingTime > 60;
+          }
+          return false;
+        });
+
+    bool methodMatch = selectedFilters['method']!.isEmpty ||
+        selectedFilters['method']!.any((method) =>
+            recipe['namerecipe']
+                .toString()
+                .toLowerCase()
+                .contains(method.toLowerCase()));
+
+    return timeMatch && methodMatch;
+  }).toList();
+
+    // Áp dụng lọc phương pháp và sắp xếp
+    _applyMethodFilterAndSort();
+
+    setState(() {
+      isLoading = false;
+      currentPage = 1;
+      updatePaginatedResults();
+    });
+  }
+
+  void _applyMethodFilterAndSort() {
+    // Lọc theo phương pháp
+    if (selectedFilters['method']!.isNotEmpty) {
+      searchResults = searchResults.where((recipe) {
+        return selectedFilters['method']!.any((method) =>
+            recipe['namerecipe']
+                .toString()
+                .toLowerCase()
+                .contains(method.toLowerCase()));
+      }).toList();
+    }
+
+    // Sắp xếp kết quả
     searchResults.sort((a, b) {
       switch (currentSortOption) {
         case 'Mới nhất':
@@ -126,11 +172,10 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
           return 0;
       }
     });
+  }
 
-    setState(() {
-      currentPage = 1;
-      updatePaginatedResults();
-    });
+  void _applyFiltersAndSort() async {
+    await _fetchFilteredData();
   }
 
   void _handlePopupMenuSelection(String value, String recipeId) async {
@@ -297,6 +342,9 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
                     child: Image.network(
                       recipe['image'],
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.error);
+                        },
                     ),
                   ),
                   title: Text(
@@ -441,7 +489,7 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
           },
         );
       },
-    );
+      );
   }
 
   Widget _buildSortingSection(StateSetter setState) {

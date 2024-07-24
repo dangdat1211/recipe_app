@@ -217,9 +217,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         _isLoading = false;
       });
 
-      SnackBarCustom.showbar(context,
-          'Đã xảy ra lỗi: $e');
-      
+      SnackBarCustom.showbar(context, 'Đã xảy ra lỗi: $e');
     }
   }
 
@@ -244,7 +242,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               children: [
                 Text(
                   'Chọn danh mục',
-                  style: TextStyle(fontSize: 16.0, ),
+                  style: TextStyle(
+                    fontSize: 16.0,
+                  ),
                 ),
                 Icon(_showCategories
                     ? Icons.arrow_drop_up
@@ -267,7 +267,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               itemBuilder: (context, index) {
                 final category = _allCategories[index];
                 return CheckboxListTile(
-                  title: Text(category['name'], ),
+                  title: Text(
+                    category['name'],
+                  ),
                   value: _selectedCategories.contains(category['id']),
                   onChanged: (bool? value) {
                     setState(() {
@@ -292,7 +294,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               final category =
                   _allCategories.firstWhere((cat) => cat['id'] == categoryId);
               return Chip(
-                label: Text(category['name'], style: TextStyle(color: mainColor),),
+                label: Text(
+                  category['name'],
+                  style: TextStyle(color: mainColor),
+                ),
                 onDeleted: () {
                   setState(() {
                     _selectedCategories.remove(categoryId);
@@ -302,6 +307,21 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             }).toList(),
           ),
       ],
+    );
+  }
+
+  Widget requiredLabel(String label) {
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(color: Colors.black87),
+        children: [
+          TextSpan(
+            text: ' *',
+            style: TextStyle(color: Colors.red),
+          ),
+        ],
+      ),
     );
   }
 
@@ -344,6 +364,15 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    textAlign: TextAlign.left,
+                    'Các trường có dấu (*) là bắt buộc',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                   _image == null
                       ? GestureDetector(
                           onTap: () async {
@@ -402,10 +431,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     onSubmitted: (_) =>
                         FocusScope.of(context).requestFocus(_descriptionFocus),
                     decoration: InputDecoration(
-                      labelText: 'Tên món ăn',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                        labelText: 'Tên món ăn',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(
+                              top:
+                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                          child: Text(
+                            '    *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        )),
                   ),
                   SizedBox(height: 10.0),
                   TextField(
@@ -417,10 +454,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     maxLines: null,
                     minLines: 1,
                     decoration: InputDecoration(
-                      labelText: 'Mô tả',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                        labelText: 'Mô tả',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(
+                              top:
+                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                          child: Text(
+                            '    *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        )),
                   ),
                   SizedBox(height: 10.0),
                   TextField(
@@ -430,10 +475,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     onSubmitted: (_) =>
                         FocusScope.of(context).requestFocus(_timeFocus),
                     decoration: InputDecoration(
-                      labelText: 'Khẩu phần',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                        labelText: 'Khẩu phần',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(
+                              top:
+                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                          child: Text(
+                            '    *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        )),
                   ),
                   SizedBox(height: 10.0),
                   DropdownButtonFormField<String>(
@@ -469,10 +522,18 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     onSubmitted: (_) =>
                         FocusScope.of(context).requestFocus(_youtubeFocus),
                     decoration: InputDecoration(
-                      labelText: 'Thời gian nấu (phút)',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                        labelText: 'Thời gian nấu (phút)',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(
+                              top:
+                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                          child: Text(
+                            '    *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        )),
                   ),
                   SizedBox(height: 10.0),
                   TextField(
@@ -522,12 +583,23 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                             }
                                           },
                                           decoration: InputDecoration(
-                                            labelText:
-                                                'Nguyên liệu ${index + 1}',
-                                            border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10)),
-                                          ),
+                                              labelText:
+                                                  'Nguyên liệu ${index + 1}',
+                                              border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          10)),
+                                              suffixIcon: Padding(
+                                                padding: EdgeInsets.only(
+                                                    top:
+                                                        10), // Thêm padding bên phải để tránh quá sát với viền
+                                                child: Text(
+                                                  '    *',
+                                                  style: TextStyle(
+                                                      color: Colors.red,
+                                                      fontSize: 16),
+                                                ),
+                                              )),
                                         ),
                                       ),
                                       IconButton(
@@ -586,11 +658,22 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                                           maxLines: null,
                                           minLines: 1,
                                           decoration: InputDecoration(
-                                            labelText: 'Bước ${index + 1}',
-                                            border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10)),
-                                          ),
+                                              labelText: 'Bước ${index + 1}',
+                                              border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          10)),
+                                              suffixIcon: Padding(
+                                                padding: EdgeInsets.only(
+                                                    top:
+                                                        10), // Thêm padding bên phải để tránh quá sát với viền
+                                                child: Text(
+                                                  '    *',
+                                                  style: TextStyle(
+                                                      color: Colors.red,
+                                                      fontSize: 16),
+                                                ),
+                                              )),
                                         ),
                                       ),
                                       IconButton(

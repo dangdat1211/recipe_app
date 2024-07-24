@@ -54,6 +54,8 @@ class _NotifyScreenState extends State<NotifyScreen> {
     }
   }
 
+  
+
   Future<Map<String, dynamic>> _getUserInfo(String userId) async {
     DocumentSnapshot userDoc =
         await _firestore.collection('users').doc(userId).get();
@@ -79,6 +81,8 @@ class _NotifyScreenState extends State<NotifyScreen> {
     }
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,21 +91,23 @@ class _NotifyScreenState extends State<NotifyScreen> {
         centerTitle: true,
         title: Text('Thông báo'),
         actions: currentUser != null
-          ? [
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: GestureDetector(
-                  onTap: _markAllAsRead,
-                  child: Center(
-                    child: Text(
-                      'Đánh dấu tất cả là đã đọc',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ),
-                ),
-              ),
-            ]
-          : null,
+  ? [
+      PopupMenuButton<String>(
+        icon: Icon(Icons.more_vert),
+        onSelected: (String result) {
+          if (result == 'markAllRead') {
+            _markAllAsRead();
+          }
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+            value: 'markAllRead',
+            child: Text('Đánh dấu tất cả là đã đọc'),
+          ),
+        ],
+      ),
+    ]
+  : null,
       ),
       body: currentUser == null
           ? _buildNotLoggedInView()

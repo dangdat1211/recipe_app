@@ -24,6 +24,8 @@ class _ProfileUserState extends State<ProfileUser> {
 
   bool isFollowing = false;
 
+  int approvedRecipesCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +35,12 @@ class _ProfileUserState extends State<ProfileUser> {
         isFollowing = value;
       });
     });
+
+    getApprovedRecipesCount().then((count) {
+    setState(() {
+      approvedRecipesCount = count;
+    });
+  });
   }
 
   Future<void> fetchUserData() async {
@@ -44,6 +52,17 @@ class _ProfileUserState extends State<ProfileUser> {
       userProfile = userDoc;
     });
   }
+
+  Future<int> getApprovedRecipesCount() async {
+  QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+      .collection('recipes')
+      .where('userID', isEqualTo: widget.userId)
+      .where('status', isEqualTo: 'Đã được phê duyệt')
+      .where('hidden', isEqualTo: false)
+      .get();
+  
+  return querySnapshot.docs.length;
+}
 
   Future<bool> checkFollow() async {
     if (currentUser != null) {
@@ -184,9 +203,7 @@ class _ProfileUserState extends State<ProfileUser> {
                             SizedBox(width: 10),
                             Column(
                               children: [
-                                Text((userProfile!['recipes'] as List)
-                                    .length
-                                    .toString()),
+                                Text(approvedRecipesCount.toString()),
                                 Text('Số công thức')
                               ],
                             ),

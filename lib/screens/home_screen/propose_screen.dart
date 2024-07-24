@@ -677,57 +677,86 @@ class _ProposeScreenState extends State<ProposeScreen> {
                     height: 5,
                   ),
                   Container(
-                    height: 100,
+                    height: 110,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: category.length,
                       itemBuilder: (context, index) {
                         final cate = category[index];
                         return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CategoryRecipeScreen(
-                                    categoryId: cate['id']),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            color: cardBack,
-                            child: Container(
-                              width: 100,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ClipOval(
-                                    child: Image.network(
-                                      cate['image'] ?? '',
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Icon(Icons.error);
-                                      },
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryRecipeScreen(
+                                      categoryId: cate['id']),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15)),
+                              color: cardBack,
+                              child: Container(
+                                width: 200,
+                                padding: EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        cate['image'] ?? '',
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            width: 60,
+                                            height: 60,
+                                            color: Colors.grey[300],
+                                            child: Icon(Icons.error,
+                                                color: Colors.red),
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    cate['name'] ?? 'No name',
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  )
-                                ],
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            cate['name'] ?? 'No name',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            cate['description'] ??
+                                                'No description',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 2,
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                        );
+                            ));
                       },
                     ),
                   ),
@@ -931,67 +960,70 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                       padding:
                                           const EdgeInsets.only(bottom: 10),
                                       child: ItemRecipe(
-                                        ontap: () {
-                                          _navigateToRecipeDetail(
-                                              recipe['recipeId'],
-                                              recipe['userID']);
-                                        },
-                                        name: recipe['namerecipe'] ??
-                                            'Không có tiêu đề',
-                                        star: recipeWithUser['avgRating']
-                                            .toStringAsFixed(1),
-                                        favorite: (recipe['likes']?.length ?? 0)
-                                            .toString(),
-                                        avatar: user['avatar'] ??
-                                            'assets/food_intro.jpg',
-                                        fullname:
-                                            user['fullname'] ?? 'Không rõ tên',
-                                        image: recipe['image'] ??
-                                            'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
-                                        isFavorite: isFavorite,
-                                        onFavoritePressed: () {
-                                          if (currentUser != null) {
-                                            FavoriteService.toggleFavorite(
-                                                context,
+                                          ontap: () {
+                                            _navigateToRecipeDetail(
                                                 recipe['recipeId'],
                                                 recipe['userID']);
-                                          }
-                                          else {
-                                            showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return AlertDialog(
-                                            title: Text('Bạn chưa đăng nhập'),
-                                            content: Text(
-                                                'Vui lòng đăng nhập để tiếp tục.'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
+                                          },
+                                          name: recipe['namerecipe'] ??
+                                              'Không có tiêu đề',
+                                          star: recipeWithUser['avgRating']
+                                              .toStringAsFixed(1),
+                                          favorite:
+                                              (recipe['likes']?.length ?? 0)
+                                                  .toString(),
+                                          avatar: user['avatar'] ??
+                                              'assets/food_intro.jpg',
+                                          fullname: user['fullname'] ??
+                                              'Không rõ tên',
+                                          image: recipe['image'] ??
+                                              'https://candangstudio.com/wp-content/uploads/2022/04/studio-session-040_51065362217_o.jpg',
+                                          isFavorite: isFavorite,
+                                          onFavoritePressed: () {
+                                            if (currentUser != null) {
+                                              FavoriteService.toggleFavorite(
+                                                  context,
+                                                  recipe['recipeId'],
+                                                  recipe['userID']);
+                                            } else {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) {
+                                                  return AlertDialog(
+                                                    title: Text(
+                                                        'Bạn chưa đăng nhập'),
+                                                    content: Text(
+                                                        'Vui lòng đăng nhập để tiếp tục.'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(context)
+                                                              .pop();
 
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            const SignInScreen()),
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                                builder:
+                                                                    (context) =>
+                                                                        const SignInScreen()),
+                                                          );
+                                                        },
+                                                        child:
+                                                            Text('Đăng nhập'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                        child: Text('Hủy'),
+                                                      ),
+                                                    ],
                                                   );
                                                 },
-                                                child: Text('Đăng nhập'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text('Hủy'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                          }
-                                        }
-                                            
-                                      ),
+                                              );
+                                            }
+                                          }),
                                     ),
                                   ),
                                 );

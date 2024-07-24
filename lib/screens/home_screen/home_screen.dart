@@ -8,6 +8,7 @@ import 'package:recipe_app/screens/home_screen/propose_screen.dart';
 
 import 'package:badges/badges.dart' as badges;
 import 'package:recipe_app/screens/notify_screen/notify_screen.dart';
+import 'package:recipe_app/screens/search_screen/search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int unreadNotifications = 0;
   late Stream<QuerySnapshot> _notificationsStream;
+  TextEditingController _searchController = TextEditingController();
   
   @override
   void initState() {
@@ -37,6 +39,17 @@ class _HomeScreenState extends State<HomeScreen> {
     //}
   }
 
+  void _performSearch() {
+    if (_searchController.text.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchScreen(initialSearchTerm: _searchController.text),
+        ),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -44,26 +57,28 @@ class _HomeScreenState extends State<HomeScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(Icons.apps),
-            onPressed: () {
-              // Handle notification icon pressed
-            },
-          ),
-          title: Container(
+          leading: Image.asset('assets/logo_noback.png', scale: 10,),
+          title:  Container(
             height: 40,
             child: TextField(
+              controller: _searchController,
+            
               decoration: InputDecoration(
-                hintText: 'Tìm kiếm...',
-                prefixIcon: Icon(Icons.search),
+                contentPadding: EdgeInsets.symmetric(vertical: 10).copyWith(left: 20),
+                hintText: 'Tìm công thức cho bữa ăn của bạn',   
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(vertical: 10),
+                
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: _performSearch,
+                ),
               ),
+              onSubmitted: (_) => _performSearch(),
             ),
           ),
           centerTitle: true,

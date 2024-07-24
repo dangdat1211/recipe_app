@@ -248,20 +248,20 @@ class _UserScreenState extends State<UserScreen> {
                             },
                             icon: Icons.calculate,
                             title: 'Công thức của bạn'),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        UIMenu(
-                            ontap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        SettingPrivacyScreen()),
-                              );
-                            },
-                            icon: Icons.privacy_tip,
-                            title: 'Cài đặt quyền riêng tư'),
+                        // SizedBox(
+                        //   height: 10,
+                        // ),
+                        // UIMenu(
+                        //     ontap: () {
+                        //       Navigator.push(
+                        //         context,
+                        //         MaterialPageRoute(
+                        //             builder: (context) =>
+                        //                 SettingPrivacyScreen()),
+                        //       );
+                        //     },
+                        //     icon: Icons.privacy_tip,
+                        //     title: 'Cài đặt quyền riêng tư'),
                         SizedBox(
                           height: 10,
                         ),
@@ -276,20 +276,20 @@ class _UserScreenState extends State<UserScreen> {
                             },
                             icon: Icons.privacy_tip,
                             title: 'Đổi mật khẩu'),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        UIMenu(
-                            ontap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        SettingNotifyScreen()),
-                              );
-                            },
-                            icon: Icons.notifications,
-                            title: 'Cài đặt thông báo'),
+                        // SizedBox(
+                        //   height: 10,
+                        // ),
+                        // UIMenu(
+                        //     ontap: () {
+                        //       Navigator.push(
+                        //         context,
+                        //         MaterialPageRoute(
+                        //             builder: (context) =>
+                        //                 SettingNotifyScreen()),
+                        //       );
+                        //     },
+                        //     icon: Icons.notifications,
+                        //     title: 'Cài đặt thông báo'),
                         SizedBox(
                           height: 10,
                         ),
@@ -422,6 +422,15 @@ class _UserScreenState extends State<UserScreen> {
                         SizedBox(
                           height: 10,
                         ),
+                        UIContainer(
+                            ontap: () {
+                               Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+  );
+                            },
+                            color: Colors.red,
+                            title: 'Hello'),
                       ],
                     ),
         ),

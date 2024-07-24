@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
       LocalStorageHelper.setValue('inFirst', true);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const OnbroadingScreen()),
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       );
     }
   }

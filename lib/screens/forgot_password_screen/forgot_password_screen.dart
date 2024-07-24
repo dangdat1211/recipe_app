@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:recipe_app/constants/colors.dart';
 import 'package:recipe_app/helpers/snack_bar_custom.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -84,7 +83,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Column(
             children: [
               
-              
+              Container(
+                height: 150,
+                child: Image.asset('assets/logo_noback.png'),
+              ),
+              Text('Quay lại lại cùng chúng tôi nhé!'),
+              SizedBox(
+                height: 30,
+              ),
+
               TextField(
                 controller: _emailController,
                 focusNode: _emailFocusNode,

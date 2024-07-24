@@ -13,10 +13,10 @@ class AdminViewRecipe extends StatefulWidget {
 class _AdminViewRecipeState extends State<AdminViewRecipe>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String sortOption = 'Mới nhất';
-  String _searchQuery = '';
-  int _currentPage = 1;
-  static const int _itemsPerPage = 10;
+  String currentSortOption = 'Mới nhất';
+  TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> searchResults = [];
+  bool isLoading = false;
 
   Map<String, List<String>> selectedFilters = {
     'difficulty': [],
@@ -24,26 +24,151 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
     'method': [],
   };
 
+  int itemsPerPage = 10;
+  int currentPage = 1;
+  List<Map<String, dynamic>> paginatedResults = [];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(_handleTabChange);
+    _loadRecipes();
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  void _handleTabChange() {
-    if (_tabController.indexIsChanging) {
-      setState(() {
-        _currentPage = 1;
-      });
+  void _loadRecipes() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('recipes')
+        .get();
+
+    searchResults = snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    _applyFiltersAndSort();
+
+    setState(() {
+      isLoading = false;
+      currentPage = 1;
+      updatePaginatedResults();
+    });
+  }
+
+  void updatePaginatedResults() {
+    int startIndex = (currentPage - 1) * itemsPerPage;
+    int endIndex = startIndex + itemsPerPage;
+    if (endIndex > searchResults.length) {
+      endIndex = searchResults.length;
     }
+    paginatedResults = searchResults.sublist(startIndex, endIndex);
+  }
+
+  Future<void> _fetchFilteredData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    Query query = FirebaseFirestore.instance.collection('recipes');
+
+    // Apply filters
+    if (selectedFilters['difficulty']!.isNotEmpty) {
+      query = query.where('level', whereIn: selectedFilters['difficulty']);
+    }
+
+    if (selectedFilters['time']!.isNotEmpty) {
+      // Handle time filtering (you may need more complex logic here)
+    }
+
+    // Fetch data
+    final snapshot = await query.get();
+
+    searchResults = snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    searchResults = searchResults.where((recipe) {
+    bool timeMatch = selectedFilters['time']!.isEmpty ||
+        selectedFilters['time']!.any((timeFilter) {
+          int recipeCookingTime = int.tryParse(
+                  recipe['time'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
+              0;
+          if (timeFilter == '< 30 phút') {
+            return recipeCookingTime < 30;
+          } else if (timeFilter == '30-60 phút') {
+            return recipeCookingTime >= 30 && recipeCookingTime <= 60;
+          } else if (timeFilter == '> 60 phút') {
+            return recipeCookingTime > 60;
+          }
+          return false;
+        });
+
+    bool methodMatch = selectedFilters['method']!.isEmpty ||
+        selectedFilters['method']!.any((method) =>
+            recipe['namerecipe']
+                .toString()
+                .toLowerCase()
+                .contains(method.toLowerCase()));
+
+    return timeMatch && methodMatch;
+  }).toList();
+
+    // Apply method filter and sort
+    _applyMethodFilterAndSort();
+
+    setState(() {
+      isLoading = false;
+      currentPage = 1;
+      updatePaginatedResults();
+    });
+  }
+
+  void _applyMethodFilterAndSort() {
+    // Filter by method
+    if (selectedFilters['method']!.isNotEmpty) {
+      searchResults = searchResults.where((recipe) {
+        return selectedFilters['method']!.any((method) =>
+            recipe['namerecipe']
+                .toString()
+                .toLowerCase()
+                .contains(method.toLowerCase()));
+      }).toList();
+    }
+
+    // Sort results
+    searchResults.sort((a, b) {
+      switch (currentSortOption) {
+        case 'Mới nhất':
+          return (b['createAt'] as Timestamp)
+              .compareTo(a['createAt'] as Timestamp);
+        case 'Cũ nhất':
+          return (a['createAt'] as Timestamp)
+              .compareTo(b['createAt'] as Timestamp);
+        case 'Đánh giá cao nhất':
+          return (b['rateCount'] as num).compareTo(a['rateCount'] as num);
+        case 'Yêu thích nhiều nhất':
+          return (b['likeCount'] as num).compareTo(a['likeCount'] as num);
+        default:
+          return 0;
+      }
+    });
+  }
+
+  void _applyFiltersAndSort() async {
+    await _fetchFilteredData();
   }
 
   void _handlePopupMenuSelection(String value, String recipeId) async {
@@ -95,9 +220,9 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
         'status': 'Đã được phê duyệt',
       });
       SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
-      setState(() {});
+      _loadRecipes();
     } catch (e) {
-      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức $e');
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức: $e');
     }
   }
 
@@ -110,10 +235,9 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
         'status': 'Bị từ chối',
       });
       SnackBarCustom.showbar(context, 'Công thức đã bị từ chối');
-      setState(() {});
+      _loadRecipes();
     } catch (e) {
-      print('Lỗi khi từ chối công thức: ');
-      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức : $e');
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức: $e');
     }
   }
 
@@ -160,238 +284,155 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
 
       SnackBarCustom.showbar(context, 'Xóa thành công');
 
-      setState(() {});
+      _loadRecipes();
     } catch (e) {
       print('Lỗi khi xóa công thức và dữ liệu liên quan: $e');
-      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa công thức và dữ liệu liên qua $e');
+      SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa công thức và dữ liệu liên quan: $e');
     }
   }
 
   Widget buildRecipeList(String status) {
-    Query recipesQuery = FirebaseFirestore.instance.collection('recipes');
+    var filteredRecipes = paginatedResults.where((recipe) {
+      return status.isEmpty || recipe['status'] == status;
+    }).toList();
 
-    if (status.isNotEmpty) {
-      recipesQuery = recipesQuery.where('status', isEqualTo: status);
+    if (filteredRecipes.isEmpty) {
+      return Center(child: Text('Không có công thức nào'));
     }
 
-    switch (sortOption) {
-      case 'Mới nhất':
-        recipesQuery = recipesQuery.orderBy('updateAt', descending: true);
-        break;
-      case 'Cũ nhất':
-        recipesQuery = recipesQuery.orderBy('updateAt', descending: false);
-        break;
-      case 'Đánh giá cao nhất':
-        recipesQuery = recipesQuery.orderBy('rateCount', descending: true);
-        break;
-      case 'Yêu thích nhiều nhất':
-        recipesQuery = recipesQuery.orderBy('likeCount', descending: true);
-        break;
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: recipesQuery.snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text('Đã xảy ra lỗi');
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        var recipes = snapshot.data!.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .where((recipe) {
-          bool nameMatch = recipe['namerecipe']
-              .toString()
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase());
-
-          bool ingredientMatch = false;
-          if (recipe['ingredients'] != null && recipe['ingredients'] is List) {
-            ingredientMatch = (recipe['ingredients'] as List).any((ingredient) =>
-                ingredient
-                    .toString()
-                    .toLowerCase()
-                    .contains(_searchQuery.toLowerCase()));
-          }
-
-          bool difficultyMatch = true;
-          if (selectedFilters['difficulty']!.isNotEmpty) {
-            difficultyMatch =
-                selectedFilters['difficulty']!.contains(recipe['level']);
-          }
-
-          bool methodMatch = true;
-          if (selectedFilters['method']!.isNotEmpty) {
-            methodMatch = selectedFilters['method']!.any((method) =>
-                recipe['namerecipe']
-                    .toString()
-                    .toLowerCase()
-                    .contains(method.toLowerCase()));
-          }
-
-          bool timeMatch = true;
-          if (selectedFilters['time']!.isNotEmpty) {
-            int recipeCookingTime = int.tryParse(
-                    recipe['time'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0;
-            timeMatch = selectedFilters['time']!.any((timeFilter) {
-              if (timeFilter == '< 30 phút') {
-                return recipeCookingTime < 30;
-              } else if (timeFilter == '30-60 phút') {
-                return recipeCookingTime >= 30 && recipeCookingTime <= 60;
-              } else if (timeFilter == '> 60 phút') {
-                return recipeCookingTime > 60;
-              }
-              return false;
-            });
-          }
-
-          return (nameMatch || ingredientMatch) &&
-              difficultyMatch &&
-              methodMatch &&
-              timeMatch;
-        }).toList();
-
-        if (recipes.isEmpty) {
-          return Center(child: Text('Không có công thức nào'));
-        }
-
-        int totalPages = (recipes.length / _itemsPerPage).ceil();
-        int startIndex = (_currentPage - 1) * _itemsPerPage;
-        int endIndex = startIndex + _itemsPerPage;
-        if (endIndex > recipes.length) endIndex = recipes.length;
-
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: endIndex - startIndex,
-                itemBuilder: (context, index) {
-                  var recipe = recipes[startIndex + index];
-                  var recipeId = snapshot.data!.docs[startIndex + index].id;
-                  return InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailReCipe(
-                              recipeId: recipeId, userId: recipe['userID']),
-                        ),
-                      );
-                    },
-                    child: ListTile(
-                      leading: Container(
-                        width: 80,
-                        height: 80,
-                        child: Image.network(
-                          recipe['image'],
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      title: Text(
-                        recipe['namerecipe'],
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(recipe['userID'])
-                                .get(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return Text('Đang tải...');
-                              }
-                              if (snapshot.hasError) {
-                                return Text('Lỗi: ${snapshot.error}');
-                              }
-                              if (!snapshot.hasData || !snapshot.data!.exists) {
-                                return Text('Người tạo: Không xác định');
-                              }
-                              var userData =
-                                  snapshot.data!.data() as Map<String, dynamic>;
-                              return Text(
-                                  'Người tạo: ${userData['fullname'] ?? 'Không xác định'}');
-                            },
-                          ),
-                          Text(
-                            recipe['description'],
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          Text(
-                            'Trạng thái: ${recipe['status']}',
-                            style: TextStyle(
-                              color: getStatusColor(recipe['status']),
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) =>
-                            _handlePopupMenuSelection(value, recipeId),
-                        itemBuilder: (BuildContext context) =>
-                            <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'approve',
-                            child: Text('Phê duyệt'),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'reject',
-                            child: Text('Từ chối'),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Text('Xóa'),
-                          ),
-                        ],
-                      ),
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: filteredRecipes.length,
+            itemBuilder: (context, index) {
+              var recipe = filteredRecipes[index];
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailReCipe(
+                          recipeId: recipe['id'], userId: recipe['userID']),
                     ),
                   );
                 },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.chevron_left),
-                    onPressed: _currentPage > 1
-                        ? () {
-                            setState(() {
-                              _currentPage--;
-                            });
-                          }
-                        : null,
+                child: ListTile(
+                  leading: Container(
+                    width: 80,
+                    height: 80,
+                    child: Image.network(
+                      recipe['image'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.error);
+                        },
+                    ),
                   ),
-                  Text('Trang $_currentPage / $totalPages'),
-                  IconButton(
-                    icon: Icon(Icons.chevron_right),
-                    onPressed: _currentPage < totalPages
-                        ? () {
-                            setState(() {
-                              _currentPage++;
-                            });
-                          }
-                        : null,
+                  title: Text(
+                    recipe['namerecipe'],
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(
+                        color: Colors.black, fontWeight: FontWeight.bold),
                   ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(recipe['userID'])
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Text('Đang tải...');
+                          }
+                          if (snapshot.hasError) {
+                            return Text('Lỗi: ${snapshot.error}');
+                          }
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return Text('Người tạo: Không xác định');
+                          }
+                          var userData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          return Text(
+                              'Người tạo: ${userData['fullname'] ?? 'Không xác định'}');
+                        },
+                      ),
+                      Text(
+                        recipe['description'],
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      Text(
+                        'Trạng thái: ${recipe['status']}',
+                        style: TextStyle(
+                          color: getStatusColor(recipe['status']),
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) =>
+                        _handlePopupMenuSelection(value, recipe['id']),
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'approve',
+                        child: Text('Phê duyệt'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'reject',
+                        child: Text('Từ chối'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text('Xóa'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        buildPaginationControls(),
+      ],
+    );
+  }
+
+  Widget buildPaginationControls() {
+    int totalPages = (searchResults.length / itemsPerPage).ceil();
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed: currentPage > 1
+              ? () {
+                  setState(() {
+                    currentPage--;
+                    updatePaginatedResults();
+                  });
+                }
+              : null,
+        ),
+        Text('Trang $currentPage / $totalPages'),
+        IconButton(
+          icon: Icon(Icons.chevron_right),
+          onPressed: currentPage < totalPages
+              ? () {
+                  setState(() {
+                    currentPage++;
+                    updatePaginatedResults();
+                  });
+                }
+              : null,
+        ),
+      ],
     );
   }
 
@@ -415,55 +456,30 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text('Lọc và Sắp xếp kết quả'),
-              content: SingleChildScrollView(
+              title: Text('Lọc và Sắp xếp', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Container(
+                width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    DropdownButton<String>(
-                      value: sortOption,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          sortOption = newValue!;
-                        });
-                      },
-                      items: <String>['Mới nhất', 'Cũ nhất', 'Đánh giá cao nhất', 'Yêu thích nhiều nhất']
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 20),
-                    Text('Độ khó:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
-                    SizedBox(height: 10),
-                    Text('Mốc thời gian:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('time', ['< 30 phút', '30-60 phút', '> 60 phút'], setState),
-                    SizedBox(height: 10),
-                    Text('Phương pháp chế biến:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ..._buildCheckboxes('method', ['Rán', 'Xào', 'Nướng', 'Hấp'], setState),
+                    _buildSortingSection(setState),
+                    _buildFilterSection('Độ khó', 'difficulty', ['Dễ', 'Trung bình', 'Khó'], setState),
+                    _buildFilterSection('Thời gian', 'time', ['< 30 phút', '30-60 phút', '> 60 phút'], setState),
+                    _buildFilterSection('Phương pháp', 'method', ['Rán', 'Xào', 'Nướng', 'Hấp'], setState),
                   ],
                 ),
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('Hủy'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  child: Text('Hủy', style: TextStyle(color: Colors.grey)),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                TextButton(
+                ElevatedButton(
                   child: Text('Áp dụng'),
                   onPressed: () {
                     Navigator.of(context).pop();
-                    setState(() {
-                      _currentPage = 1;
-                    });
+                    _applyFiltersAndSort();
                   },
                 ),
               ],
@@ -474,22 +490,66 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
     );
   }
 
-  List<Widget> _buildCheckboxes(String filterType, List<String> options, StateSetter setState) {
-    return options.map((option) {
-      return CheckboxListTile(
-        title: Text(option),
-        value: selectedFilters[filterType]!.contains(option),
-        onChanged: (bool? value) {
-          setState(() {
-            if (value == true) {
-              selectedFilters[filterType]!.add(option);
-            } else {
-              selectedFilters[filterType]!.remove(option);
-            }
-          });
-        },
-      );
-    }).toList();
+  Widget _buildSortingSection(StateSetter setState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey),
+          ),
+          child: DropdownButton<String>(
+            value: currentSortOption,
+            onChanged: (String? newValue) {
+              setState(() => currentSortOption = newValue!);
+            },
+            items: ['Mới nhất', 'Cũ nhất', 'Đánh giá cao nhất', 'Yêu thích nhiều nhất']
+                .map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(value: value, child: Text(value));
+            }).toList(),
+            isExpanded: true,
+            underline: SizedBox(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterSection(String title, String filterType, List<String> options, StateSetter setState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: options.map((option) {
+            bool isSelected = selectedFilters[filterType]!.contains(option);
+            return FilterChip(
+              showCheckmark: false,
+              label: Text(option),
+              selected: isSelected,
+              onSelected: (bool selected) {
+                setState(() {
+                  if (selected) {
+                    selectedFilters[filterType]!.add(option);
+                  } else {
+                    selectedFilters[filterType]!.remove(option);
+                  }
+                });
+              },
+              backgroundColor: Colors.grey[200],
+              selectedColor: Theme.of(context).primaryColor.withOpacity(0.3),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
   }
 
   @override
@@ -519,6 +579,7 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
                   child: Container(
                     height: 40,
                     child: TextField(
+                      controller: _searchController,
                       decoration: InputDecoration(
                         hintText: 'Tìm kiếm...',
                         prefixIcon: Icon(Icons.search),
@@ -529,31 +590,39 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
                       ),
                       onChanged: (value) {
                         setState(() {
-                          _searchQuery = value;
-                          _currentPage = 1;
+                          searchResults = searchResults.where((recipe) {
+                            return recipe['namerecipe']
+                                .toString()
+                                .toLowerCase()
+                                .contains(value.toLowerCase());
+                          }).toList();
+                          currentPage = 1;
+                          updatePaginatedResults();
                         });
                       },
                     ),
                   ),
                 ),
                 SizedBox(width: 8.0),
-                ElevatedButton(
+                IconButton(
+                  icon: Icon(Icons.filter_list),
                   onPressed: _showFilterDialog,
-                  child: Text('Lọc'),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                buildRecipeList(''),
-                buildRecipeList('Đợi phê duyệt'),
-                buildRecipeList('Đã được phê duyệt'),
-                buildRecipeList('Bị từ chối'),
-              ],
-            ),
+            child: isLoading
+                ? Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      buildRecipeList(''),
+                      buildRecipeList('Đợi phê duyệt'),
+                      buildRecipeList('Đã được phê duyệt'),
+                      buildRecipeList('Bị từ chối'),
+                    ],
+                  ),
           ),
         ],
       ),

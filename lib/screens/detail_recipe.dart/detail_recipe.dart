@@ -13,7 +13,6 @@ import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
 import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
-import 'package:recipe_app/service/user_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -293,7 +292,9 @@ class _DetailReCipeState extends State<DetailReCipe> {
         flags: YoutubePlayerFlags(autoPlay: false),
       ),
       showVideoProgressIndicator: true,
-      onReady: () {},
+      onReady: () {
+        
+      },
     );
   }
 

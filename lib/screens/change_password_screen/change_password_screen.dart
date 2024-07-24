@@ -143,6 +143,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Container(
+                height: 150,
+                child: Image.asset('assets/logo_noback.png'),
+              ),
+              Text('Hãy nhớ mật khẩu của bạn'),
+              SizedBox(
+                height: 30,
+              ),
             InputForm(
               controller: _currentPasswordController,
               focusNode: _currentPasswordFocusNode,

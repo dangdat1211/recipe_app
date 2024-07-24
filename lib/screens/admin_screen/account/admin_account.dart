@@ -15,15 +15,25 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
   String _searchQuery = '';
   String _sortBy = 'fullname';
   bool _isAscending = true;
-  int _currentPageActive = 1;
-  int _currentPageInactive = 1;
+  int _currentPage = 1;
   int _itemsPerPage = 10;
   int _totalItems = 0;
+
+  final List<String> _roles = ['Thành viên', 'Chuyên gia', 'Quản trị viên'];
+  String _selectedRole = 'Thành viên';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _selectedRole = _roles[_tabController.index];
+          _currentPage = 1;
+        });
+      }
+    });
   }
 
   @override
@@ -66,8 +76,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
-                      _currentPageActive = 1;
-                      _currentPageInactive = 1;
+                      _currentPage = 1;
                     });
                   },
                 ),
@@ -76,8 +85,9 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 dividerColor: Colors.transparent,
                 controller: _tabController,
                 tabs: [
-                  Tab(text: 'Đang hoạt động'),
-                  Tab(text: 'Vô hiệu hóa'),
+                  Tab(text: 'Thành viên'),
+                  Tab(text: 'Chuyên gia'),
+                  Tab(text: 'Quản trị viên'),
                 ],
               ),
             ],
@@ -87,18 +97,19 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAccountList(true, _currentPageActive),
-          _buildAccountList(false, _currentPageInactive),
+          _buildAccountList('Thành viên'),
+          _buildAccountList('Chuyên gia'),
+          _buildAccountList('Quản trị viên'),
         ],
       ),
     );
   }
 
-  Widget _buildAccountList(bool isActive, int currentPage) {
+  Widget _buildAccountList(String role) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .where('status', isEqualTo: isActive)
+          .where('role', isEqualTo: role)
           .orderBy(_sortBy, descending: !_isAscending)
           .snapshots(),
       builder: (context, snapshot) {
@@ -128,7 +139,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
         _totalItems = filteredDocs.length;
         int totalPages = (_totalItems / _itemsPerPage).ceil();
 
-        int startIndex = (currentPage - 1) * _itemsPerPage;
+        int startIndex = (_currentPage - 1) * _itemsPerPage;
         int endIndex = startIndex + _itemsPerPage;
         if (endIndex > _totalItems) endIndex = _totalItems;
 
@@ -142,15 +153,32 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   Map<String, dynamic> data = document.data() as Map<String, dynamic>;
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: NetworkImage(data['avatar'] ?? ''),
+                      backgroundImage: NetworkImage(data['avatar'] ?? '', ),
                     ),
-                    title: Text(data['fullname'] ?? ''),
-                    subtitle: Text(data['email'] ?? ''),
-                    trailing: Switch(
-                      value: data['status'],
-                      onChanged: (bool value) {
-                        _showConfirmationDialog(document.id, value);
-                      },
+                    title: Text(data['fullname'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(data['email'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
+                        Text('Vai trò: ${data['role']}'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch(
+                          value: data['status'] ?? false,
+                          onChanged: data['role'] == 'Quản trị viên' ? null : (bool value) {
+                            _showConfirmationDialog(document.id, value);
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: data['role'] == 'Quản trị viên' ? null : () {
+                            _showChangeRoleDialog(document.id, data['role']);
+                          },
+                        ),
+                      ],
                     ),
                     onTap: () {
                       _navigateToUserDetail(document.id);
@@ -159,44 +187,34 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 }).toList(),
               ),
             ),
-            _buildPaginationControls(totalPages, isActive),
+            _buildPaginationControls(totalPages),
           ],
         );
       },
     );
   }
 
-  Widget _buildPaginationControls(int totalPages, bool isActive) {
-    int currentPage = isActive ? _currentPageActive : _currentPageInactive;
-    
+  Widget _buildPaginationControls(int totalPages) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
           icon: Icon(Icons.chevron_left),
-          onPressed: currentPage > 1
+          onPressed: _currentPage > 1
               ? () {
                   setState(() {
-                    if (isActive) {
-                      _currentPageActive--;
-                    } else {
-                      _currentPageInactive--;
-                    }
+                    _currentPage--;
                   });
                 }
               : null,
         ),
-        Text('Trang $currentPage / $totalPages'),
+        Text('Trang $_currentPage / $totalPages'),
         IconButton(
           icon: Icon(Icons.chevron_right),
-          onPressed: currentPage < totalPages
+          onPressed: _currentPage < totalPages
               ? () {
                   setState(() {
-                    if (isActive) {
-                      _currentPageActive++;
-                    } else {
-                      _currentPageInactive++;
-                    }
+                    _currentPage++;
                   });
                 }
               : null,
@@ -222,23 +240,21 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
-                      _currentPageActive = 1;
-                      _currentPageInactive = 1;
+                      _currentPage = 1;
                       Navigator.pop(context);
                     });
                   },
                 ),
               ),
               ListTile(
-                title: Text('Email'),
+                title: Text('Email',),
                 leading: Radio(
                   value: 'email',
                   groupValue: _sortBy,
                   onChanged: (value) {
                     setState(() {
                       _sortBy = value.toString();
-                      _currentPageActive = 1;
-                      _currentPageInactive = 1;
+                      _currentPage = 1;
                       Navigator.pop(context);
                     });
                   },
@@ -252,8 +268,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
               onPressed: () {
                 setState(() {
                   _isAscending = !_isAscending;
-                  _currentPageActive = 1;
-                  _currentPageInactive = 1;
+                  _currentPage = 1;
                   Navigator.pop(context);
                 });
               },
@@ -264,32 +279,42 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
     );
   }
 
-  void _showConfirmationDialog(String documentId, bool newValue) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Xác nhận'),
-          content: Text('Bạn có chắc chắn muốn ${newValue ? "kích hoạt" : "vô hiệu hóa"} tài khoản này?'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Hủy'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Xác nhận'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _toggleAccountStatus(documentId, newValue);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+ void _showConfirmationDialog(String documentId, bool newValue) {
+  FirebaseFirestore.instance.collection('users').doc(documentId).get().then((doc) {
+    if (doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      if (data['role'] == 'Quản trị viên') {
+        SnackBarCustom.showbar(context, 'Không thể thay đổi trạng thái của tài khoản quản trị viên');
+        return;
+      }
+      
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Xác nhận'),
+            content: Text('Bạn có chắc chắn muốn ${newValue ? "kích hoạt" : "vô hiệu hóa"} tài khoản này?'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Hủy'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: Text('Xác nhận'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _toggleAccountStatus(documentId, newValue);
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  });
+}
 
   void _toggleAccountStatus(String documentId, bool isActive) {
     FirebaseFirestore.instance.collection('users').doc(documentId).update({
@@ -308,5 +333,61 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
         builder: (context) => ProfileUser(userId: userId),
       ),
     );
+  }
+
+  void _showChangeRoleDialog(String documentId, String currentRole) {
+    String newRole = currentRole;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Thay đổi quyền'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _roles.map((String role) {
+                  return RadioListTile<String>(
+                    title: Text(role),
+                    value: role,
+                    groupValue: newRole,
+                    onChanged: (String? value) {
+                      setState(() {
+                        newRole = value!;
+                      });
+                    },
+                  );
+                }).toList(),
+              );
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Hủy'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Xác nhận'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _changeUserRole(documentId, newRole);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _changeUserRole(String documentId, String newRole) {
+    FirebaseFirestore.instance.collection('users').doc(documentId).update({
+      'role': newRole,
+    }).then((_) {
+      SnackBarCustom.showbar(context, 'Cập nhật quyền tài khoản thành công');
+    }).catchError((error) {
+      SnackBarCustom.showbar(context, 'Lỗi khi cập nhật quyền tài khoản: $error');
+    });
   }
 }
