@@ -38,6 +38,7 @@ class _CommentScreenState extends State<CommentScreen> {
     super.initState();
     _loadComments();
     _loadCurrentUser();
+    _loadRecipeName();
 
     if (widget.autoFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,12 +155,30 @@ class _CommentScreenState extends State<CommentScreen> {
     );
   }
 
+  String recipeName = '';
+  Future<void> _loadRecipeName() async {
+  try {
+    DocumentSnapshot recipeSnapshot = await FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(widget.recipeId)
+        .get();
+    
+    if (recipeSnapshot.exists) {
+      setState(() {
+        recipeName = recipeSnapshot.get('namerecipe') ?? 'Công thức không tên';
+      });
+    }
+  } catch (e) {
+    print('Error loading recipe name: $e');
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('Cơm rượu nếp than'),
+        title: Text(recipeName.isNotEmpty ? recipeName : 'Đang tải...'),
       ),
       body: Stack(
         children: [

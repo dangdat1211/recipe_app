@@ -116,7 +116,7 @@ class _UserScreenState extends State<UserScreen> {
                                       children: [
                                         Text('Đăng nhập vào tài khoản'),
                                         Text(
-                                            'Lưu và tạo công thức, gửi cooksnap và hơn thế nữa')
+                                            'Tạo, lưu trữ và chia sẽ công thức của riêng bạn và nhiều hơn thế nữa')
                                       ],
                                     ),
                                   )
@@ -422,15 +422,6 @@ class _UserScreenState extends State<UserScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        UIContainer(
-                            ontap: () {
-                               Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-  );
-                            },
-                            color: Colors.red,
-                            title: 'Hello'),
                       ],
                     ),
         ),

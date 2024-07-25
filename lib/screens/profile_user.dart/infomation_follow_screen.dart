@@ -80,6 +80,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
               title: Text(fullname),
               centerTitle: true,
               bottom: TabBar(
+                dividerColor: Colors.transparent,
                 controller: _tabController,
                 tabs: [
                   Tab(text: 'Đang theo dõi'),
@@ -126,8 +127,8 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen>
                   backgroundImage: NetworkImage(
                       userData['avatar'] ?? 'https://via.placeholder.com/150'),
                 ),
-                title: Text(userData['fullname']),
-                subtitle: Text(userData['email']),
+                title: Text(userData['fullname'], maxLines: 1, overflow: TextOverflow.ellipsis,),
+                subtitle: Text(userData['email'], maxLines: 1, overflow: TextOverflow.ellipsis,),
                 trailing: userId == currentUser!.uid ? null :
                 ElevatedButton(
                   onPressed: () async {

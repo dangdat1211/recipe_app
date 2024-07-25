@@ -21,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> searchResultsWithUserData = [];
   bool isLoading = false;
   String currentSortOption = 'Mới nhất';
+  bool _hasSearchText = false;
 
   User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -34,10 +35,24 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.initialSearchTerm);
+    _searchController.addListener(_onSearchTextChanged);
     if (widget.initialSearchTerm != null) {
       _onSearchSubmitted(widget.initialSearchTerm!);
     }
   }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchTextChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchTextChanged() {
+  setState(() {
+    _hasSearchText = _searchController.text.isNotEmpty;
+  });
+}
 
   void _onSearchSubmitted(String query) async {
     if (query.isNotEmpty) {
@@ -272,17 +287,19 @@ Widget _buildFilterSection(String title, String filterType, List<String> options
     return Scaffold(
       appBar: AppBar(
         title: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Tìm kiếm...',
-            border: InputBorder.none,
-            suffixIcon: IconButton(
+    controller: _searchController,
+    decoration: InputDecoration(
+      hintText: 'Tìm kiếm...',
+      border: InputBorder.none,
+      suffixIcon: _hasSearchText
+          ? IconButton(
               icon: Icon(Icons.clear),
               onPressed: _clearSearch,
-            ),
-          ),
-          onSubmitted: _onSearchSubmitted,
-        ),
+            )
+          : null,
+    ),
+    onSubmitted: _onSearchSubmitted,
+  ),
         actions: [
           IconButton(
             icon: Icon(Icons.search),
@@ -307,7 +324,7 @@ Widget _buildFilterSection(String title, String filterType, List<String> options
                     color: Colors.white,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 21.0, right: 22),
+                        padding:  EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.048, right: MediaQuery.of(context).size.width * 0.045),
                         child: Container(
                           child: ListView.builder(
                             itemCount: searchResultsWithUserData.length,
