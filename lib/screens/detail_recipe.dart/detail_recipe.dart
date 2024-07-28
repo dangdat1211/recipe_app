@@ -111,17 +111,17 @@ class _DetailReCipeState extends State<DetailReCipe> {
   }
 
   Future<void> _loadRecipeName() async {
-  final recipeDoc = await FirebaseFirestore.instance
-      .collection('recipes')
-      .doc(widget.recipeId)
-      .get();
+    final recipeDoc = await FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(widget.recipeId)
+        .get();
 
-  if (recipeDoc.exists) {
-    setState(() {
-      recipeName = recipeDoc.data()?['namerecipe'] ?? '';
-    });
+    if (recipeDoc.exists) {
+      setState(() {
+        recipeName = recipeDoc.data()?['namerecipe'] ?? '';
+      });
+    }
   }
-}
 
   Future<void> _loadCurrentUserInfo() async {
     currentUser = FirebaseAuth.instance.currentUser;
@@ -283,6 +283,29 @@ class _DetailReCipeState extends State<DetailReCipe> {
         height: 200,
         width: 355,
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 200,
+          width: 355,
+          color: Colors.grey[300],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error, color: Colors.red, size: 50),
+              SizedBox(height: 10),
+              Text(
+                'Không thể tải ảnh',
+                style: TextStyle(color: Colors.red),
+              ),
+              SizedBox(height: 5),
+              Text(
+                'Vui lòng thử lại sau',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+        );
+      },
       );
     }
 
@@ -292,9 +315,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
         flags: YoutubePlayerFlags(autoPlay: false),
       ),
       showVideoProgressIndicator: true,
-      onReady: () {
-        
-      },
+      onReady: () {},
     );
   }
 

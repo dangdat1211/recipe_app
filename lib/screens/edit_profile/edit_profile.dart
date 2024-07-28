@@ -120,7 +120,7 @@ class _EditProfileState extends State<EditProfile> {
 
   setState(() {
     _fullnameError = fullname.isEmpty ? 'Tên đầy đủ không được để trống' : null;
-    _bioError = bio.isEmpty ? 'Tiểu sử không được để trống' : null;
+    _usernameError = username.isEmpty ? 'Tên người dùng không được để trống' : null;
   });
 
   bool isUsernameValid = await _isUsernameValid(username);

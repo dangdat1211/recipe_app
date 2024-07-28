@@ -98,43 +98,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
 
   Future<void> _register() async {
-    if (_usernameController.text.isEmpty ||
-        _fullnameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty || 
-        _confirmPasswordController.text != _passwordController.text) {
-      return;
-    }
+    // if (_usernameController.text.isEmpty ||
+    //     _fullnameController.text.isEmpty ||
+    //     _emailController.text.isEmpty ||
+    //     _passwordController.text.isEmpty ||
+    //     _confirmPasswordController.text.isEmpty || 
+    //     _confirmPasswordController.text != _passwordController.text) {
+    //   return;
+    // }
 
-    setState(() {
-      _isLoading = true;
+    final String username = _usernameController.text;
+    final String fullname =  _fullnameController.text;
+    final String email = _emailController.text;
+    final String pass = _passwordController.text;
+    final String confirm = _confirmPasswordController.text;
+
+    setState( () {
+      _usernameError = username.isEmpty  ? 'Tên tài khoản không được để trống' : null;
+      _fullnameError = fullname.isEmpty  ? 'Tên đầy đủ không được để trống' : null;
+      _emailError = email.isEmpty  ? 'Email không được để trống' : null;
+      _passwordError = pass.isEmpty  ? 'Mật khẩu không được để trống' : null;
+      _confirmPasswordError = confirm .isEmpty ? 'Mật khẩu không được để trống' : null;
+      if (pass.isNotEmpty  && confirm.isNotEmpty) {
+        if (pass != confirm) {
+          _confirmPasswordError = 'Mật khẩu không trùng';
+        }
+        else {
+          _confirmPasswordError = null;
+        }
+      }
+
     });
 
-    try {
-      await _authService.registerUser(
-        username: _usernameController.text,
-        fullname: _fullnameController.text,
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      SnackBarCustom.showbar(context, 'Email xác minh đã được gửi đến ${_emailController.text}');
-
-      Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
+    if (_usernameError == null && _fullnameError == null && _emailError == null && _passwordError == null && _confirmPasswordError == null) {
       setState(() {
-        if (e.code == 'email-already-in-use') {
-          _emailError = 'Email đã được sử dụng';
-        }
-        if (e.code == 'invalid-email') {
-          _emailError = 'Sai định dạng email';
-        }
+        _isLoading = true;
       });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+
+      try {
+        await _authService.registerUser(
+          username: _usernameController.text,
+          fullname: _fullnameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+
+        SnackBarCustom.showbar(context, 'Email xác minh đã được gửi đến ${_emailController.text}');
+
+        Navigator.pop(context);
+      } on FirebaseAuthException catch (e) {
+        setState(() {
+          if (e.code == 'email-already-in-use') {
+            _emailError = 'Email đã được sử dụng';
+          }
+          if (e.code == 'invalid-email') {
+            _emailError = 'Sai định dạng email';
+          }
+        });
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
