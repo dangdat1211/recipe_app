@@ -231,7 +231,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         'steps': [],
         'image': mainImageUrl ?? '',
         'level': _selectedDifficulty,
-        'likes': [],
+        // 'likes': [],
         'rates': [],
         'comments': [],
         'status': 'Đợi phê duyệt',

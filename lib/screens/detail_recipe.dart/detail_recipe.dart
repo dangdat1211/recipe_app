@@ -437,7 +437,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                     Row(
                       children: [
                         Expanded(
-                          flex: 3,
+                          flex: 2,
                           child: Divider(color: Colors.black, thickness: 1),
                         ),
                         Expanded(
@@ -451,7 +451,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                           ),
                         ),
                         Expanded(
-                          flex: 3,
+                          flex: 2,
                           child: Divider(color: Colors.black, thickness: 1),
                         ),
                       ],

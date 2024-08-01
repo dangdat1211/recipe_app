@@ -18,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void redirectOnbroadingScrren() async {
     final inFirst = LocalStorageHelper.getValue('inFirst') as bool?;
-    await Future.delayed(const Duration(seconds: 2));
+     await Future.delayed(const Duration(seconds: 2));
 
     if (inFirst != null && inFirst) {
       Navigator.pushReplacement(

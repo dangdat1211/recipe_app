@@ -58,7 +58,7 @@ class _CategoryRecipeScreenState extends State<CategoryRecipeScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('recipes')
-          .where('category', arrayContains: widget.categoryId)
+          .where('categories', arrayContains: widget.categoryId)
           .where('status', isEqualTo: 'Đã được phê duyệt')
           .where('hidden', isEqualTo: false)
           .get();

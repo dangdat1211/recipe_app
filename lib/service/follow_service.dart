@@ -40,7 +40,7 @@ class FollowService {
         recipeId: '',
         screen: 'user'
       );
-      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(otherUserId);
+      Map<String, dynamic> currentUserInfo = await UserService().getUserInfo(userId);
       await NotificationService.sendNotification(currentUserInfo['FCM'], 'Theo dõi mới', '${currentUserInfo['fullname']} vừa theo dõi bạn ',
       data: {'screen': 'user', 'userId': otherUserId});
 

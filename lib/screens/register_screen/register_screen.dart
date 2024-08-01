@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -34,6 +35,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
 
+  bool isPasswordValid(String password) {
+    return password.length >= 6 && !password.contains(' ');
+  }
+
+  Future<bool> isUsernameAvailable(String username) async {
+    try {
+      final result = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .get();
+      return result.docs.isEmpty;
+    } catch (e) {
+      print('Lỗi khi kiểm tra tên tài khoản: $e');
+      throw e;
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -68,14 +85,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     _passwordFocusNode.addListener(() {
-      if (!_passwordFocusNode.hasFocus) {
-        setState(() {
-          _passwordError = _passwordController.text.isEmpty
-              ? 'Mật khẩu không thể để trống'
-              : null;
-        });
+  if (!_passwordFocusNode.hasFocus) {
+    setState(() {
+      if (_passwordController.text.isEmpty) {
+        _passwordError = 'Mật khẩu không thể để trống';
+      } else if (!isPasswordValid(_passwordController.text)) {
+        _passwordError = 'Mật khẩu phải có ít nhất 6 ký tự và không chứa khoảng trắng';
+      } else {
+        _passwordError = null;
       }
     });
+  }
+});
 
     _confirmPasswordFocusNode.addListener(() {
       if (!_confirmPasswordFocusNode.hasFocus) {
@@ -114,19 +135,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final String confirm = _confirmPasswordController.text;
 
     setState( () {
-      _usernameError = username.isEmpty  ? 'Tên tài khoản không được để trống' : null;
+      _usernameError = username.isEmpty  ? 'Tên tài khoản không được để trống' 
+      : !isPasswordValid(username) ? 'Tên tài khoản có ít nhất 6 ký tự và không chứa khoảng trắng' : null;
       _fullnameError = fullname.isEmpty  ? 'Tên đầy đủ không được để trống' : null;
       _emailError = email.isEmpty  ? 'Email không được để trống' : null;
       _passwordError = pass.isEmpty  ? 'Mật khẩu không được để trống' : null;
       _confirmPasswordError = confirm .isEmpty ? 'Mật khẩu không được để trống' : null;
-      if (pass.isNotEmpty  && confirm.isNotEmpty) {
-        if (pass != confirm) {
-          _confirmPasswordError = 'Mật khẩu không trùng';
-        }
-        else {
-          _confirmPasswordError = null;
-        }
-      }
+      _passwordError = pass.isEmpty 
+      ? 'Mật khẩu không được để trống' 
+      : !isPasswordValid(pass)
+        ? 'Mật khẩu phải có ít nhất 6 ký tự và không chứa khoảng trắng'
+        : null;
+    _confirmPasswordError = confirm.isEmpty 
+      ? 'Xác nhận mật khẩu không được để trống' 
+      : pass != confirm
+        ? 'Mật khẩu không trùng khớp'
+        : null;
 
     });
 
@@ -136,6 +160,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       try {
+        bool isAvailable = await isUsernameAvailable(username);
+        if (!isAvailable) {
+          setState(() {
+            _usernameError = 'Tên tài khoản đã được sử dụng';
+            _isLoading = false;
+          });
+          return;
+        }
+
         await _authService.registerUser(
           username: _usernameController.text,
           fullname: _fullnameController.text,
@@ -166,11 +199,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('Đăng ký'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
+        
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

@@ -27,6 +27,10 @@ class _SignInScreenState extends State<SignInScreen> {
   bool remember = false;
   bool _isLoading = false;
 
+  bool isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,8 +41,13 @@ class _SignInScreenState extends State<SignInScreen> {
     _emailFocusNode.addListener(() {
       if (!_emailFocusNode.hasFocus) {
         setState(() {
-          _emailError =
-              _emailController.text.isEmpty ? 'Email không được để trống' : null;
+          if (_emailController.text.isEmpty) {
+            _emailError = 'Email không được để trống';
+          } else if (!isValidEmail(_emailController.text)) {
+            _emailError = 'Định dạng email không hợp lệ';
+          } else {
+            _emailError = null;
+          }
         });
       }
     });
@@ -69,7 +78,13 @@ class _SignInScreenState extends State<SignInScreen> {
     final String password = _passwordController.text;
 
     setState(() {
-      _emailError = email.isEmpty ? 'Email không được để trống' : null;
+      if (email.isEmpty) {
+        _emailError = 'Email không được để trống';
+      } else if (!isValidEmail(email)) {
+        _emailError = 'Định dạng email không hợp lệ';
+      } else {
+        _emailError = null;
+      }
       _passwordError = password.isEmpty ? 'Mật khẩu không được để trống' : null;
     });
 
@@ -96,7 +111,7 @@ class _SignInScreenState extends State<SignInScreen> {
           } else if (e.code == 'invalid-email') {
             _emailError = 'Sai định dạng email';
           } else if (e.code == 'invalid-credential') {
-            _emailError = 'Tài khoản hoặc mật khẩu không chính xác';
+            _emailError = 'Sai email hoặc mật khẩu';
           } else if (e.code == 'user-disabled') {
             SnackBarCustom.showbar(context, 'Tài khoản này đã bị vô hiệu hóa.');
           } else if (e.code == 'email-not-verified') {

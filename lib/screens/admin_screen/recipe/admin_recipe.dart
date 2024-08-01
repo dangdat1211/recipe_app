@@ -99,58 +99,58 @@ class _AdminRecipeState extends State<AdminRecipe>
                   var recipe = recipes[startIndex + index];
                   var recipeId = snapshot.data!.docs[startIndex + index].id;
                   return ListTile(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => AdminRecipeReview(
-                                recipeId: recipeId, userId: currentUser!.uid)),
-                      );
-                    },
-                    leading: Container(
-                      width: 60,
-                      height: 60,
-                      child: Image.network(
-                        recipe['image'],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.error);
-                        },
-                      ),
-                    ),
-                    title: Text(
-                      recipe['namerecipe'],
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(recipe['description'] ?? '',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(
-                          'Trạng thái: ${recipe['status']}',
-                          style: TextStyle(
-                            color: getStatusColor(recipe['status']),
-                          ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => AdminRecipeReview(
+                                  recipeId: recipeId,
+                                  userId: currentUser!.uid)),
+                        );
+                      },
+                      leading: Container(
+                        width: 60,
+                        height: 60,
+                        child: Image.network(
+                          recipe['image'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(Icons.error);
+                          },
                         ),
-                      ],
-                    ),
-                    trailing: recipe['status'] != 'Đã được phê duyệt'
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.check, color: Colors.green),
-                                onPressed: () => approveRecipe(recipeId),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.close, color: Colors.red),
-                                onPressed: () => rejectRecipe(recipeId),
-                              ),
-                            ],
-                          )
-                        : null
-                  );
+                      ),
+                      title: Text(
+                        recipe['namerecipe'],
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(recipe['description'] ?? '',
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            'Trạng thái: ${recipe['status']}',
+                            style: TextStyle(
+                              color: getStatusColor(recipe['status']),
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: recipe['status'] != 'Đã được phê duyệt'
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.check, color: Colors.green),
+                                  onPressed: () => approveRecipe(recipeId),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.close, color: Colors.red),
+                                  onPressed: () => rejectRecipe(recipeId),
+                                ),
+                              ],
+                            )
+                          : null);
                 },
               ),
             ),
@@ -192,33 +192,43 @@ class _AdminRecipeState extends State<AdminRecipe>
 
   void approveRecipe(String recipeId) async {
     try {
-      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
+      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .get();
       String recipeOwnerId = recipeDoc.get('userID');
       String recipeName = recipeDoc.get('namerecipe');
-      
 
-      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Đã được phê duyệt'});
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({'status': 'Đã được phê duyệt'});
 
       // Gửi thông báo cho chủ công thức
       await NotificationService().createNotification(
-        content: 'Công thức "$recipeName" của bạn đã được phê duyệt',
-        fromUser: currentUser!.uid,
-        userId: recipeOwnerId,
-        recipeId: recipeId,
-        screen: 'recipe'
-      );
+          content: 'Công thức "$recipeName" của bạn đã được phê duyệt',
+          fromUser: currentUser!.uid,
+          userId: recipeOwnerId,
+          recipeId: recipeId,
+          screen: 'recipe');
 
-      DocumentSnapshot ownerDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
+      DocumentSnapshot ownerDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipeOwnerId)
+          .get();
       String? ownerFcmToken = ownerDoc.get('FCM');
       String? recipeOwnerName = ownerDoc.get('fullname');
-      
+
       if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
         await NotificationService.sendNotification(
-          ownerFcmToken,
-          'Công thức được phê duyệt',
-          'Công thức "$recipeName" của bạn đã được phê duyệt',
-          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
-        );
+            ownerFcmToken,
+            'Công thức được phê duyệt',
+            'Công thức "$recipeName" của bạn đã được phê duyệt',
+            data: {
+              'screen': 'recipe',
+              'recipeId': recipeId,
+              'userId': currentUser!.uid
+            });
       }
 
       // Gửi thông báo cho những người đang follow chủ công thức
@@ -229,63 +239,110 @@ class _AdminRecipeState extends State<AdminRecipe>
 
       for (var userDoc in usersDocs.docs) {
         String followerId = userDoc.id;
-        
+
         await NotificationService().createNotification(
-          content: 'vừa đăng một công thức mới: "$recipeName"',
-          fromUser: recipeOwnerId,
-          userId: followerId,
-          recipeId: recipeId,
-          screen: 'recipe'
-        );
+            content: 'vừa đăng một công thức mới: "$recipeName"',
+            fromUser: recipeOwnerId,
+            userId: followerId,
+            recipeId: recipeId,
+            screen: 'recipe');
 
         String? followerFcmToken = userDoc.get('FCM');
-        
+
         if (followerFcmToken != null && followerFcmToken.isNotEmpty) {
           await NotificationService.sendNotification(
-            followerFcmToken,
-            'Công thức mới',
-            '$recipeOwnerName vừa đăng một công thức mới: "$recipeName"',
-            data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': recipeOwnerId}
-          );
+              followerFcmToken,
+              'Công thức mới',
+              '$recipeOwnerName vừa đăng một công thức mới: "$recipeName"',
+              data: {
+                'screen': 'recipe',
+                'recipeId': recipeId,
+                'userId': recipeOwnerId
+              });
         }
       }
       SnackBarCustom.showbar(context, 'Công thức đã được phê duyệt');
-
     } catch (error) {
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi phê duyệt công thức');
     }
   }
 
   void rejectRecipe(String recipeId) async {
+    String? rejectionReason = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        String reason = '';
+        return AlertDialog(
+          title: Text('Lý do từ chối'),
+          content: TextField(
+            onChanged: (value) {
+              reason = value;
+            },
+            decoration: InputDecoration(hintText: "Nhập lý do từ chối"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Hủy'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Xác nhận'),
+              onPressed: () {
+                Navigator.of(context).pop(reason);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (rejectionReason == null || rejectionReason.isEmpty) {
+      SnackBarCustom.showbar(context, 'Vui lòng nhập lý do từ chối');
+      return;
+    }
+
     try {
-      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
+      DocumentSnapshot recipeDoc = await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .get();
       String recipeOwnerId = recipeDoc.get('userID');
       String recipeName = recipeDoc.get('namerecipe');
 
-      await FirebaseFirestore.instance.collection('recipes').doc(recipeId).update({'status': 'Bị từ chối'});
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({'status': 'Bị từ chối', 'rejectionReason': rejectionReason});
 
       // Gửi thông báo cho chủ công thức
       await NotificationService().createNotification(
-        content: 'Công thức "$recipeName" của bạn đã bị từ chối',
-        fromUser: currentUser!.uid,
-        userId: recipeOwnerId,
-        recipeId: recipeId,
-        screen: 'recipe'
-      );
+          content:
+              'Công thức "$recipeName" của bạn đã bị từ chối. Lý do: $rejectionReason',
+          fromUser: currentUser!.uid,
+          userId: recipeOwnerId,
+          recipeId: recipeId,
+          screen: 'recipe');
 
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(recipeOwnerId).get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipeOwnerId)
+          .get();
       String? ownerFcmToken = userDoc.get('FCM');
-      
+
       if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
         await NotificationService.sendNotification(
-          ownerFcmToken,
-          'Công thức bị từ chối',
-          'Công thức "$recipeName" của bạn đã bị từ chối',
-          data: {'screen': 'recipe', 'recipeId': recipeId, 'userId': currentUser!.uid}
-        );
+            ownerFcmToken,
+            'Công thức bị từ chối',
+            'Công thức "$recipeName" của bạn đã bị từ chối. Lý do: $rejectionReason',
+            data: {
+              'screen': 'recipe',
+              'recipeId': recipeId,
+              'userId': currentUser!.uid
+            });
       }
       SnackBarCustom.showbar(context, 'Công thức đã bị từ chối');
-
     } catch (error) {
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi từ chối công thức');
     }
@@ -318,20 +375,26 @@ class _AdminRecipeState extends State<AdminRecipe>
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm theo tên...',
                       prefixIcon: Icon(Icons.search, size: 20),
-                      contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide(width: 1, color: Colors.grey),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                        borderSide: BorderSide(
+                            width: 1, color: Theme.of(context).primaryColor),
                       ),
                     ),
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;
-                        _currentPages = [1, 1, 1]; // Reset all pages when searching
+                        _currentPages = [
+                          1,
+                          1,
+                          1
+                        ]; // Reset all pages when searching
                       });
                     },
                   ),
@@ -349,7 +412,8 @@ class _AdminRecipeState extends State<AdminRecipe>
                       _currentPages = [1, 1, 1]; // Reset all pages when sorting
                     });
                   },
-                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
                     PopupMenuItem<String>(
                       value: 'name',
                       child: Text('Sắp xếp theo tên'),
