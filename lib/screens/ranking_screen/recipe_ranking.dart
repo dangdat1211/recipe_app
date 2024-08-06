@@ -6,7 +6,7 @@ import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:recipe_app/constants/colors.dart'; // Thêm import này
+import 'package:recipe_app/constants/colors.dart';
 
 class RecipeRanking extends StatefulWidget {
   const RecipeRanking({super.key});
@@ -16,7 +16,8 @@ class RecipeRanking extends StatefulWidget {
 }
 
 class _RecipeRankingState extends State<RecipeRanking> {
-  String dropdownValue = 'Lượt thích cao nhất';
+  String sortValue = 'Lượt thích cao nhất';
+  String timeValue = 'Tất cả';
   List<Map<String, dynamic>> recipesWithUserData = [];
   bool isLoading = false;
 
@@ -56,14 +57,16 @@ class _RecipeRankingState extends State<RecipeRanking> {
       if (userData != null) {
         recipeData['recipeId'] = recipeId;
 
+        var favoriteCount = await _getFavoriteCount(recipeId);
+        var ratingData = await _fetchAverageRating(recipeId);
+
         bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
-        
-        var ratingData = await RateService.fetchAverageRating(recipeId);
 
         recipesWithUserData.add({
           'recipe': recipeData,
           'user': userData,
           'isFavorite': isFavorite,
+          'favoriteCount': favoriteCount,
           'avgRating': ratingData['avgRating'],
           'ratingCount': ratingData['ratingCount'],
         });
@@ -77,12 +80,65 @@ class _RecipeRankingState extends State<RecipeRanking> {
     });
   }
 
+  Future<int> _getFavoriteCount(String recipeId) async {
+    var now = DateTime.now();
+    var query = FirebaseFirestore.instance.collection('favorites').where('recipeId', isEqualTo: recipeId);
+
+    if (timeValue == '7 ngày gần nhất') {
+      query = query.where('createAt', isGreaterThan: now.subtract(Duration(days: 9)));
+    } else if (timeValue == '30 ngày gần nhất') {
+      query = query.where('createAt', isGreaterThan: now.subtract(Duration(days: 30)));
+    }
+
+    var snapshot = await query.get();
+    return snapshot.docs.length;
+  }
+
+  Future<Map<String, dynamic>> _fetchAverageRating(String recipeId) async {
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  var now = DateTime.now();
+  var query = FirebaseFirestore.instance
+      .collection('rates')
+      .where('recipeId', isEqualTo: recipeId);
+
+  if (timeValue == '7 ngày gần nhất') {
+    query = query.where('createAt', isGreaterThan: now.subtract(Duration(days: 7)));
+  } else if (timeValue == '30 ngày gần nhất') {
+    query = query.where('createAt', isGreaterThan: now.subtract(Duration(days: 30)));
+  }
+
+  final ratingsSnapshot = await query.get();
+
+  final ratings =
+      ratingsSnapshot.docs.map((doc) => doc.data()['star'] as num).toList();
+
+  final userRatingSnapshot = await FirebaseFirestore.instance
+      .collection('rates')
+      .doc('${currentUser?.uid}_${recipeId}')
+      .get();
+
+  final hasRated = userRatingSnapshot.exists;
+
+  if (ratings.isEmpty) {
+    return {'avgRating': 0.0, 'ratingCount': 0, 'hasRated': hasRated};
+  }
+
+  final avgRating = ratings.reduce((a, b) => a + b) / ratings.length;
+  final ratingCount = ratings.length;
+
+  return {
+    'avgRating': avgRating.toDouble(),
+    'ratingCount': ratingCount,
+    'hasRated': hasRated
+  };
+}
+
   void _sortRecipes() {
-    if (dropdownValue == 'Lượt thích cao nhất') {
+    if (sortValue == 'Lượt thích cao nhất') {
       recipesWithUserData.sort((a, b) {
-        return (b['recipe']['likes']?.length ?? 0).compareTo(a['recipe']['likes']?.length ?? 0);
+        return b['favoriteCount'].compareTo(a['favoriteCount']);
       });
-    } else if (dropdownValue == 'Điểm đánh giá cao nhất') {
+    } else if (sortValue == 'Điểm đánh giá cao nhất') {
       recipesWithUserData.sort((a, b) {
         return b['avgRating'].compareTo(a['avgRating']);
       });
@@ -93,8 +149,15 @@ class _RecipeRankingState extends State<RecipeRanking> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          _buildDropdown(),
+          Row(
+            children: [
+              Expanded(child: _buildSortDropdown(),),
+              Expanded(child: _buildTimeDropdown(),)
+            ],
+          ),
           isLoading
               ? Center(child: CircularProgressIndicator())
               : Padding(
@@ -154,7 +217,7 @@ class _RecipeRankingState extends State<RecipeRanking> {
                                       },
                                       name: recipe['namerecipe'],
                                       star: recipeWithUser['avgRating'].toStringAsFixed(1),
-                                      favorite: (recipe['likes']?.length ?? 0).toString(),
+                                      favorite: recipeWithUser['favoriteCount'].toString(),
                                       avatar: user['avatar'],
                                       fullname: user['fullname'],
                                       image: recipe['image'],
@@ -162,42 +225,36 @@ class _RecipeRankingState extends State<RecipeRanking> {
                                       onFavoritePressed: () {
                                         if (currentUser != null) {
                                           FavoriteService.toggleFavorite(context, recipe['recipeId'], recipe['userID']);
-                                        }
-                                        else {
+                                        } else {
                                           showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return AlertDialog(
-                                            title: Text('Bạn chưa đăng nhập'),
-                                            content: Text(
-                                                'Vui lòng đăng nhập để tiếp tục.'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            const SignInScreen()),
-                                                  );
-                                                },
-                                                child: Text('Đăng nhập'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text('Hủy'),
-                                              ),
-                                            ],
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title: Text('Bạn chưa đăng nhập'),
+                                                content: Text('Vui lòng đăng nhập để tiếp tục.'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(builder: (context) => const SignInScreen()),
+                                                      );
+                                                    },
+                                                    child: Text('Đăng nhập'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                    },
+                                                    child: Text('Hủy'),
+                                                  ),
+                                                ],
+                                              );
+                                            },
                                           );
-                                        },
-                                      );
                                         }
-                                      }
-                                          
+                                      },
                                     ),
                                   ),
                                 ),
@@ -214,7 +271,7 @@ class _RecipeRankingState extends State<RecipeRanking> {
     );
   }
 
-  Widget _buildDropdown() {
+  Widget _buildSortDropdown() {
     return Container(
       margin: EdgeInsets.fromLTRB(16, 16, 16, 8),
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -232,17 +289,57 @@ class _RecipeRankingState extends State<RecipeRanking> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: dropdownValue,
+          value: sortValue,
           isExpanded: true,
           icon: Icon(Icons.arrow_drop_down, color: mainColor, size: 20),
           style: TextStyle(color: mainColor, fontSize: 14),
           onChanged: (String? newValue) {
             setState(() {
-              dropdownValue = newValue!;
+              sortValue = newValue!;
               _fetchRecipes();
             });
           },
           items: <String>['Lượt thích cao nhất', 'Điểm đánh giá cao nhất']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeDropdown() {
+    return Container(
+      margin: EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: timeValue,
+          isExpanded: true,
+          icon: Icon(Icons.arrow_drop_down, color: mainColor, size: 20),
+          style: TextStyle(color: mainColor, fontSize: 14),
+          onChanged: (String? newValue) {
+            setState(() {
+              timeValue = newValue!;
+              _fetchRecipes();
+            });
+          },
+          items: <String>['7 ngày gần nhất', '30 ngày gần nhất', 'Tất cả']
               .map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(
               value: value,

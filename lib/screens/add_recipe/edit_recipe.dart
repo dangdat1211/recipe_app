@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -50,14 +51,17 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   }
 
   Future<void> _loadCategories() async {
-  final categoriesSnapshot = await FirebaseFirestore.instance.collection('categories').get();
-  setState(() {
-    _allCategories = categoriesSnapshot.docs.map((doc) => {
-      'id': doc.id,
-      'name': doc['name'],
-    }).toList();
-  });
-}
+    final categoriesSnapshot =
+        await FirebaseFirestore.instance.collection('categories').get();
+    setState(() {
+      _allCategories = categoriesSnapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                'name': doc['name'],
+              })
+          .toList();
+    });
+  }
 
   Future<void> _loadRecipeData() async {
     setState(() {
@@ -83,8 +87,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         _selectedDifficulty = recipeData['level'] ?? 'Trung bình';
 
         List<dynamic> ingredientsList = recipeData['ingredients'] ?? [];
-        for (String ingredient in ingredientsList) {
-          _ingredientsControllers.add(TextEditingController(text: ingredient));
+        for (var ingredient in ingredientsList) {
+          _ingredientsControllers.add({
+            'name': TextEditingController(text: ingredient['name'] ?? ''),
+            'quality': TextEditingController(text: ingredient['quality'] ?? ''),
+          });
         }
 
         List<dynamic> stepIds = recipeData['steps'] ?? [];
@@ -169,10 +176,13 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     }
   }
 
-  final List<TextEditingController> _ingredientsControllers = [];
+  final List<Map<String, TextEditingController>> _ingredientsControllers = [];
   void _addIngredientField() {
     setState(() {
-      _ingredientsControllers.add(TextEditingController());
+      _ingredientsControllers.add({
+        'name': TextEditingController(),
+        'quality': TextEditingController(),
+      });
     });
   }
 
@@ -195,12 +205,27 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   }
 
   Future<void> _updateRecipe() async {
+
+    if ( _image == null) {
+      SnackBarCustom.showbar(context,
+          'Chưa chọn ảnh bìa cho công thức');
+      return;
+    }
     if (_nameController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
         _servingsController.text.isEmpty ||
         _timeController.text.isEmpty) {
+      SnackBarCustom.showbar(context,
+          'Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.');
       return;
     }
+
+    if (_ingredientsControllers.isEmpty || 
+      _stepsControllers.isEmpty) {
+        SnackBarCustom.showbar(context,
+          'Công thức phải có nguyên liệu và các bước thực hiện');
+      return;
+      }
 
     setState(() {
       _isLoading = true;
@@ -219,8 +244,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         mainImageUrl = await _uploadFile(_image!);
       }
 
-      final ingredients =
-          _ingredientsControllers.map((controller) => controller.text).toList();
+      final ingredients = _ingredientsControllers
+          .map((controller) => {
+                'name': controller['name']!.text,
+                'quality': controller['quality']!.text,
+              })
+          .toList();
 
       final recipeData = {
         'namerecipe': _nameController.text,
@@ -238,7 +267,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         'userID': currentUser!.uid,
         'urlYoutube': _youtubeController.text,
         'updateAt': FieldValue.serverTimestamp(),
-        'categories': _selectedCategories,  
+        'categories': _selectedCategories,
       };
 
       DocumentReference recipeDoc =
@@ -320,96 +349,123 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       );
 
       SnackBarCustom.showbar(context, 'Công thức đã được cập nhật thành công');
-
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
 
       SnackBarCustom.showbar(context, 'Đã xảy ra lỗi: $e');
-
-      
     }
   }
 
   Widget _buildCategoriesSelector() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      InkWell(
-        onTap: () {
-          setState(() {
-            _showCategories = !_showCategories;
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            // color: Colors.grey[200],
-            border: Border.all(width: 1, color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Chọn danh mục',
-                style: TextStyle(fontSize: 16.0, ),
-              ),
-              Icon(_showCategories ? Icons.arrow_drop_up : Icons.arrow_drop_down),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _showCategories = !_showCategories;
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              // color: Colors.grey[200],
+              border: Border.all(width: 1, color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Chọn danh mục',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                  ),
+                ),
+                Icon(_showCategories
+                    ? Icons.arrow_drop_up
+                    : Icons.arrow_drop_down),
+              ],
+            ),
           ),
         ),
-      ),
-      if (_showCategories) ...[
-        SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(8),
+        if (_showCategories) ...[
+          SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _allCategories.length,
+              itemBuilder: (context, index) {
+                final category = _allCategories[index];
+                return CheckboxListTile(
+                  title: Text(category['name']),
+                  value: _selectedCategories.contains(category['id']),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedCategories.add(category['id']);
+                      } else {
+                        _selectedCategories.remove(category['id']);
+                      }
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              },
+            ),
           ),
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: _allCategories.length,
-            itemBuilder: (context, index) {
-              final category = _allCategories[index];
-              return CheckboxListTile(
-                title: Text(category['name']),
-                value: _selectedCategories.contains(category['id']),
-                onChanged: (bool? value) {
+        ],
+        SizedBox(height: 8),
+        if (_selectedCategories.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: _selectedCategories.map((categoryId) {
+              final category =
+                  _allCategories.firstWhere((cat) => cat['id'] == categoryId);
+              return Chip(
+                label: Text(
+                  category['name'],
+                  style: TextStyle(color: mainColor),
+                ),
+                onDeleted: () {
                   setState(() {
-                    if (value == true) {
-                      _selectedCategories.add(category['id']);
-                    } else {
-                      _selectedCategories.remove(category['id']);
-                    }
+                    _selectedCategories.remove(categoryId);
                   });
                 },
-                controlAffinity: ListTileControlAffinity.leading,
               );
-            },
+            }).toList(),
           ),
-        ),
       ],
-      SizedBox(height: 8),
-      if (_selectedCategories.isNotEmpty)
-        Wrap(
-          spacing: 8,
-          children: _selectedCategories.map((categoryId) {
-            final category = _allCategories.firstWhere((cat) => cat['id'] == categoryId);
-            return Chip(
-              label: Text(category['name'], style: TextStyle(color: mainColor),),
-              onDeleted: () {
-                setState(() {
-                  _selectedCategories.remove(categoryId);
-                });
-              },
-            );
-          }).toList(),
-        ),
-    ],
-  );
+    );
+  }
+
+  Future<bool> _showUnsavedChangesDialog() async {
+  return await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Cảnh báo'),
+        content: Text('Nếu bạn quay lại, dữ liệu sẽ không được lưu. Bạn có chắc chắn muốn thoát?'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Hủy'),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          TextButton(
+            child: Text('Xác nhận'),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      );
+    },
+  ) ?? false;
 }
 
   @override
@@ -509,10 +565,13 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                     maxLines: null,
                     minLines: 1,
                     controller: _servingsController,
+                    keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       labelText: 'Khẩu phần',
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
+                          suffixText: 'người',
                     ),
                   ),
                   SizedBox(height: 10.0),
@@ -525,19 +584,22 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
+                    
                   ),
                   SizedBox(height: 10.0),
                   DropdownButtonFormField<String>(
                     value: _selectedDifficulty,
                     decoration: InputDecoration(
                       labelText: 'Độ khó',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     items: <String>['Dễ', 'Trung bình', 'Khó']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
-                        child: Text(value, style: TextStyle(fontWeight: FontWeight.normal)),
+                        child: Text(value,
+                            style: TextStyle(fontWeight: FontWeight.normal)),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -572,21 +634,28 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                               index,
                               Column(
                                 children: [
-                                  SizedBox(
-                                    height: 10,
-                                  ),
+                                  SizedBox(height: 10),
                                   Row(
                                     children: [
                                       Expanded(
+                                        flex: 2,
                                         child: TextField(
-                                          maxLines:
-                                              null, // Không giới hạn số dòng
-                                          minLines:
-                                              1, // Chiều cao tối thiểu là 3 dòng
-                                          controller: controller,
+                                          controller: controller['name'],
                                           decoration: InputDecoration(
-                                            labelText:
-                                                'Nguyên liệu ${index + 1}',
+                                            labelText: 'Tên nguyên liệu ${index + 1}' ,
+                                            border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10)),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 1,
+                                        child: TextField(
+                                          controller: controller['quality'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Định lượng',
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(10)),
@@ -594,9 +663,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                                         ),
                                       ),
                                       IconButton(
+                                        icon: Icon(Icons.remove_circle),
                                         onPressed: () =>
                                             _removeIngredientField(index),
-                                        icon: Icon(Icons.remove_circle),
                                       ),
                                     ],
                                   ),
@@ -656,8 +725,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                                   Wrap(
                                     children: _stepsImages[index]
                                         .map((image) => Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Stack(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Stack(
                                                 children: [
                                                   Image.file(
                                                     image,
@@ -686,7 +756,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                                                   ),
                                                 ],
                                               ),
-                                        ))
+                                            ))
                                         .toList(),
                                   ),
                                   TextButton(

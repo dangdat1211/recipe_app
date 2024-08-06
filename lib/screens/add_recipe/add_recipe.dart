@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,11 +98,14 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   final List<TextEditingController> _ingredientsControllers = [];
+  final List<TextEditingController> _ingredientQuantityControllers = [];
+
   final List<FocusNode> _ingredientsFocusNodes = [];
 
   void _addIngredientField() {
     setState(() {
       _ingredientsControllers.add(TextEditingController());
+      _ingredientQuantityControllers.add(TextEditingController());
       _ingredientsFocusNodes.add(FocusNode());
     });
   }
@@ -111,6 +115,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       _ingredientsControllers.removeAt(index);
       _ingredientsFocusNodes[index].dispose();
       _ingredientsFocusNodes.removeAt(index);
+      _ingredientQuantityControllers.removeAt(index);
     });
   }
 
@@ -127,17 +132,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   Future<void> _uploadRecipe() async {
+
+    if ( _image == null) {
+      SnackBarCustom.showbar(context,
+          'Chưa chọn ảnh bìa cho công thức');
+      return;
+    }
     if (_nameController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
         _servingsController.text.isEmpty ||
         _timeController.text.isEmpty ||
-        _image == null ||
         _ingredientsControllers.any((controller) => controller.text.isEmpty) ||
         _stepsControllers.any((controller) => controller.text.isEmpty)) {
       SnackBarCustom.showbar(context,
           'Vui lòng điền đầy đủ tất cả các trường bắt buộc và chọn ảnh chính.');
       return;
     }
+
+    if (_ingredientsControllers.isEmpty || 
+      _stepsControllers.isEmpty) {
+        SnackBarCustom.showbar(context,
+          'Công thức phải có nguyên liệu và các bước thực hiện');
+      return;
+      }
 
     setState(() {
       _isLoading = true;
@@ -159,10 +176,16 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         stepImageUrls.add(urls);
       }
 
-      final ingredients =
-          _ingredientsControllers.map((controller) => controller.text).toList();
       final steps =
           _stepsControllers.map((controller) => controller.text).toList();
+
+      final ingredients = List.generate(
+        _ingredientsControllers.length,
+        (index) => {
+          'name': _ingredientsControllers[index].text,
+          'quality': _ingredientQuantityControllers[index].text,
+        },
+      );
 
       final recipe = RecipeModel(
           namerecipe: _nameController.text,
@@ -343,403 +366,415 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text('Lưu'),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Xác nhận'),
+            content: Text('Khi bạn quay lại dữ liệu của bạn không được lưu lại!!! Bạn có chắc muốn quay lại ?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Không'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Có'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: _uploadRecipe,
-            child: Text('Đăng tải'),
-          ),
-          IconButton(onPressed: () {}, icon: Icon(Icons.more_vert))
-        ],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    textAlign: TextAlign.left,
-                    'Các trường có dấu (*) là bắt buộc',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
+        );
+
+        if (result ?? false) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        
+        appBar: AppBar(
+          actions: [
+            TextButton(
+              onPressed: () {},
+              child: Text('Lưu'),
+            ),
+            TextButton(
+              onPressed: _uploadRecipe,
+              child: Text('Đăng tải'),
+            ),
+            IconButton(onPressed: () {}, icon: Icon(Icons.more_vert))
+          ],
+        ),
+        body: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      textAlign: TextAlign.left,
+                      'Các trường có dấu (*) là bắt buộc',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  ),
-                  _image == null
-                      ? GestureDetector(
-                          onTap: () async {
-                            final pickedFile = await _picker.pickImage(
-                                source: ImageSource.gallery);
-                            if (pickedFile != null) {
-                              setState(() {
-                                _image = File(pickedFile.path);
-                              });
-                            }
-                          },
-                          child: Container(
-                            height: 200,
-                            width: double.infinity,
-                            color: Colors.grey[300],
-                            child: Icon(
-                              Icons.add_a_photo,
-                              color: Colors.white,
-                              size: 50,
-                            ),
-                          ),
-                        )
-                      : Stack(
-                          children: [
-                            Image.file(
-                              _image!,
+                    _image == null
+                        ? GestureDetector(
+                            onTap: () async {
+                              final pickedFile = await _picker.pickImage(
+                                  source: ImageSource.gallery);
+                              if (pickedFile != null) {
+                                setState(() {
+                                  _image = File(pickedFile.path);
+                                });
+                              }
+                            },
+                            child: Container(
                               height: 200,
                               width: double.infinity,
-                              fit: BoxFit.cover,
+                              color: Colors.grey[300],
+                              child: Icon(
+                                Icons.add_a_photo,
+                                color: Colors.white,
+                                size: 50,
+                              ),
                             ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _image = null;
-                                  });
-                                },
-                                child: Container(
-                                  color: Colors.black54,
-                                  child: Icon(
-                                    Icons.delete,
-                                    color: Colors.white,
+                          )
+                        : Stack(
+                            children: [
+                              Image.file(
+                                _image!,
+                                height: 200,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _image = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    color: Colors.black54,
+                                    child: Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                    SizedBox(height: 10.0),
+                    TextField(
+                      focusNode: _nameFocus,
+                      controller: _nameController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) =>
+                          FocusScope.of(context).requestFocus(_descriptionFocus),
+                      decoration: InputDecoration(
+                          labelText: 'Tên món ăn',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          suffixIcon: Padding(
+                            padding: EdgeInsets.only(
+                                top:
+                                    10), // Thêm padding bên phải để tránh quá sát với viền
+                            child: Text(
+                              '    *',
+                              style: TextStyle(color: Colors.red, fontSize: 16),
                             ),
-                          ],
-                        ),
-                  SizedBox(height: 10.0),
-                  TextField(
-                    focusNode: _nameFocus,
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) =>
-                        FocusScope.of(context).requestFocus(_descriptionFocus),
-                    decoration: InputDecoration(
-                        labelText: 'Tên món ăn',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: Padding(
-                          padding: EdgeInsets.only(
-                              top:
-                                  10), // Thêm padding bên phải để tránh quá sát với viền
-                          child: Text(
-                            '    *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
-                          ),
-                        )),
-                  ),
-                  SizedBox(height: 10.0),
-                  TextField(
-                    focusNode: _descriptionFocus,
-                    controller: _descriptionController,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) =>
-                        FocusScope.of(context).requestFocus(_servingsFocus),
-                    maxLines: null,
-                    minLines: 1,
-                    decoration: InputDecoration(
-                        labelText: 'Mô tả',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: Padding(
-                          padding: EdgeInsets.only(
-                              top:
-                                  10), // Thêm padding bên phải để tránh quá sát với viền
-                          child: Text(
-                            '    *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
-                          ),
-                        )),
-                  ),
-                  SizedBox(height: 10.0),
-                  TextField(
-                    focusNode: _servingsFocus,
-                    controller: _servingsController,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) =>
-                        FocusScope.of(context).requestFocus(_timeFocus),
-                    decoration: InputDecoration(
+                          )),
+                    ),
+                    SizedBox(height: 10.0),
+                    TextField(
+                      focusNode: _descriptionFocus,
+                      controller: _descriptionController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) =>
+                          FocusScope.of(context).requestFocus(_servingsFocus),
+                      maxLines: null,
+                      minLines: 1,
+                      decoration: InputDecoration(
+                          labelText: 'Mô tả',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          suffixIcon: Padding(
+                            padding: EdgeInsets.only(
+                                top:
+                                    10), // Thêm padding bên phải để tránh quá sát với viền
+                            child: Text(
+                              '    *',
+                              style: TextStyle(color: Colors.red, fontSize: 16),
+                            ),
+                          )),
+                    ),
+                    SizedBox(height: 10.0),
+                    TextField(
+                      focusNode: _servingsFocus,
+                      controller: _servingsController,
+                      textInputAction: TextInputAction.next,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSubmitted: (_) =>
+                          FocusScope.of(context).requestFocus(_timeFocus),
+                      decoration: InputDecoration(
                         labelText: 'Khẩu phần',
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
                         suffixIcon: Padding(
-                          padding: EdgeInsets.only(
-                              top:
-                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                          padding: EdgeInsets.only(top: 10),
                           child: Text(
                             '    *',
                             style: TextStyle(color: Colors.red, fontSize: 16),
                           ),
-                        )),
-                  ),
-                  SizedBox(height: 10.0),
-                  DropdownButtonFormField<String>(
-                    value: _selectedDifficulty,
-                    decoration: InputDecoration(
-                      labelText: 'Độ khó',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    items: <String>['Dễ', 'Trung bình', 'Khó']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          value,
-                          style: TextStyle(fontWeight: FontWeight.normal),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedDifficulty = newValue!;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 10.0),
-                  _buildCategoriesSelector(),
-                  SizedBox(height: 10.0),
-                  TextField(
-                    focusNode: _timeFocus,
-                    controller: _timeController,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) =>
-                        FocusScope.of(context).requestFocus(_youtubeFocus),
-                    decoration: InputDecoration(
-                        labelText: 'Thời gian nấu (phút)',
+                        suffixText: 'người',
+                      ),
+                    ),
+                    SizedBox(height: 10.0),
+                    DropdownButtonFormField<String>(
+                      value: _selectedDifficulty,
+                      decoration: InputDecoration(
+                        labelText: 'Độ khó',
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: Padding(
-                          padding: EdgeInsets.only(
-                              top:
-                                  10), // Thêm padding bên phải để tránh quá sát với viền
+                      ),
+                      items: <String>['Dễ', 'Trung bình', 'Khó']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
                           child: Text(
-                            '    *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
+                            value,
+                            style: TextStyle(fontWeight: FontWeight.normal),
                           ),
-                        )),
-                  ),
-                  SizedBox(height: 10.0),
-                  TextField(
-                    focusNode: _youtubeFocus,
-                    controller: _youtubeController,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      labelText: 'Video youtube hướng dẫn',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedDifficulty = newValue!;
+                        });
+                      },
                     ),
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Nguyên liệu',
-                    style:
-                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                  ),
-                  Column(
-                    children: _ingredientsControllers
-                        .asMap()
-                        .map((index, controller) => MapEntry(
-                              index,
-                              Column(
-                                children: [
-                                  SizedBox(
-                                    height: 10,
+                    SizedBox(height: 10.0),
+                    _buildCategoriesSelector(),
+                    SizedBox(height: 10.0),
+                    TextField(
+                      focusNode: _timeFocus,
+                      controller: _timeController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) =>
+                          FocusScope.of(context).requestFocus(_youtubeFocus),
+                      decoration: InputDecoration(
+                          labelText: 'Thời gian nấu (phút)',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          suffixIcon: Padding(
+                            padding: EdgeInsets.only(
+                                top:
+                                    10), // Thêm padding bên phải để tránh quá sát với viền
+                            child: Text(
+                              '    *',
+                              style: TextStyle(color: Colors.red, fontSize: 16),
+                            ),
+                          )),
+                    ),
+                    SizedBox(height: 10.0),
+                    TextField(
+                      focusNode: _youtubeFocus,
+                      controller: _youtubeController,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: 'Video youtube hướng dẫn',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    Text(
+                      'Nguyên liệu',
+                      style:
+                          TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                    ),
+                    Column(
+                      children:
+                          List.generate(_ingredientsControllers.length, (index) {
+                        return Column(
+                          children: [
+                            SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: TextField(
+                                    controller: _ingredientsControllers[index],
+                                    decoration: InputDecoration(
+                                      labelText: 'Tên nguyên liệu ${index + 1}',
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
                                   ),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          focusNode:
-                                              _ingredientsFocusNodes[index],
-                                          controller: controller,
-                                          textInputAction: TextInputAction.next,
-                                          onSubmitted: (_) {
-                                            if (index ==
-                                                _ingredientsControllers.length -
-                                                    1) {
-                                              _addIngredientField();
-                                            } else {
-                                              FocusScope.of(context)
-                                                  .requestFocus(
-                                                      _ingredientsFocusNodes[
-                                                          index + 1]);
-                                            }
-                                          },
-                                          decoration: InputDecoration(
-                                              labelText:
-                                                  'Nguyên liệu ${index + 1}',
-                                              border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          10)),
-                                              suffixIcon: Padding(
-                                                padding: EdgeInsets.only(
-                                                    top:
-                                                        10), // Thêm padding bên phải để tránh quá sát với viền
-                                                child: Text(
-                                                  '    *',
-                                                  style: TextStyle(
-                                                      color: Colors.red,
-                                                      fontSize: 16),
-                                                ),
-                                              )),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () =>
-                                            _removeIngredientField(index),
-                                        icon: Icon(Icons.remove_circle),
-                                      ),
-                                    ],
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  flex: 1,
+                                  child: TextField(
+                                    controller:
+                                        _ingredientQuantityControllers[index],
+                                    decoration: InputDecoration(
+                                      labelText: 'Định lượng',
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ))
-                        .values
-                        .toList(),
-                  ),
-                  SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: _addIngredientField,
-                    child: Text('Thêm nguyên liệu'),
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Cách làm',
-                    style:
-                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                  ),
-                  Column(
-                    children: _stepsControllers
-                        .asMap()
-                        .map((index, controller) => MapEntry(
-                              index,
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 10,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          focusNode: _stepsFocusNodes[index],
-                                          controller: controller,
-                                          textInputAction: TextInputAction.next,
-                                          onSubmitted: (_) {
-                                            if (index ==
-                                                _stepsControllers.length - 1) {
-                                              _addStepField();
-                                            } else {
-                                              FocusScope.of(context)
-                                                  .requestFocus(
-                                                      _stepsFocusNodes[
-                                                          index + 1]);
-                                            }
-                                          },
-                                          maxLines: null,
-                                          minLines: 1,
-                                          decoration: InputDecoration(
-                                              labelText: 'Bước ${index + 1}',
-                                              border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          10)),
-                                              suffixIcon: Padding(
-                                                padding: EdgeInsets.only(
-                                                    top:
-                                                        10), // Thêm padding bên phải để tránh quá sát với viền
-                                                child: Text(
-                                                  '    *',
-                                                  style: TextStyle(
-                                                      color: Colors.red,
-                                                      fontSize: 16),
-                                                ),
-                                              )),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () =>
-                                            _removeStepField(index),
-                                        icon: Icon(Icons.remove_circle),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8.0),
-                                  Wrap(
-                                    children: _stepsImages[index]
-                                        .map((image) => Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Stack(
-                                                children: [
-                                                  Image.file(
-                                                    image,
-                                                    width: 100,
-                                                    height: 100,
-                                                    fit: BoxFit.cover,
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () => _removeIngredientField(index),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                    SizedBox(height: 16.0),
+                    ElevatedButton(
+                      onPressed: _addIngredientField,
+                      child: Text('Thêm nguyên liệu'),
+                    ),
+                    SizedBox(height: 16.0),
+                    Text(
+                      'Cách làm',
+                      style:
+                          TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                    ),
+                    Column(
+                      children: _stepsControllers
+                          .asMap()
+                          .map((index, controller) => MapEntry(
+                                index,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 10,
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            focusNode: _stepsFocusNodes[index],
+                                            controller: controller,
+                                            textInputAction: TextInputAction.next,
+                                            onSubmitted: (_) {
+                                              if (index ==
+                                                  _stepsControllers.length - 1) {
+                                                _addStepField();
+                                              } else {
+                                                FocusScope.of(context)
+                                                    .requestFocus(
+                                                        _stepsFocusNodes[
+                                                            index + 1]);
+                                              }
+                                            },
+                                            maxLines: null,
+                                            minLines: 1,
+                                            decoration: InputDecoration(
+                                                labelText: 'Bước ${index + 1}',
+                                                border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10)),
+                                                suffixIcon: Padding(
+                                                  padding: EdgeInsets.only(
+                                                      top:
+                                                          10), // Thêm padding bên phải để tránh quá sát với viền
+                                                  child: Text(
+                                                    '    *',
+                                                    style: TextStyle(
+                                                        color: Colors.red,
+                                                        fontSize: 16),
                                                   ),
-                                                  Positioned(
-                                                    top: 0,
-                                                    right: 0,
-                                                    child: GestureDetector(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          _stepsImages[index]
-                                                              .remove(image);
-                                                        });
-                                                      },
-                                                      child: Container(
-                                                        color: Colors.black54,
-                                                        child: Icon(
-                                                          Icons.delete,
-                                                          color: Colors.white,
+                                                )),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () =>
+                                              _removeStepField(index),
+                                          icon: Icon(Icons.remove_circle),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8.0),
+                                    Wrap(
+                                      children: _stepsImages[index]
+                                          .map((image) => Padding(
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
+                                                child: Stack(
+                                                  children: [
+                                                    Image.file(
+                                                      image,
+                                                      width: 100,
+                                                      height: 100,
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                    Positioned(
+                                                      top: 0,
+                                                      right: 0,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          setState(() {
+                                                            _stepsImages[index]
+                                                                .remove(image);
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                          color: Colors.black54,
+                                                          child: Icon(
+                                                            Icons.delete,
+                                                            color: Colors.white,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ))
-                                        .toList(),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => _pickStepImages(index),
-                                    child:
-                                        Text('Chọn ảnh cho bước ${index + 1}'),
-                                  ),
-                                  SizedBox(height: 16.0),
-                                ],
-                              ),
-                            ))
-                        .values
-                        .toList(),
-                  ),
-                  ElevatedButton(
-                    onPressed: _addStepField,
-                    child: Text('Thêm bước'),
-                  ),
-                ],
+                                                  ],
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => _pickStepImages(index),
+                                      child:
+                                          Text('Chọn ảnh cho bước ${index + 1}'),
+                                    ),
+                                    SizedBox(height: 16.0),
+                                  ],
+                                ),
+                              ))
+                          .values
+                          .toList(),
+                    ),
+                    ElevatedButton(
+                      onPressed: _addStepField,
+                      child: Text('Thêm bước'),
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }

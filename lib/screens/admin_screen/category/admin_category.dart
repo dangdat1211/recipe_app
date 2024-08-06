@@ -34,31 +34,23 @@ class _AdminCategoryState extends State<AdminCategory> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Container(
-              height: 40,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm danh mục...',
-                  prefixIcon: Icon(Icons.search, size: 20),
-                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(width: 1, color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(width: 1, color: Theme.of(context).primaryColor),
-                  ),
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm danh mục...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                style: TextStyle(fontSize: 14),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _currentPage = 1; // Reset to first page when searching
-                  });
-                },
+                filled: true,
+                fillColor: Colors.grey[200],
               ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _currentPage = 1;
+                });
+              },
             ),
           ),
           Expanded(
@@ -98,48 +90,67 @@ class _AdminCategoryState extends State<AdminCategory> {
 
                 return Column(
                   children: [
-                    _buildPaginationControls(totalPages),
                     Expanded(
                       child: ListView.builder(
                         itemCount: paginatedCategories.length,
                         itemBuilder: (context, index) {
                           var data = paginatedCategories[index];
-                          return ListTile(
-                            leading: Image.network(data['image'],
-                                width: 50, height: 50, fit: BoxFit.cover),
-                            title: Text(data['name']),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Mô tả: ${data['description']}'),
-                                Text('Ngày tạo: ${_formatDateTime(data['createAt'])}'),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => EditCategory(categoryId: data['id']),
-                                      ),
-                                    );
-                                  },
+                          return Card(
+                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  data['image'],
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () => _showDeleteConfirmationDialog(data['id'], data['name']),
-                                ),
-                              ],
+                              ),
+                              title: Text(
+                                data['name'],
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Mô tả: ${data['description']}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    'Ngày tạo: ${_formatDateTime(data['createAt'])}',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => EditCategory(categoryId: data['id']),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmationDialog(data['id'], data['name']),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
                       ),
                     ),
-                    
+                    _buildPaginationControls(totalPages),
                   ],
                 );
               },
@@ -156,36 +167,43 @@ class _AdminCategoryState extends State<AdminCategory> {
         },
         icon: Icon(Icons.add),
         label: Text('Thêm danh mục'),
+        backgroundColor: Theme.of(context).primaryColor,
       ),
     );
   }
 
   Widget _buildPaginationControls(int totalPages) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1
-              ? () {
-                  setState(() {
-                    _currentPage--;
-                  });
-                }
-              : null,
-        ),
-        Text('Trang $_currentPage / $totalPages'),
-        IconButton(
-          icon: Icon(Icons.chevron_right),
-          onPressed: _currentPage < totalPages
-              ? () {
-                  setState(() {
-                    _currentPage++;
-                  });
-                }
-              : null,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.chevron_left),
+            onPressed: _currentPage > 1
+                ? () {
+                    setState(() {
+                      _currentPage--;
+                    });
+                  }
+                : null,
+          ),
+          Text(
+            'Trang $_currentPage / $totalPages',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: Icon(Icons.chevron_right),
+            onPressed: _currentPage < totalPages
+                ? () {
+                    setState(() {
+                      _currentPage++;
+                    });
+                  }
+                : null,
+          ),
+        ],
+      ),
     );
   }
 
@@ -207,7 +225,7 @@ class _AdminCategoryState extends State<AdminCategory> {
                     setState(() {
                       _sortBy = 'name';
                       _sortAscending = true;
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPage = 1;
                     });
                     Navigator.pop(context);
                   },
@@ -222,7 +240,7 @@ class _AdminCategoryState extends State<AdminCategory> {
                     setState(() {
                       _sortBy = 'name';
                       _sortAscending = false;
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPage = 1;
                     });
                     Navigator.pop(context);
                   },
@@ -237,7 +255,7 @@ class _AdminCategoryState extends State<AdminCategory> {
                     setState(() {
                       _sortBy = 'createAt';
                       _sortAscending = false;
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPage = 1;
                     });
                     Navigator.pop(context);
                   },
@@ -252,7 +270,7 @@ class _AdminCategoryState extends State<AdminCategory> {
                     setState(() {
                       _sortBy = 'createAt';
                       _sortAscending = true;
-                      _currentPage = 1; // Reset to first page when sorting
+                      _currentPage = 1;
                     });
                     Navigator.pop(context);
                   },
@@ -298,10 +316,9 @@ class _AdminCategoryState extends State<AdminCategory> {
         .doc(categoryId)
         .delete()
         .then((_) {
-          SnackBarCustom.showbar(context, 'Đã xóa danh mục thành công');
+      SnackBarCustom.showbar(context, 'Đã xóa danh mục thành công');
     }).catchError((error) {
       SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi xóa danh mục');
-      
     });
   }
 

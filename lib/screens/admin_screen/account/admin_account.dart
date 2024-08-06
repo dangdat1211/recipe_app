@@ -19,7 +19,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
   int _itemsPerPage = 10;
   int _totalItems = 0;
 
-  final List<String> _roles = ['Thành viên', 'Chuyên gia', 'Quản trị viên'];
+  final List<String> _roles = ['Thành viên', 'Chuyên gia'];
   String _selectedRole = 'Thành viên';
 
   @override
@@ -54,11 +54,11 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(100),
+          preferredSize: Size.fromHeight(110),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Tìm kiếm...',
@@ -148,43 +148,57 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
         return Column(
           children: [
             Expanded(
-              child: ListView(
-                children: paginatedDocs.map((DocumentSnapshot document) {
+              child: ListView.builder(
+                itemCount: paginatedDocs.length,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot document = paginatedDocs[index];
                   Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: NetworkImage(data['avatar'] ?? '', ),
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(data['avatar'] ?? ''),
+                      ),
+                      title: Text(
+                        data['fullname'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['email'] ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text('Vai trò: ${data['role']}'),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: data['status'] ?? false,
+                            onChanged: data['role'] == 'Quản trị viên' ? null : (bool value) {
+                              _showConfirmationDialog(document.id, value);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: data['role'] == 'Quản trị viên' ? null : () {
+                              _showChangeRoleDialog(document.id, data['role']);
+                            },
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        _navigateToUserDetail(document.id);
+                      },
                     ),
-                    title: Text(data['fullname'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(data['email'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
-                        Text('Vai trò: ${data['role']}'),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Switch(
-                          value: data['status'] ?? false,
-                          onChanged: data['role'] == 'Quản trị viên' ? null : (bool value) {
-                            _showConfirmationDialog(document.id, value);
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: data['role'] == 'Quản trị viên' ? null : () {
-                            _showChangeRoleDialog(document.id, data['role']);
-                          },
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      _navigateToUserDetail(document.id);
-                    },
                   );
-                }).toList(),
+                },
               ),
             ),
             _buildPaginationControls(totalPages),
@@ -195,31 +209,34 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
   }
 
   Widget _buildPaginationControls(int totalPages) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1
-              ? () {
-                  setState(() {
-                    _currentPage--;
-                  });
-                }
-              : null,
-        ),
-        Text('Trang $_currentPage / $totalPages'),
-        IconButton(
-          icon: Icon(Icons.chevron_right),
-          onPressed: _currentPage < totalPages
-              ? () {
-                  setState(() {
-                    _currentPage++;
-                  });
-                }
-              : null,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.chevron_left),
+            onPressed: _currentPage > 1
+                ? () {
+                    setState(() {
+                      _currentPage--;
+                    });
+                  }
+                : null,
+          ),
+          Text('Trang $_currentPage / $totalPages'),
+          IconButton(
+            icon: Icon(Icons.chevron_right),
+            onPressed: _currentPage < totalPages
+                ? () {
+                    setState(() {
+                      _currentPage++;
+                    });
+                  }
+                : null,
+          ),
+        ],
+      ),
     );
   }
 
@@ -247,7 +264,7 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
                 ),
               ),
               ListTile(
-                title: Text('Email',),
+                title: Text('Email'),
                 leading: Radio(
                   value: 'email',
                   groupValue: _sortBy,
@@ -279,42 +296,42 @@ class _AdminAccountState extends State<AdminAccount> with SingleTickerProviderSt
     );
   }
 
- void _showConfirmationDialog(String documentId, bool newValue) {
-  FirebaseFirestore.instance.collection('users').doc(documentId).get().then((doc) {
-    if (doc.exists) {
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      if (data['role'] == 'Quản trị viên') {
-        SnackBarCustom.showbar(context, 'Không thể thay đổi trạng thái của tài khoản quản trị viên');
-        return;
+  void _showConfirmationDialog(String documentId, bool newValue) {
+    FirebaseFirestore.instance.collection('users').doc(documentId).get().then((doc) {
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        if (data['role'] == 'Quản trị viên') {
+          SnackBarCustom.showbar(context, 'Không thể thay đổi trạng thái của tài khoản quản trị viên');
+          return;
+        }
+        
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Xác nhận'),
+              content: Text('Bạn có chắc chắn muốn ${newValue ? "kích hoạt" : "vô hiệu hóa"} tài khoản này?'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Hủy'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Xác nhận'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _toggleAccountStatus(documentId, newValue);
+                  },
+                ),
+              ],
+            );
+          },
+        );
       }
-      
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Xác nhận'),
-            content: Text('Bạn có chắc chắn muốn ${newValue ? "kích hoạt" : "vô hiệu hóa"} tài khoản này?'),
-            actions: <Widget>[
-              TextButton(
-                child: Text('Hủy'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text('Xác nhận'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _toggleAccountStatus(documentId, newValue);
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
-  });
-}
+    });
+  }
 
   void _toggleAccountStatus(String documentId, bool isActive) {
     FirebaseFirestore.instance.collection('users').doc(documentId).update({

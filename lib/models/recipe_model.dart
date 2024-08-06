@@ -7,7 +7,7 @@ class RecipeModel {
   final String description;
   final String ration;
   final String time;
-  final List<String> ingredients;
+  final List<Map<String, dynamic>> ingredients;
   final List<String> steps;
   final String image;
   final String level;
@@ -77,7 +77,7 @@ class RecipeModel {
       description: map['description'] ?? '',
       ration: map['ration'] ?? '',
       time: map['time'] ?? '',
-      ingredients: List<String>.from(map['ingredients'] ?? []),
+      ingredients: List<Map<String, dynamic>>.from(map['ingredients'] ?? []),
       steps: List<String>.from(map['steps'] ?? []),
       image: map['image'] ?? '',
       level: map['level'] ?? '',

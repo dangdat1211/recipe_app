@@ -7,8 +7,17 @@ class RecipeService {
 
   Future<String> uploadRecipe(RecipeModel recipe, String? mainImageUrl, List<List<String>> stepImageUrls) async {
     try {
+
+      Map<String, dynamic> recipeMap = recipe.toMap();
+      
+      // Đảm bảo rằng nguyên liệu được lưu dưới dạng List<Map<String, dynamic>>
+      recipeMap['ingredients'] = recipe.ingredients.map((ingredient) => {
+        'name': ingredient['name'],
+        'quality': ingredient['quality'],
+      }).toList();
+
       // Add the recipe document and get its ID
-      DocumentReference recipeDoc = await _firestore.collection('recipes').add(recipe.toMap());
+      DocumentReference recipeDoc = await _firestore.collection('recipes').add(recipeMap);
       String recipeId = recipeDoc.id;
 
       // Collection reference for steps

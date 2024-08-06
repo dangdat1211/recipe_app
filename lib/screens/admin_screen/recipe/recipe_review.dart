@@ -347,7 +347,7 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                           child: Column(
                             children: [
                               Text('Khẩu phần'),
-                              Text(recipeData['ration'])
+                              Text(recipeData['ration'] + ' người')
                             ],
                           )),
                       Expanded(
@@ -406,7 +406,8 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                                         .toInt() +
                                     1)
                                 .toString(),
-                            title: ingredient.toString(),
+                            title: ingredient['quality'] != '' ?
+                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
                           );
                         }).toList(),
                         if ((recipeData['ingredients'] as List<dynamic>)
@@ -427,7 +428,8 @@ class _AdminRecipeReviewState extends State<AdminRecipeReview> {
                                               .toInt() +
                                           1)
                                       .toString(),
-                                  title: ingredient.toString(),
+                                  title: ingredient['quality'] != '' ?
+                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
                                 );
                               }).toList(),
                             ),

@@ -284,28 +284,28 @@ class _DetailReCipeState extends State<DetailReCipe> {
         width: 355,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-        return Container(
-          height: 200,
-          width: 355,
-          color: Colors.grey[300],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error, color: Colors.red, size: 50),
-              SizedBox(height: 10),
-              Text(
-                'Không thể tải ảnh',
-                style: TextStyle(color: Colors.red),
-              ),
-              SizedBox(height: 5),
-              Text(
-                'Vui lòng thử lại sau',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ],
-          ),
-        );
-      },
+          return Container(
+            height: 200,
+            width: 355,
+            color: Colors.grey[300],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, color: Colors.red, size: 50),
+                SizedBox(height: 10),
+                Text(
+                  'Không thể tải ảnh',
+                  style: TextStyle(color: Colors.red),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Vui lòng thử lại sau',
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ],
+            ),
+          );
+        },
       );
     }
 
@@ -466,7 +466,7 @@ class _DetailReCipeState extends State<DetailReCipe> {
                             child: Column(
                               children: [
                                 Text('Khẩu phần'),
-                                Text(recipeData['ration'])
+                                Text(recipeData['ration'] + ' người')
                               ],
                             )),
                         Expanded(
@@ -512,61 +512,66 @@ class _DetailReCipeState extends State<DetailReCipe> {
                         ),
                       ],
                     ),
-                    StatefulBuilder(builder: (context, setState) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...(recipeData['ingredients'] as List<dynamic>)
-                              .take(3)
-                              .map((ingredient) {
-                            return ItemIngredient(
-                              index:
-                                  ((recipeData['ingredients'] as List<dynamic>)
-                                              .indexOf(ingredient)
-                                              .toInt() +
-                                          1)
-                                      .toString(),
-                              title: ingredient.toString(),
-                            );
-                          }).toList(),
-                          if ((recipeData['ingredients'] as List<dynamic>)
-                                  .length >
-                              3)
-                            AnimatedCrossFade(
-                              duration: Duration(milliseconds: 300),
-                              firstChild: Container(),
-                              secondChild: Column(
-                                children:
-                                    (recipeData['ingredients'] as List<dynamic>)
-                                        .skip(3)
-                                        .map((ingredient) {
-                                  return ItemIngredient(
-                                    index: ((recipeData['ingredients']
-                                                    as List<dynamic>)
-                                                .indexOf(ingredient)
-                                                .toInt() +
-                                            1)
-                                        .toString(),
-                                    title: ingredient.toString(),
-                                  );
-                                }).toList(),
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...(recipeData['ingredients'] as List<dynamic>)
+                                .take(3)
+                                .map((ingredient) {
+                              return ItemIngredient(
+                                index: ((recipeData['ingredients']
+                                                as List<dynamic>)
+                                            .indexOf(ingredient)
+                                            .toInt() +
+                                        1)
+                                    .toString(),
+                                title: ingredient['quality'] != '' ?
+                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
+                              );
+                            }).toList(),
+                            if ((recipeData['ingredients'] as List<dynamic>)
+                                    .length >
+                                3)
+                              AnimatedCrossFade(
+                                duration: Duration(milliseconds: 300),
+                                firstChild: Container(),
+                                secondChild: Column(
+                                  children: (recipeData['ingredients']
+                                          as List<dynamic>)
+                                      .skip(3)
+                                      .map((ingredient) {
+                                    return ItemIngredient(
+                                      index: ((recipeData['ingredients']
+                                                      as List<dynamic>)
+                                                  .indexOf(ingredient)
+                                                  .toInt() +
+                                              1)
+                                          .toString(),
+                                      title: ingredient['quality'] != '' ?
+                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
+                                    );
+                                  }).toList(),
+                                ),
+                                crossFadeState: _showAllIngredients
+                                    ? CrossFadeState.showSecond
+                                    : CrossFadeState.showFirst,
                               ),
-                              crossFadeState: _showAllIngredients
-                                  ? CrossFadeState.showSecond
-                                  : CrossFadeState.showFirst,
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showAllIngredients = !_showAllIngredients;
+                                });
+                              },
+                              child: Text(_showAllIngredients
+                                  ? 'Ẩn bớt'
+                                  : 'Hiện tất cả'),
                             ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _showAllIngredients = !_showAllIngredients;
-                              });
-                            },
-                            child: Text(
-                                _showAllIngredients ? 'Ẩn bớt' : 'Hiện tất cả'),
-                          ),
-                        ],
-                      );
-                    }),
+                          ],
+                        );
+                      },
+                    ),
                     Row(
                       children: [
                         Expanded(
