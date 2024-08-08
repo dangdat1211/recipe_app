@@ -96,8 +96,11 @@ class _ProposeScreenState extends State<ProposeScreen> {
             recipeData['recipeId'] = recipeId;
             bool isFavorite = await FavoriteService.isRecipeFavorite(recipeId);
 
+            var re = await RateService.getAverageRating(recipeId);
+
             recipeResults.add({
               'recipe': recipeData,
+              'star' : re,
               'user': userData,
               'isFavorite': isFavorite,
             });
@@ -443,6 +446,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                             final user = recipeWithUser['user'];
                                             final isFavorite =
                                                 recipeWithUser['isFavorite'];
+                                            final star = recipeWithUser['star'];
 
                                             return Padding(
                                               padding: const EdgeInsets.only(
@@ -455,7 +459,7 @@ class _ProposeScreenState extends State<ProposeScreen> {
                                                 },
                                                 name: recipe['namerecipe'] ??
                                                     'Không có tiêu đề',
-                                                star: (recipe['star'] ?? 0)
+                                                star: (star?? 0)
                                                     .toString(),
                                                 favorite:
                                                     (recipe['likes'] ?? [])

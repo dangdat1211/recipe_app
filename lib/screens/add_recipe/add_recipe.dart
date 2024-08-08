@@ -26,6 +26,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final ImagePicker _picker = ImagePicker();
   String _selectedDifficulty = 'Trung bình';
 
+  String _selectedPrivacy = 'public';
+
   List<String> _selectedCategories = [];
   List<Map<String, dynamic>> _allCategories = [];
 
@@ -198,7 +200,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           userID: currentUser!.uid,
           urlYoutube: _youtubeController.text,
           categories: _selectedCategories,
+          area: _selectedPrivacy,
           level: _selectedDifficulty);
+          
 
       String recipeId = await _recipeService.uploadRecipe(
           recipe, mainImageUrl, stepImageUrls);
@@ -474,6 +478,30 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                               ),
                             ],
                           ),
+                    SizedBox(height: 10.0),
+                  DropdownButtonFormField<String>(
+                    value: _mapPrivacyToLabel(_selectedPrivacy),
+                    decoration: InputDecoration(
+                      labelText: 'Quyền riêng tư',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: <String>['Công khai', 'Người theo dõi']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          value,
+                          style: TextStyle(fontWeight: FontWeight.normal),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedPrivacy = _mapLabelToPrivacy(newValue!);
+                      });
+                    },
+                  ),
                     SizedBox(height: 10.0),
                     TextField(
                       focusNode: _nameFocus,
@@ -776,5 +804,27 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
       ),
     );
+  }
+
+  String _mapLabelToPrivacy(String label) {
+    switch (label) {
+      case 'Công khai':
+        return 'public';
+      case 'Người theo dõi':
+        return 'follower';
+      default:
+        return 'public';
+    }
+  }
+
+  String _mapPrivacyToLabel(String privacy) {
+    switch (privacy) {
+      case 'public':
+        return 'Công khai';
+      case 'follower':
+        return 'Người theo dõi';
+      default:
+        return 'Công khai';
+    }
   }
 }

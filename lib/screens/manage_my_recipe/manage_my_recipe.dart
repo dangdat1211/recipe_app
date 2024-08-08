@@ -224,6 +224,9 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       case 'show':
         await _showRecipe(recipeId);
         break;
+      case 'privacy':
+        await _toggleRecipePrivacy(recipeId);
+        break;
     }
   }
 
@@ -393,6 +396,10 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
                         value: recipe['hidden'] ? 'show' : 'hide',
                         child: Text(recipe['hidden'] ? 'Hiện' : 'Ẩn'),
                       ),
+                      const PopupMenuItem<String>(
+                        value: 'privacy',
+                        child: Text('Thay đổi quyền riêng tư'),
+                      ),
                     ],
                   ),
                 ),
@@ -553,6 +560,110 @@ class _ManageMyRecipeState extends State<ManageMyRecipe>
       ],
     );
   }
+
+  Future<void> _toggleRecipePrivacy(String recipeId) async {
+  try {
+    // Lấy dữ liệu công thức hiện tại
+    DocumentSnapshot recipeDoc = await FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(recipeId)
+        .get();
+    Map<String, dynamic> recipeData = recipeDoc.data() as Map<String, dynamic>;
+
+    // Hiển thị dialog để người dùng chọn quyền riêng tư
+    String? newPrivacy = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Chọn quyền riêng tư'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Bạn muốn công thức này là:'),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop('public');
+                      },
+                      child: Text('Công khai'),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop('followers');
+                      },
+                      child: Text('Chỉ dành cho người theo dõi'),
+                    ),
+                  ),
+                ],
+              ),
+              // SizedBox(height: 8),
+              // Row(
+              //   children: [
+              //     Expanded(
+              //       child: ElevatedButton(
+              //         onPressed: () {
+              //           Navigator.of(context).pop('private');
+              //         },
+              //         child: Text('Riêng tư'),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Hủy'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newPrivacy != null) {
+      // Cập nhật trạng thái quyền riêng tư
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({'area': newPrivacy});
+
+      // Hiển thị thông báo
+      String message = '';
+      switch (newPrivacy) {
+        case 'public':
+          message = 'Công thức đã được đặt thành công công khai';
+          break;
+        case 'followers':
+          message = 'Công thức đã được đặt thành công chỉ dành cho người theo dõi';
+          break;
+        case 'private':
+          message = 'Công thức đã được đặt thành công riêng tư';
+          break;
+      }
+      SnackBarCustom.showbar(context, message);
+
+      // Cập nhật lại danh sách công thức
+      _loadRecipes();
+    }
+  } catch (e) {
+    print('Lỗi khi thay đổi quyền riêng tư công thức: $e');
+    SnackBarCustom.showbar(context, 'Có lỗi xảy ra khi thay đổi quyền riêng tư công thức');
+  }
+}
 
   @override
   Widget build(BuildContext context) {

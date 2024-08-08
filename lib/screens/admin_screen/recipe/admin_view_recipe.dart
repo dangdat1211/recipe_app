@@ -379,14 +379,14 @@ class _AdminViewRecipeState extends State<AdminViewRecipe>
                         _handlePopupMenuSelection(value, recipe['id']),
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'approve',
-                        child: Text('Phê duyệt'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'reject',
-                        child: Text('Từ chối'),
-                      ),
+                      // const PopupMenuItem<String>(
+                      //   value: 'approve',
+                      //   child: Text('Phê duyệt'),
+                      // ),
+                      // const PopupMenuItem<String>(
+                      //   value: 'reject',
+                      //   child: Text('Từ chối'),
+                      // ),
                       const PopupMenuItem<String>(
                         value: 'delete',
                         child: Text('Xóa'),

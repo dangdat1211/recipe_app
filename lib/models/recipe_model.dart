@@ -22,6 +22,7 @@ class RecipeModel {
   final bool hidden;
   final bool official;
   final List<String> categories;
+  final String area;
 
   RecipeModel({
     this.id,
@@ -44,6 +45,7 @@ class RecipeModel {
     this.hidden = false,
     this.official = true,
     this.categories = const [],
+    required this.area,
   });
 
   Map<String, dynamic> toMap() {
@@ -67,6 +69,7 @@ class RecipeModel {
       'hidden': hidden,
       'official': official,
       'categories': categories,
+      'area': area
     };
   }
 
@@ -92,6 +95,7 @@ class RecipeModel {
       hidden: map['hidden'] ?? false,
       official: map['official'] ?? true,
       categories: List<String>.from(map['categories'] ?? []),
+      area: map['area'] ?? 'public'
     );
   }
 }

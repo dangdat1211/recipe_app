@@ -26,6 +26,8 @@ class _ProfileUserState extends State<ProfileUser> {
 
   int approvedRecipesCount = 0;
 
+  String privacy = 'public';
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +43,19 @@ class _ProfileUserState extends State<ProfileUser> {
       approvedRecipesCount = count;
     });
   });
+  _getPrivacySetting();
+  }
+
+  Future<void> _getPrivacySetting() async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .get();
+    if (userDoc.exists) {
+      setState(() {
+        privacy = userDoc['privacy'] ?? 'public'; // Cập nhật giá trị privacy
+      });
+    }
   }
 
   Future<void> fetchUserData() async {
@@ -299,6 +314,23 @@ class _ProfileUserState extends State<ProfileUser> {
                         SizedBox(height: 10),
                         Text(userProfile!['bio']),
                         SizedBox(height: 10),
+                        if (privacy == 'public')
+                        TabBar(
+                          dividerColor: Colors.transparent,
+                          tabs: [
+                            Tab(text: 'Công thức của bạn'),
+                            Tab(text: 'Yêu thích'),
+                          ],
+                        ),
+                      if (privacy == 'follower' && isFollowing)
+                        TabBar(
+                          dividerColor: Colors.transparent,
+                          tabs: [
+                            Tab(text: 'Công thức của bạn'),
+                            Tab(text: 'Yêu thích'),
+                          ],
+                        ),
+                      if (privacy == 'private' && (currentUser?.uid == widget.userId || currentUser?.uid == 'admin'))
                         TabBar(
                           dividerColor: Colors.transparent,
                           tabs: [
@@ -314,8 +346,38 @@ class _ProfileUserState extends State<ProfileUser> {
             },
             body: TabBarView(
               children: [
+                if (privacy == 'public')
                 MyRecipe(userId: widget.userId),
-                MyFavorite(userId: widget.userId)
+              if (privacy == 'follower' && isFollowing)
+                MyRecipe(userId: widget.userId),
+              if (privacy == 'private' && (currentUser?.uid == widget.userId || currentUser?.uid == 'admin'))
+                MyRecipe(userId: widget.userId),
+              if (privacy == 'public')
+                MyFavorite(userId: widget.userId),
+              if (privacy == 'follower' && isFollowing)
+                MyFavorite(userId: widget.userId),
+              if (privacy == 'private' && (currentUser?.uid == widget.userId || currentUser?.uid == 'admin'))
+                MyFavorite(userId: widget.userId),
+              if (privacy == 'follower' && !isFollowing)
+                Center(
+                  child: Text(
+                    'Bạn cần phải theo dõi người dùng này để xem các công thức và yêu thích của họ.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              if (privacy == 'private' && currentUser?.uid != widget.userId )
+                Center(
+                  child: Text(
+                    'Người đang để chỉ mình tôi. Bạn không được phép xem các công thức và yêu thích của người dùng này.',
+                    textAlign: TextAlign.center,  
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

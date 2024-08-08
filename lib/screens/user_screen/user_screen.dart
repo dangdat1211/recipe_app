@@ -248,20 +248,20 @@ class _UserScreenState extends State<UserScreen> {
                             },
                             icon: Icons.calculate,
                             title: 'Công thức của bạn'),
-                        // SizedBox(
-                        //   height: 10,
-                        // ),
-                        // UIMenu(
-                        //     ontap: () {
-                        //       Navigator.push(
-                        //         context,
-                        //         MaterialPageRoute(
-                        //             builder: (context) =>
-                        //                 SettingPrivacyScreen()),
-                        //       );
-                        //     },
-                        //     icon: Icons.privacy_tip,
-                        //     title: 'Cài đặt quyền riêng tư'),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        UIMenu(
+                            ontap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        SettingPrivacyScreen()),
+                              );
+                            },
+                            icon: Icons.privacy_tip,
+                            title: 'Cài đặt quyền riêng tư'),
                         SizedBox(
                           height: 10,
                         ),

@@ -11,7 +11,6 @@ import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_ingredient.da
 import 'package:recipe_app/screens/detail_recipe.dart/widgets/item_step.dart';
 import 'package:recipe_app/screens/screens.dart';
 import 'package:recipe_app/service/favorite_service.dart';
-import 'package:recipe_app/service/notification_service.dart';
 import 'package:recipe_app/service/rate_service.dart';
 import 'package:recipe_app/widgets/item_recipe.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -53,6 +52,10 @@ class _DetailReCipeState extends State<DetailReCipe> {
   String? currentUserAvatar;
   String recipeName = '';
 
+  bool isAdmin = false;
+  String recipeStatus = 'public';
+  bool owner = false;
+
   String _formatDateTime(dynamic timestamp) {
     if (timestamp == null) return '';
     if (timestamp is Timestamp) {
@@ -77,6 +80,8 @@ class _DetailReCipeState extends State<DetailReCipe> {
   }
 
   late Future<Map<String, dynamic>> _commentDataFuture;
+
+  bool checkPermiss = false;
 
   @override
   void initState() {
@@ -108,6 +113,14 @@ class _DetailReCipeState extends State<DetailReCipe> {
     _commentDataFuture = getCommentData();
     _loadCurrentUserInfo();
     _loadRecipeName();
+    _checkUserRole();
+    _getRecipeStatus();
+
+    if (currentUser != null) {
+      if (currentUser!.uid == widget.userId) {
+        owner = true;
+      }
+    }
   }
 
   Future<void> _loadRecipeName() async {
@@ -119,6 +132,33 @@ class _DetailReCipeState extends State<DetailReCipe> {
     if (recipeDoc.exists) {
       setState(() {
         recipeName = recipeDoc.data()?['namerecipe'] ?? '';
+      });
+    }
+  }
+
+  Future<void> _checkUserRole() async {
+    if (currentUser != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          isAdmin = userDoc.data()?['role'] == 'Quản trị viên';
+        });
+      }
+      print(isAdmin);
+    }
+  }
+
+  Future<void> _getRecipeStatus() async {
+    final recipeDoc = await FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(widget.recipeId)
+        .get();
+    if (recipeDoc.exists) {
+      setState(() {
+        recipeStatus = recipeDoc.data()?['area'] ?? 'public';
       });
     }
   }
@@ -322,225 +362,215 @@ class _DetailReCipeState extends State<DetailReCipe> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(recipeName),
-        actions: [
-          currentUser != null
-              ? currentUser!.uid == widget.userId
-                  ? IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EditRecipeScreen(recipeId: widget.recipeId),
-                          ),
-                        );
-                      },
-                      icon: Icon(Icons.edit))
-                  : Container()
-              : Container(),
-          StatefulBuilder(builder: (context, setState) {
-            return IconButton(
-              onPressed: () async {
-                await FavoriteService.toggleFavorite(
-                    context, widget.recipeId, widget.userId);
-                // if (_isFavorite == false) {
-                //   await NotificationService().createNotification(
-                //       content: 'vừa mới thích công thức của bạn',
-                //       fromUser: currentUser!.uid,
-                //       userId: widget.userId,
-                //       recipeId: widget.recipeId,
-                //       screen: 'recipe');
-                //   Map<String, dynamic> currentUserInfo =
-                //       await UserService().getUserInfo(currentUser!.uid);
-                //   await NotificationService.sendNotification(
-                //       currentUserInfo['FCM'],
-                //       'Lượt yêu thích mới từ công thức',
-                //       '${currentUserInfo['fullname']} đã thích công thức của bạn ');
-                // }
-                setState(() {
-                  _isFavorite = !_isFavorite;
-                });
-              },
-              icon: Icon(
-                _isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: _isFavorite ? Colors.red : null,
-              ),
-            );
-          }),
-          IconButton(onPressed: () {}, icon: Icon(Icons.more_vert)),
-        ],
-      ),
-      body: FutureBuilder(
-          future: Future.wait(
-              [_recipeFuture, _userFuture, _userRecipesFuture, _stepsFuture]),
-          builder:
-              (BuildContext context, AsyncSnapshot<List<dynamic>> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-            if (!snapshot.hasData || snapshot.data!.length != 4) {
-              return Center(child: Text('Data not available'));
-            }
+        appBar: AppBar(
+          title: Text(recipeName),
+          actions: [
+            currentUser != null
+                ? currentUser!.uid == widget.userId
+                    ? IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  EditRecipeScreen(recipeId: widget.recipeId),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.edit))
+                    : Container()
+                : Container(),
+            StatefulBuilder(builder: (context, setState) {
+              return IconButton(
+                onPressed: () async {
+                  await FavoriteService.toggleFavorite(
+                      context, widget.recipeId, widget.userId);
+                  // if (_isFavorite == false) {
+                  //   await NotificationService().createNotification(
+                  //       content: 'vừa mới thích công thức của bạn',
+                  //       fromUser: currentUser!.uid,
+                  //       userId: widget.userId,
+                  //       recipeId: widget.recipeId,
+                  //       screen: 'recipe');
+                  //   Map<String, dynamic> currentUserInfo =
+                  //       await UserService().getUserInfo(currentUser!.uid);
+                  //   await NotificationService.sendNotification(
+                  //       currentUserInfo['FCM'],
+                  //       'Lượt yêu thích mới từ công thức',
+                  //       '${currentUserInfo['fullname']} đã thích công thức của bạn ');
+                  // }
+                  setState(() {
+                    _isFavorite = !_isFavorite;
+                  });
+                },
+                icon: Icon(
+                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: _isFavorite ? Colors.red : null,
+                ),
+              );
+            }),
+            IconButton(onPressed: () {}, icon: Icon(Icons.more_vert)),
+          ],
+        ),
+        body: (_isFollowing || owner || isAdmin || recipeStatus == 'public')
+            ? FutureBuilder(
+                future: Future.wait([
+                  _recipeFuture,
+                  _userFuture,
+                  _userRecipesFuture,
+                  _stepsFuture
+                ]),
+                builder: (BuildContext context,
+                    AsyncSnapshot<List<dynamic>> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.length != 4) {
+                    return Center(child: Text('Data not available'));
+                  }
 
-            var recipeSnapshot =
-                snapshot.data![0] as DocumentSnapshot<Map<String, dynamic>>;
-            var userSnapshot =
-                snapshot.data![1] as DocumentSnapshot<Map<String, dynamic>>;
-            var userRecipesSnapshot = snapshot.data![2]
-                as List<DocumentSnapshot<Map<String, dynamic>>>;
-            var stepsSnapshot = snapshot.data![3]
-                as List<DocumentSnapshot<Map<String, dynamic>>>;
+                  var recipeSnapshot = snapshot.data![0]
+                      as DocumentSnapshot<Map<String, dynamic>>;
+                  var userSnapshot = snapshot.data![1]
+                      as DocumentSnapshot<Map<String, dynamic>>;
+                  var userRecipesSnapshot = snapshot.data![2]
+                      as List<DocumentSnapshot<Map<String, dynamic>>>;
+                  var stepsSnapshot = snapshot.data![3]
+                      as List<DocumentSnapshot<Map<String, dynamic>>>;
 
-            var recipeData = recipeSnapshot.data();
-            var userData = userSnapshot.data();
+                  var recipeData = recipeSnapshot.data();
+                  var userData = userSnapshot.data();
 
-            if (recipeData == null || userData == null) {
-              return Center(child: Text('Data not available'));
-            }
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 10),
-                    Center(
-                      child: Container(
-                        height: 200,
-                        width: 355,
-                        child: _buildYoutubePlayerOrImage(
-                          recipeData['urlYoutube'],
-                          recipeData[
-                              'image'], // Ensure this field exists in your data
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        '${recipeData['namerecipe']}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Text(
-                      'Mô tả món ăn: ${recipeData['description']}',
-                      textAlign: TextAlign.left,
-                    ),
-                    SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Center(
-                            child: Text(
-                              'Thông tin cơ bản',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
+                  if (recipeData == null || userData == null) {
+                    return Center(child: Text('Data not available'));
+                  }
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 10),
+                          Center(
+                            child: Container(
+                              height: 200,
+                              width: 355,
+                              child: _buildYoutubePlayerOrImage(
+                                recipeData['urlYoutube'],
+                                recipeData[
+                                    'image'], // Ensure this field exists in your data
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                            flex: 3,
-                            child: Column(
-                              children: [
-                                Text('Khẩu phần'),
-                                Text(recipeData['ration'] + ' người')
-                              ],
-                            )),
-                        Expanded(
-                            flex: 3,
-                            child: Column(
-                              children: [
-                                Text('Thời gian'),
-                                Text(recipeData['time'])
-                              ],
-                            )),
-                        Expanded(
-                            flex: 3,
-                            child: Column(
-                              children: [
-                                Text('Độ khó'),
-                                Text(recipeData['level'])
-                              ],
-                            )),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Center(
+                          SizedBox(height: 10),
+                          Center(
                             child: Text(
-                              'Nguyên liệu',
+                              '${recipeData['namerecipe']}',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
+                                  fontSize: 20, fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                      ],
-                    ),
-                    StatefulBuilder(
-                      builder: (context, setState) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...(recipeData['ingredients'] as List<dynamic>)
-                                .take(3)
-                                .map((ingredient) {
-                              return ItemIngredient(
-                                index: ((recipeData['ingredients']
-                                                as List<dynamic>)
-                                            .indexOf(ingredient)
-                                            .toInt() +
-                                        1)
-                                    .toString(),
-                                title: ingredient['quality'] != '' ?
-                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
-                              );
-                            }).toList(),
-                            if ((recipeData['ingredients'] as List<dynamic>)
-                                    .length >
-                                3)
-                              AnimatedCrossFade(
-                                duration: Duration(milliseconds: 300),
-                                firstChild: Container(),
-                                secondChild: Column(
-                                  children: (recipeData['ingredients']
+                          Text(
+                            'Mô tả món ăn: ${recipeData['description']}',
+                            textAlign: TextAlign.left,
+                          ),
+                          SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Center(
+                                  child: Text(
+                                    'Thông tin cơ bản',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
+                              ),
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    children: [
+                                      Text('Khẩu phần'),
+                                      Text(recipeData['ration'] + ' người')
+                                    ],
+                                  )),
+                              Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    children: [
+                                      Text('Thời gian'),
+                                      Text(recipeData['time'])
+                                    ],
+                                  )),
+                              Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    children: [
+                                      Text('Độ khó'),
+                                      Text(recipeData['level'])
+                                    ],
+                                  )),
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Center(
+                                  child: Text(
+                                    'Nguyên liệu',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
+                              ),
+                            ],
+                          ),
+                          StatefulBuilder(
+                            builder: (context, setState) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ...(recipeData['ingredients']
                                           as List<dynamic>)
-                                      .skip(3)
+                                      .take(3)
                                       .map((ingredient) {
                                     return ItemIngredient(
                                       index: ((recipeData['ingredients']
@@ -549,277 +579,275 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                                   .toInt() +
                                               1)
                                           .toString(),
-                                      title: ingredient['quality'] != '' ?
-                                          '${ingredient['name']} - ${ingredient['quality']}' : '${ingredient['name']}',
+                                      title: ingredient['quality'] != ''
+                                          ? '${ingredient['name']} - ${ingredient['quality']}'
+                                          : '${ingredient['name']}',
                                     );
                                   }).toList(),
-                                ),
-                                crossFadeState: _showAllIngredients
-                                    ? CrossFadeState.showSecond
-                                    : CrossFadeState.showFirst,
-                              ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showAllIngredients = !_showAllIngredients;
-                                });
-                              },
-                              child: Text(_showAllIngredients
-                                  ? 'Ẩn bớt'
-                                  : 'Hiện tất cả'),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Center(
-                            child: Text(
-                              'Cách làm',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Divider(color: Colors.black, thickness: 1),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 5),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: stepsSnapshot.map((step) {
-                        var stepData = step.data();
-                        return ItemStep(
-                          index: (stepData!['order'] as int).toString(),
-                          title: stepData['title'],
-                          child: Container(
-                            width: MediaQuery.of(context).size.width * 0.8,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (stepData['images'] != null &&
-                                    (stepData['images'] as List<dynamic>)
-                                        .isNotEmpty)
-                                  Container(
-                                    height: MediaQuery.of(context).size.width *
-                                        0.25,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount:
-                                          (stepData['images'] as List<dynamic>)
-                                              .length,
-                                      itemBuilder: (context, imageIndex) {
-                                        return Padding(
-                                          padding: EdgeInsets.only(right: 8.0),
-                                          child: Container(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.25,
-                                            decoration: BoxDecoration(
-                                              image: DecorationImage(
-                                                image: NetworkImage(
-                                                  (stepData['images'] as List<
-                                                      dynamic>)[imageIndex],
-                                                ),
-                                                fit: BoxFit.cover,
-                                              ),
-                                              color: Colors.blue,
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                  if ((recipeData['ingredients']
+                                              as List<dynamic>)
+                                          .length >
+                                      3)
+                                    AnimatedCrossFade(
+                                      duration: Duration(milliseconds: 300),
+                                      firstChild: Container(),
+                                      secondChild: Column(
+                                        children: (recipeData['ingredients']
+                                                as List<dynamic>)
+                                            .skip(3)
+                                            .map((ingredient) {
+                                          return ItemIngredient(
+                                            index: ((recipeData['ingredients']
+                                                            as List<dynamic>)
+                                                        .indexOf(ingredient)
+                                                        .toInt() +
+                                                    1)
+                                                .toString(),
+                                            title: ingredient['quality'] != ''
+                                                ? '${ingredient['name']} - ${ingredient['quality']}'
+                                                : '${ingredient['name']}',
+                                          );
+                                        }).toList(),
+                                      ),
+                                      crossFadeState: _showAllIngredients
+                                          ? CrossFadeState.showSecond
+                                          : CrossFadeState.showFirst,
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 5),
-                    SizedBox(height: 10),
-                    Divider(),
-                    SizedBox(height: 5),
-                    Center(
-                      child: Container(
-                        height: 60,
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              SizedBox(width: 10),
-                              RatingBar.builder(
-                                initialRating: _hasRated ? _userRating : 0,
-                                minRating: 1,
-                                direction: Axis.horizontal,
-                                allowHalfRating: true,
-                                itemCount: 5,
-                                itemPadding:
-                                    EdgeInsets.symmetric(horizontal: 4.0),
-                                itemBuilder: (context, _) => Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                ),
-                                onRatingUpdate: (rating) async {
-                                  if (currentUser != null) {
-                                    try {
-                                      await RateService().updateRating(
-                                          currentUser!.uid,
-                                          widget.recipeId,
-                                          rating);
-                                      await _updateRatingState();
+                                  TextButton(
+                                    onPressed: () {
                                       setState(() {
-                                        _userRating = rating;
-                                        _hasRated = true;
+                                        _showAllIngredients =
+                                            !_showAllIngredients;
                                       });
-                                    } catch (e) {
-                                      // Xử lý lỗi
-                                    }
-                                  } else {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          title: Text('Bạn chưa đăng nhập'),
-                                          content: Text(
-                                              'Vui lòng đăng nhập để tiếp tục.'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          const SignInScreen()),
-                                                );
-                                              },
-                                              child: Text('Đăng nhập'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                              child: Text('Hủy'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  }
-                                },
+                                    },
+                                    child: Text(_showAllIngredients
+                                        ? 'Ẩn bớt'
+                                        : 'Hiện tất cả'),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
                               ),
-                              Text(
-                                'Đánh giá $_avgRating/5 từ ${_ratingCount.toString()} thành viên',
+                              Expanded(
+                                flex: 2,
+                                child: Center(
+                                  child: Text(
+                                    'Cách làm',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child:
+                                    Divider(color: Colors.black, thickness: 1),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ),
-                    Divider(),
-                    SizedBox(height: 5),
-                    FutureBuilder<Map<String, dynamic>>(
-                      future: _commentDataFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        }
-                        if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
-                        final commentData = snapshot.data!;
-                        final commentCount = commentData['count'];
-                        final latestComment = commentData['latestComment'];
-
-                        return Center(
-                          child: Container(
-                            height: 180,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                          SizedBox(height: 5),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: stepsSnapshot.map((step) {
+                              var stepData = step.data();
+                              return ItemStep(
+                                index: (stepData!['order'] as int).toString(),
+                                title: stepData['title'],
+                                child: Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.8,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.comment),
-                                      SizedBox(width: 10),
-                                      Text('Bình luận'),
-                                      SizedBox(width: 10),
-                                      Text(commentCount.toString()),
+                                      if (stepData['images'] != null &&
+                                          (stepData['images'] as List<dynamic>)
+                                              .isNotEmpty)
+                                        Container(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.25,
+                                          child: ListView.builder(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: (stepData['images']
+                                                    as List<dynamic>)
+                                                .length,
+                                            itemBuilder: (context, imageIndex) {
+                                              return Padding(
+                                                padding:
+                                                    EdgeInsets.only(right: 8.0),
+                                                child: Container(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.25,
+                                                  decoration: BoxDecoration(
+                                                    image: DecorationImage(
+                                                      image: NetworkImage(
+                                                        (stepData['images']
+                                                                as List<
+                                                                    dynamic>)[
+                                                            imageIndex],
+                                                      ),
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                    color: Colors.blue,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                  SizedBox(height: 5),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => CommentScreen(
-                                            recipeId: widget.recipeId,
-                                            userId: widget.userId,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text('Xem tất cả bình luận'),
-                                  ),
-                                  SizedBox(height: 5),
-                                  if (latestComment != null)
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundImage: NetworkImage(
-                                              latestComment['avatar'] ?? ''),
-                                        ),
-                                        SizedBox(width: 10),
-                                        Text(latestComment['fullname'] ?? ''),
-                                        SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            latestComment['content'] ?? '',
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 20,
-                                        backgroundImage: currentUserAvatar !=
-                                                null
-                                            ? NetworkImage(currentUserAvatar!)
-                                            : null,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          SizedBox(height: 5),
+                          SizedBox(height: 10),
+                          Divider(),
+                          SizedBox(height: 5),
+                          Center(
+                            child: Container(
+                              height: 60,
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    SizedBox(width: 10),
+                                    RatingBar.builder(
+                                      initialRating:
+                                          _hasRated ? _userRating : 0,
+                                      minRating: 1,
+                                      direction: Axis.horizontal,
+                                      allowHalfRating: true,
+                                      itemCount: 5,
+                                      itemPadding:
+                                          EdgeInsets.symmetric(horizontal: 4.0),
+                                      itemBuilder: (context, _) => Icon(
+                                        Icons.star,
+                                        color: Colors.amber,
                                       ),
-                                      SizedBox(width: 10),
-                                      Expanded(
-                                        child: GestureDetector(
+                                      onRatingUpdate: (rating) async {
+                                        if (currentUser != null) {
+                                          try {
+                                            await RateService().updateRating(
+                                                currentUser!.uid,
+                                                widget.recipeId,
+                                                rating);
+                                            await _updateRatingState();
+                                            setState(() {
+                                              _userRating = rating;
+                                              _hasRated = true;
+                                            });
+                                          } catch (e) {
+                                            // Xử lý lỗi
+                                          }
+                                        } else {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title:
+                                                    Text('Bạn chưa đăng nhập'),
+                                                content: Text(
+                                                    'Vui lòng đăng nhập để tiếp tục.'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const SignInScreen()),
+                                                      );
+                                                    },
+                                                    child: Text('Đăng nhập'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: Text('Hủy'),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        }
+                                      },
+                                    ),
+                                    Text(
+                                      'Đánh giá $_avgRating/5 từ ${_ratingCount.toString()} thành viên',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Divider(),
+                          SizedBox(height: 5),
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: _commentDataFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              }
+                              if (snapshot.hasError) {
+                                return Text('Error: ${snapshot.error}');
+                              }
+                              final commentData = snapshot.data!;
+                              final commentCount = commentData['count'];
+                              final latestComment =
+                                  commentData['latestComment'];
+
+                              return Center(
+                                child: Container(
+                                  height: 180,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.9,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.comment),
+                                            SizedBox(width: 10),
+                                            Text('Bình luận'),
+                                            SizedBox(width: 10),
+                                            Text(commentCount.toString()),
+                                          ],
+                                        ),
+                                        SizedBox(height: 5),
+                                        GestureDetector(
                                           onTap: () {
                                             Navigator.push(
                                               context,
@@ -828,227 +856,334 @@ class _DetailReCipeState extends State<DetailReCipe> {
                                                     CommentScreen(
                                                   recipeId: widget.recipeId,
                                                   userId: widget.userId,
-                                                  autoFocus: true,
                                                 ),
                                               ),
                                             );
                                           },
-                                          child: Container(
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              color: Colors.white,
-                                            ),
-                                            alignment: Alignment.centerLeft,
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 16),
-                                            child: Text('Bình luận ngay'),
+                                          child: Text('Xem tất cả bình luận'),
+                                        ),
+                                        SizedBox(height: 5),
+                                        if (latestComment != null)
+                                          Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 20,
+                                                backgroundImage: NetworkImage(
+                                                    latestComment['avatar'] ??
+                                                        ''),
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(latestComment['fullname'] ??
+                                                  ''),
+                                              SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  latestComment['content'] ??
+                                                      '',
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 20,
+                                              backgroundImage:
+                                                  currentUserAvatar != null
+                                                      ? NetworkImage(
+                                                          currentUserAvatar!)
+                                                      : null,
+                                            ),
+                                            SizedBox(width: 10),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          CommentScreen(
+                                                        recipeId:
+                                                            widget.recipeId,
+                                                        userId: widget.userId,
+                                                        autoFocus: true,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Container(
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    border: Border.all(),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            20),
+                                                    color: Colors.white,
+                                                  ),
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 16),
+                                                  child: Text('Bình luận ngay'),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 5),
+                          Divider(),
+                          SizedBox(height: 5),
+                          Center(
+                            child: GestureDetector(
+                              onTap: () {},
+                              child: Container(
+                                height: 250,
+                                width: MediaQuery.of(context).size.width * 0.9,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  children: [
+                                    SizedBox(height: 20),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => ProfileUser(
+                                                    userId: widget.userId,
+                                                  )),
+                                        );
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage: NetworkImage(
+                                          userData['avatar'] ?? '',
                                         ),
                                       ),
-                                    ],
+                                    ),
+                                    Text('Được đăng tải bởi'),
+                                    Text(userData['fullname'] ?? ''),
+                                    Text(
+                                      'Ngày tạo công thức: ${_formatDateTime(recipeData['createAt'])}',
+                                    ),
+                                    StatefulBuilder(
+                                      builder: (context, setState) {
+                                        return GestureDetector(
+                                          onTap: () async {
+                                            final currentUserId =
+                                                currentUser?.uid;
+                                            final userId = widget.userId;
+                                            final userRef = FirebaseFirestore
+                                                .instance
+                                                .collection('users')
+                                                .doc(currentUserId);
+
+                                            final userOther = FirebaseFirestore
+                                                .instance
+                                                .collection('users')
+                                                .doc(userId);
+
+                                            final userSnapshot =
+                                                await userRef.get();
+                                            final userData =
+                                                userSnapshot.data();
+                                            final followings =
+                                                userData?['followings'] ?? [];
+
+                                            if (followings.contains(userId)) {
+                                              // Nếu đã theo dõi, hủy theo dõi
+                                              await userRef.update({
+                                                'followings':
+                                                    FieldValue.arrayRemove(
+                                                        [userId])
+                                              });
+                                              await userOther.update({
+                                                'followers':
+                                                    FieldValue.arrayRemove(
+                                                        [currentUserId])
+                                              });
+                                              setState(() {
+                                                _isFollowing = false;
+                                              });
+                                            } else {
+                                              await userRef.update({
+                                                'followings':
+                                                    FieldValue.arrayUnion(
+                                                        [userId])
+                                              });
+                                              await userOther.update({
+                                                'followers':
+                                                    FieldValue.arrayUnion(
+                                                        [currentUserId])
+                                              });
+                                              setState(() {
+                                                _isFollowing = true;
+                                              });
+                                            }
+                                          },
+                                          child: Container(
+                                            height: 40,
+                                            width: 150,
+                                            // decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                                            color: Colors.amber,
+                                            child: Center(
+                                              child: Text(
+                                                _isFollowing
+                                                    ? 'Đang theo dõi'
+                                                    : 'Theo dõi',
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Divider(),
+                          SizedBox(height: 5),
+                          Center(
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      'Các món mới từ ${userData['fullname']}',
+                                      textAlign: TextAlign.start,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
+                                  SizedBox(height: 5),
+                                  ListView.builder(
+                                    physics: NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    itemCount: recipesWithUserData.length,
+                                    itemBuilder: (context, index) {
+                                      final recipeWithUser =
+                                          recipesWithUserData[index];
+                                      final recipe = recipeWithUser['recipe'];
+                                      final user = recipeWithUser['user'];
+                                      final isFavorite =
+                                          recipeWithUser['isFavorite'];
+
+                                      return Container(
+                                        child: Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 10),
+                                            child: FutureBuilder<double>(
+                                                future: RateService
+                                                    .getAverageRating(
+                                                        recipe['recipeId']),
+                                                builder: (context, snapshot) {
+                                                  double averageRating =
+                                                      snapshot.data ?? 0.0;
+                                                  return ItemRecipe(
+                                                      ontap: () {
+                                                        // Navigate to recipe detail screen
+                                                      },
+                                                      name: recipe[
+                                                              'namerecipe'] ??
+                                                          '',
+                                                      star: averageRating
+                                                          .toStringAsFixed(1),
+                                                      favorite: recipe['likes']
+                                                              ?.length
+                                                              .toString() ??
+                                                          '0',
+                                                      avatar:
+                                                          user['avatar'] ?? '',
+                                                      fullname:
+                                                          user['fullname'] ??
+                                                              '',
+                                                      image:
+                                                          recipe['image'] ?? '',
+                                                      isFavorite: isFavorite,
+                                                      onFavoritePressed:
+                                                          () async {
+                                                        FavoriteService
+                                                            .toggleFavorite(
+                                                                context,
+                                                                recipe[
+                                                                    'recipeId'],
+                                                                recipe[
+                                                                    'userID']);
+                                                      });
+                                                }),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
                                 ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 5),
-                    Divider(),
-                    SizedBox(height: 5),
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          height: 250,
-                          width: MediaQuery.of(context).size.width * 0.9,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            children: [
-                              SizedBox(height: 20),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => ProfileUser(
-                                              userId: widget.userId,
-                                            )),
-                                  );
-                                },
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: NetworkImage(
-                                    userData['avatar'] ?? '',
-                                  ),
-                                ),
-                              ),
-                              Text('Được đăng tải bởi'),
-                              Text(userData['fullname'] ?? ''),
-                              Text(
-                                'Ngày tạo công thức: ${_formatDateTime(recipeData['createAt'])}',
-                              ),
-                              StatefulBuilder(
-                                builder: (context, setState) {
-                                  return GestureDetector(
-                                    onTap: () async {
-                                      final currentUserId = currentUser?.uid;
-                                      final userId = widget.userId;
-                                      final userRef = FirebaseFirestore.instance
-                                          .collection('users')
-                                          .doc(currentUserId);
-
-                                      final userOther = FirebaseFirestore
-                                          .instance
-                                          .collection('users')
-                                          .doc(userId);
-
-                                      final userSnapshot = await userRef.get();
-                                      final userData = userSnapshot.data();
-                                      final followings =
-                                          userData?['followings'] ?? [];
-
-                                      if (followings.contains(userId)) {
-                                        // Nếu đã theo dõi, hủy theo dõi
-                                        await userRef.update({
-                                          'followings':
-                                              FieldValue.arrayRemove([userId])
-                                        });
-                                        await userOther.update({
-                                          'followers': FieldValue.arrayRemove(
-                                              [currentUserId])
-                                        });
-                                        setState(() {
-                                          _isFollowing = false;
-                                        });
-                                      } else {
-                                        await userRef.update({
-                                          'followings':
-                                              FieldValue.arrayUnion([userId])
-                                        });
-                                        await userOther.update({
-                                          'followers': FieldValue.arrayUnion(
-                                              [currentUserId])
-                                        });
-                                        setState(() {
-                                          _isFollowing = true;
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      height: 40,
-                                      width: 150,
-                                      // decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
-                                      color: Colors.amber,
-                                      child: Center(
-                                        child: Text(
-                                          _isFollowing
-                                              ? 'Đang theo dõi'
-                                              : 'Theo dõi',
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 5),
-                    Divider(),
-                    SizedBox(height: 5),
-                    Center(
-                      child: Container(
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
+                  );
+                })
+            : Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset('assets/logo_noback.png', width: MediaQuery.of(context).size.width*0.5,),
+                      Text(
+                        'Công thức này chỉ dành cho những người đang theo dõi',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Các món mới từ ${userData['fullname']}',
-                                textAlign: TextAlign.start,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            ListView.builder(
-                              physics: NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              itemCount: recipesWithUserData.length,
-                              itemBuilder: (context, index) {
-                                final recipeWithUser =
-                                    recipesWithUserData[index];
-                                final recipe = recipeWithUser['recipe'];
-                                final user = recipeWithUser['user'];
-                                final isFavorite = recipeWithUser['isFavorite'];
-
-                                return Container(
-                                  child: Center(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: FutureBuilder<double>(
-                                          future: RateService.getAverageRating(
-                                              recipe['recipeId']),
-                                          builder: (context, snapshot) {
-                                            double averageRating =
-                                                snapshot.data ?? 0.0;
-                                            return ItemRecipe(
-                                                ontap: () {
-                                                  // Navigate to recipe detail screen
-                                                },
-                                                name:
-                                                    recipe['namerecipe'] ?? '',
-                                                star: averageRating
-                                                    .toStringAsFixed(1),
-                                                favorite: recipe['likes']
-                                                        ?.length
-                                                        .toString() ??
-                                                    '0',
-                                                avatar: user['avatar'] ?? '',
-                                                fullname:
-                                                    user['fullname'] ?? '',
-                                                image: recipe['image'] ?? '',
-                                                isFavorite: isFavorite,
-                                                onFavoritePressed: () async {
-                                                  FavoriteService
-                                                      .toggleFavorite(
-                                                          context,
-                                                          recipe['recipeId'],
-                                                          recipe['userID']);
-                                                });
-                                          }),
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          ],
-                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
-                ),
+                      SizedBox(height: 16.0),
+                      ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileUser(userId: widget.userId),
               ),
             );
-          }),
-    );
+          },
+          style: ElevatedButton.styleFrom(
+            textStyle: TextStyle(
+              // decoration: TextDecoration.underline,
+            ),
+          ),
+          child: Text('Đến trang cá nhân của chủ công thức'),
+        )
+                    ],
+                  ),
+                ),
+              ));
   }
 }
