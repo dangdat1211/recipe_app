@@ -132,49 +132,51 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         title: Text('Đổi mật khẩu'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Container(
-              height: 150,
-              child: Image.asset('assets/logo_noback.png'),
-            ),
-            Text('Hãy nhớ mật khẩu của bạn'),
-            SizedBox(
-              height: 30,
-            ),
-            InputForm(
-              controller: _currentPasswordController,
-              focusNode: _currentPasswordFocusNode,
-              errorText: _currentPasswordError,
-              isPassword: true,
-              label: 'Mật khẩu hiện tại',
-            ),
-            SizedBox(height: 16),
-            InputForm(
-              controller: _newPasswordController,
-              focusNode: _newPasswordFocusNode,
-              errorText: _newPasswordError,
-              isPassword: true,
-              label: 'Mật khẩu mới',
-            ),
-            SizedBox(height: 16),
-            InputForm(
-              controller: _confirmPasswordController,
-              focusNode: _confirmPasswordFocusNode,
-              errorText: _confirmPasswordError,
-              isPassword: true,
-              label: 'Nhập lại mật khẩu mới',
-            ),
-            SizedBox(height: 20),
-            UiButton(
-              ontap: _showChangePasswordDialog,
-              title: 'Đổi mật khẩu',
-              weightBT: MediaQuery.of(context).size.width * 0.9,
-              color: mainColor
-            ),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Container(
+                height: 150,
+                child: Image.asset('assets/logo_noback.png'),
+              ),
+              Text('Hãy nhớ mật khẩu của bạn'),
+              SizedBox(
+                height: 30,
+              ),
+              InputForm(
+                controller: _currentPasswordController,
+                focusNode: _currentPasswordFocusNode,
+                errorText: _currentPasswordError,
+                isPassword: true,
+                label: 'Mật khẩu hiện tại',
+              ),
+              SizedBox(height: 16),
+              InputForm(
+                controller: _newPasswordController,
+                focusNode: _newPasswordFocusNode,
+                errorText: _newPasswordError,
+                isPassword: true,
+                label: 'Mật khẩu mới',
+              ),
+              SizedBox(height: 16),
+              InputForm(
+                controller: _confirmPasswordController,
+                focusNode: _confirmPasswordFocusNode,
+                errorText: _confirmPasswordError,
+                isPassword: true,
+                label: 'Nhập lại mật khẩu mới',
+              ),
+              SizedBox(height: 20),
+              UiButton(
+                ontap: _showChangePasswordDialog,
+                title: 'Đổi mật khẩu',
+                weightBT: MediaQuery.of(context).size.width * 0.9,
+                color: mainColor
+              ),
+            ],
+          ),
         ),
       ),
     );
