@@ -322,7 +322,7 @@ class _ProfileUserState extends State<ProfileUser> {
                             Tab(text: 'Yêu thích'),
                           ],
                         ),
-                      if (privacy == 'follower' && isFollowing)
+                      if (privacy == 'follower' && (isFollowing || currentUser?.uid == widget.userId))
                         TabBar(
                           dividerColor: Colors.transparent,
                           tabs: [
@@ -348,17 +348,17 @@ class _ProfileUserState extends State<ProfileUser> {
               children: [
                 if (privacy == 'public')
                 MyRecipe(userId: widget.userId),
-              if (privacy == 'follower' && isFollowing)
+              if (privacy == 'follower' && (isFollowing || currentUser?.uid == widget.userId))
                 MyRecipe(userId: widget.userId),
               if (privacy == 'private' && (currentUser?.uid == widget.userId || currentUser?.uid == 'admin'))
                 MyRecipe(userId: widget.userId),
               if (privacy == 'public')
                 MyFavorite(userId: widget.userId),
-              if (privacy == 'follower' && isFollowing)
+              if (privacy == 'follower' && (isFollowing || currentUser?.uid == widget.userId))
                 MyFavorite(userId: widget.userId),
               if (privacy == 'private' && (currentUser?.uid == widget.userId || currentUser?.uid == 'admin'))
                 MyFavorite(userId: widget.userId),
-              if (privacy == 'follower' && !isFollowing)
+              if (privacy == 'follower' && !isFollowing && currentUser?.uid != widget.userId)
                 Center(
                   child: Text(
                     'Bạn cần phải theo dõi người dùng này để xem các công thức và yêu thích của họ.',

@@ -73,7 +73,7 @@ class _SettingPrivacyScreenState extends State<SettingPrivacyScreen> {
           _buildPrivacyOption(
             title: 'Người theo dõi',
             subtitle: 'Những người đã theo dõi bạn',
-            value: 'friends',
+            value: 'follower',
             icon: Icons.group,
           ),
           _buildPrivacyOption(
